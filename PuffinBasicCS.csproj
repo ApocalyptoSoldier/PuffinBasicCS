@@ -1,0 +1,142 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LangVersion>10.0</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{647C0B18-5EC1-3ED4-F519-9FED203034D7}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <AssemblyName>WindowsApplication</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>PuffinBasicCS</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".vs\ProjectSettings.json" />
+    <None Include=".vs\PuffinBasicCS.slnx\FileContentIndex\8bee9a65-0339-4db7-a105-6895e707a971.vsidx" />
+    <None Include=".vs\PuffinBasicCS.slnx\v18\.wsuo" />
+    <None Include=".vs\PuffinBasicCS.slnx\v18\DocumentLayout.json" />
+    <None Include=".vs\slnx.sqlite" />
+    <None Include=".vs\VSWorkspaceState.json" />
+    <None Include="app.config" />
+    <None Include="domain\PuffinBasicSymbolTable.warning" />
+    <None Include="domain\Scope.warning" />
+    <None Include="domain\STObjects.warning" />
+    <None Include="domain\Variable.warning" />
+    <None Include="error\PuffinBasicInternalError.warning" />
+    <None Include="error\PuffinBasicRuntimeError.warning" />
+    <None Include="error\PuffinBasicSemanticError.warning" />
+    <None Include="error\PuffinBasicSyntaxError.warning" />
+    <None Include="file\PuffinBasicFile.warning" />
+    <None Include="file\PuffinBasicFiles.warning" />
+    <None Include="file\PuffinBasicRandomAccessFile.warning" />
+    <None Include="file\PuffinBasicSequentialAccessInputFile.warning" />
+    <None Include="file\PuffinBasicSequentialAccessOutputFile.warning" />
+    <None Include="file\SystemInputOutputFile.warning" />
+    <None Include="organizer.ps1" />
+    <None Include="parser\LinenumberListener.warning" />
+    <None Include="parser\PuffinBasicImportPath.warning" />
+    <None Include="parser\PuffinBasicIR.warning" />
+    <None Include="PuffinBasicInterpreterMain.warning" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="domain\PuffinBasicSymbolTable.cs" />
+    <Compile Include="domain\IScope.cs" />
+    <Compile Include="domain\STEntry.cs" />
+    <Compile Include="domain\STObjects.cs" />
+    <Compile Include="domain\Variable.cs" />
+    <Compile Include="error\PuffinBasicInternalError.cs" />
+    <Compile Include="error\PuffinBasicRuntimeError.cs" />
+    <Compile Include="error\PuffinBasicSemanticError.cs" />
+    <Compile Include="error\PuffinBasicSyntaxError.cs" />
+    <Compile Include="file\PuffinBasicFile.cs" />
+    <Compile Include="file\PuffinBasicFiles.cs" />
+    <Compile Include="file\PuffinBasicRandomAccessFile.cs" />
+    <Compile Include="file\PuffinBasicSequentialAccessInputFile.cs" />
+    <Compile Include="file\PuffinBasicSequentialAccessOutputFile.cs" />
+    <Compile Include="file\SystemInputOutputFile.cs" />
+    <Compile Include="parser\LinenumberListener.cs" />
+    <Compile Include="parser\PuffinBasicImportPath.cs" />
+    <Compile Include="parser\PuffinBasicIR.cs" />
+    <Compile Include="parser\PuffinBasicIRListener.cs" />
+    <Compile Include="parser\PuffinBasicSourceFile.cs" />
+    <Compile Include="PuffinBasicInterpreterMain.cs" />
+    <Compile Include="runtime\ArraysUtil.cs" />
+    <Compile Include="runtime\Environment.cs" />
+    <Compile Include="runtime\Formatter.cs" />
+    <Compile Include="runtime\Functions.cs" />
+    <Compile Include="runtime\GraphicsRuntime.cs" />
+    <Compile Include="runtime\GraphicsUtil.cs" />
+    <Compile Include="runtime\Numbers.cs" />
+    <Compile Include="runtime\Operators.cs" />
+    <Compile Include="runtime\PrintBuffer.cs" />
+    <Compile Include="runtime\PuffinBasicRuntime.cs" />
+    <Compile Include="runtime\SoundState.cs" />
+    <Compile Include="runtime\Statements.cs" />
+    <Compile Include="runtime\Types.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
+  <ProjectExtensions>
+    <VisualStudio AllowExistingFolder="true" />
+  </ProjectExtensions>
+</Project>
