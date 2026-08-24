@@ -23,7 +23,7 @@ namespace Org.Puffinbasic.File
         private readonly RandomAccessFile file;
         private readonly int recordLength;
         private readonly byte[] recordBuffer;
-        private IntList recordParts;
+        private List<int> recordParts;
         private long currentFilePosBytes;
         private int lastGetRecordNumber;
         private int lastPutRecordNumber;
@@ -51,7 +51,7 @@ namespace Org.Puffinbasic.File
             this.fileState = FileState.OPEN;
         }
 
-        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, IntList recordParts)
+        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
             Preconditions.CheckNotNull(symbolTable);
             Preconditions.CheckNotNull(recordParts);

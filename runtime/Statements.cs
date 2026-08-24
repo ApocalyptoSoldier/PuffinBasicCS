@@ -261,7 +261,7 @@ namespace Org.Puffinbasic.Runtime
 
         public static void Field(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, IList<Instruction> fields, Instruction instruction)
         {
-            var varList = new IntArrayList(fields.Count);
+            var varList = new List<int>(fields.Count);
             foreach (var instrI in fields)
             {
                 var recordPartLen = symbolTable[instrI.op2].GetValue().GetInt32();
@@ -441,13 +441,13 @@ namespace Org.Puffinbasic.Runtime
             variable.GetValue().Assign(data.GetValue());
         }
 
-        static void CreateInstance(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void CreateInstance(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var entry = (STVariable)symbolTable[instruction.op1];
             entry.CreateAndSetInstance(symbolTable);
         }
 
-        static void StructLValue(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void StructLValue(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
             var root = (STObjects.STStruct)symbolTable[instruction.op1].GetValue();
             for (int i = 0; i < @params.Count - 1; i++)
@@ -465,7 +465,7 @@ namespace Org.Puffinbasic.Runtime
         public static void MemberFuncCall(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
             STValue[] funcParams = new ISTValue[@params.Count];
-            var object = symbolTable[instruction.op1].GetValue();
+            var @object = symbolTable[instruction.op1].GetValue();
             var funcName = symbolTable[instruction.op2].GetValue().GetString();
             ISTValue result = symbolTable[instruction.result].GetValue();
             for (int i = 0; i < @params.Count; i++)
@@ -476,7 +476,7 @@ namespace Org.Puffinbasic.Runtime
             @object.Call(funcName, funcParams, result);
         }
 
-        static void StructMemberRef(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void StructMemberRef(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
             var root = (STObjects.STStruct)symbolTable[instruction.op1].GetValue();
             for (int i = 0; i < @params.Count - 1; i++)

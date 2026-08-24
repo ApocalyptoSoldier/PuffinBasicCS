@@ -38,7 +38,7 @@ namespace Org.Puffinbasic.File
             this.fileState = FileState.OPEN;
         }
 
-        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, IntList recordParts)
+        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
             ThrowIllegalAccess();
         }

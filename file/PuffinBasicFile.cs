@@ -12,7 +12,7 @@ namespace Org.Puffinbasic.File
     public interface IPuffinBasicFile
     {
         int DEFAULT_RECORD_LEN = 128;
-        void SetFieldParams(PuffinBasicSymbolTable symbolTable, IntList recordParts);
+        void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts);
         int GetCurrentRecordNumber();
         long GetFileSizeInBytes();
         string ReadLine();

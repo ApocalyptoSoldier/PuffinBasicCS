@@ -1,21 +1,21 @@
-using Org.Apache.Commons.Io;
+//using Org.Apache.Commons.Io;
 using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
-using Org.Puffinbasic.Parser.PuffinBasicIR;
-using Org.Puffinbasic.Runtime.GraphicsUtil;
-using Javax.Imageio;
-using Javax.Swing;
-using Java.Awt;
-using Java.Awt.Event;
-using Java.Awt.Geom;
-using Java.Awt.Image;
-using Java.Io;
-using Java.Util;
-using Java.Util.Regex;
-using Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Parser.PuffinBasicIR;
+using static Org.Puffinbasic.Runtime.GraphicsUtil;
+//using Javax.Imageio;
+//using Javax.Swing;
+//using Java.Awt;
+//using Java.Awt.Event;
+//using Java.Awt.Geom;
+//using Java.Awt.Image;
+//using Java.Io;
+//using Java.Util;
+//using Java.Util.Regex;
+using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,40 +24,40 @@ using System.Text;
 
 namespace Org.Puffinbasic.Runtime
 {
-    class GraphicsRuntime
+    public class GraphicsRuntime
     {
         private static readonly Pattern DRAW_ARG1 = Pattern.Compile("([UDLREFGHA])([BN]+)?([0-9]+)");
         private static readonly Pattern DRAW_ARG2 = Pattern.Compile("M([+\\-]?[0-9]+),([+\\-]?[0-9]+)");
-        class GraphicsState
+        public class GraphicsState
         {
             private BasicFrame frame;
-            virtual bool IsInitialized()
+            public virtual bool IsInitialized()
             {
                 return frame != null;
             }
 
-            virtual BasicFrame GetFrame()
+            public virtual BasicFrame GetFrame()
             {
                 AssertScreenInitialized();
                 return frame;
             }
 
-            virtual Graphics2D GetGraphics2D()
+            public virtual Graphics2D GetGraphics2D()
             {
                 return GetFrame().GetDrawingCanvas().GetGraphics2D();
             }
 
-            virtual int GetImageWidth()
+            public virtual int GetImageWidth()
             {
                 return GetFrame().GetDrawingCanvas().GetImageWidth();
             }
 
-            virtual int GetImageHeight()
+            public virtual int GetImageHeight()
             {
                 return GetFrame().GetDrawingCanvas().GetImageHeight();
             }
 
-            virtual void SetFrame(BasicFrame frame)
+            public virtual void SetFrame(BasicFrame frame)
             {
                 AssertNewScreen();
                 this.frame = frame;

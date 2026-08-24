@@ -3711,7 +3711,7 @@ namespace Org.Puffinbasic.Parser
                     // array
                     var arrayName = compCtx.elem.VARNAME().GetText();
                     var arrayAtomType = ir.GetSymbolTable().GetDataTypeFor(arrayName, compCtx.elemsuffix != null ? compCtx.elemsuffix.GetText() : null);
-                    IntList dims = new IntArrayList(compCtx.DECIMAL().Count);
+                    List<int> dims = new List<int>(compCtx.DECIMAL().Count);
                     foreach (var dimStrNode in compCtx.DECIMAL())
                     {
                         dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), () => GetCtxString(ctx)));
@@ -4342,7 +4342,7 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitDimstmt(PuffinBasicParser.DimstmtContext ctx)
         {
-            IntList dims = new IntArrayList(ctx.Expr().Count);
+            List<int> dims = new List<int>(ctx.Expr().Count);
             for (int i = 0; i < ctx.Expr().Count; i++)
             {
                 dims.Add(0);
@@ -4404,7 +4404,7 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitReallocstmt(PuffinBasicParser.ReallocstmtContext ctx)
         {
-            IntList dims = new IntArrayList(ctx.Expr().Count);
+            List<int> dims = new List<int>(ctx.Expr().Count);
             for (int i = 0; i < ctx.Expr().Count; i++)
             {
                 dims.Add(0);
@@ -4840,7 +4840,7 @@ namespace Org.Puffinbasic.Parser
                     // array
                     var arrayName = compCtx.elem.VARNAME().GetText();
                     var arrayAtomType = ir.GetSymbolTable().GetDataTypeFor(arrayName, compCtx.elemsuffix != null ? compCtx.elemsuffix.GetText() : null);
-                    IntList dims = new IntArrayList(compCtx.DECIMAL().Count);
+                    List<int> dims = new List<int>(compCtx.DECIMAL().Count);
                     foreach (var dimStrNode in compCtx.DECIMAL())
                     {
                         dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), () => GetCtxString(ctx)));
@@ -20449,7 +20449,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         // if fileNumber != null, skip first instruction
         // GraphicsRuntime
-        private sealed class UDFState
+        internal sealed class UDFState
         {
             private readonly VariableName variableName;
             private readonly STUDF udfEntry;
@@ -20624,7 +20624,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         // if fileNumber != null, skip first instruction
         // GraphicsRuntime
-        private sealed class WhileLoopState
+        internal sealed class WhileLoopState
         {
             public Instruction labelBeforeWhile;
             public Instruction gotoAfterWend;
@@ -20789,7 +20789,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         // if fileNumber != null, skip first instruction
         // GraphicsRuntime
-        private sealed class ForLoopState
+        internal sealed class ForLoopState
         {
             public Variable variable;
             public Instruction labelApplyStep;
@@ -20955,7 +20955,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         // if fileNumber != null, skip first instruction
         // GraphicsRuntime
-        private sealed class IfState
+        internal sealed class IfState
         {
             public Instruction gotoIfConditionTrue;
             public Instruction gotoIfConditionFalse;

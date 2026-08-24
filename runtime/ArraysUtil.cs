@@ -15,25 +15,25 @@ using System.Text;
 
 namespace Org.Puffinbasic.Runtime
 {
-    sealed class ArraysUtil
+    public sealed class ArraysUtil
     {
-        sealed class ArrayState
+        public sealed class ArrayState
         {
             private int dimIndex;
-            int GetAndIncrement()
+            public int GetAndIncrement()
             {
                 return dimIndex++;
             }
 
-            void Reset()
+            public void Reset()
             {
                 dimIndex = 0;
             }
         }
 
-        static void Dim(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void Dim(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
-            IntList dims = new IntArrayList(@params.Count);
+            List<int> dims = new List<int>(@params.Count);
             foreach (var param in @params)
             {
                 dims.Add(symbolTable[param.op1].GetValue().GetInt32());
@@ -42,15 +42,15 @@ namespace Org.Puffinbasic.Runtime
             symbolTable[instruction.op1].GetValue().SetArrayDimensions(dims);
         }
 
-        static void ResetIndex(ArrayState state, PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void ResetIndex(ArrayState state, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             state.Reset();
             symbolTable[instruction.op1].GetValue().ResetArrayIndex();
         }
 
-        static void AllocArray(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void AllocArray(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
-            IntList dims = new IntArrayList(@params.Count);
+            List<int> dims = new List<int>(@params.Count);
             foreach (var param in @params)
             {
                 dims.Add(symbolTable[param.op1].GetValue().GetInt32());
@@ -62,9 +62,9 @@ namespace Org.Puffinbasic.Runtime
             arrayEntry.GetValue().SetArrayDimensions(dims);
         }
 
-        static void ReallocArray(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void ReallocArray(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
-            IntList dims = new IntArrayList(@params.Count);
+            List<int> dims = new List<int>(@params.Count);
             foreach (var param in @params)
             {
                 dims.Add(symbolTable[param.op1].GetValue().GetInt32());
@@ -78,19 +78,19 @@ namespace Org.Puffinbasic.Runtime
             ((AbstractSTEntry)arrayEntry).CreateAndSetInstance(symbolTable);
         }
 
-        static void SetIndex(ArrayState state, PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void SetIndex(ArrayState state, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             int index = symbolTable[instruction.op2].GetValue().GetInt32();
             symbolTable[instruction.op1].GetValue().SetArrayIndex(state.GetAndIncrement(), index);
         }
 
-        static void Arrayref(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Arrayref(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var index = symbolTable[instruction.op1].GetValue().GetArrayIndex1D();
             symbolTable[instruction.result].GetValue().SetArrayReferenceIndex1D(index);
         }
 
-        static void Arrayfill(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Arrayfill(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var array = symbolTable[instruction.op1].GetValue();
             var fillEntry = symbolTable[instruction.op2];
@@ -118,7 +118,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void ArrayCopy(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void ArrayCopy(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var array1Entry = symbolTable[instruction.op1];
             var array1 = array1Entry.GetValue();
@@ -177,7 +177,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array2dShiftVertical(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array2dShiftVertical(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
@@ -251,7 +251,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array2dShiftHorizontal(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array2dShiftHorizontal(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
@@ -465,7 +465,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array1DCopy(PuffinBasicSymbolTable symbolTable, Instruction i0, Instruction i1, Instruction instruction)
+        public static void Array1DCopy(PuffinBasicSymbolTable symbolTable, Instruction i0, Instruction i1, Instruction instruction)
         {
             var srcEntry = symbolTable[i0.op1];
             var src = srcEntry.GetValue();
@@ -532,7 +532,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array1dSort(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dSort(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var entry = symbolTable[instruction.op1];
             var array = entry.GetValue();
@@ -559,7 +559,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array1dBinSearch(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dBinSearch(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
@@ -591,7 +591,7 @@ namespace Org.Puffinbasic.Runtime
             result.SetInt32(index);
         }
 
-        static void Array1dMin(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dMin(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
@@ -668,7 +668,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array1dMax(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dMax(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
@@ -745,7 +745,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array1dMean(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dMean(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var result = symbolTable[instruction.result].GetValue();
@@ -753,7 +753,7 @@ namespace Org.Puffinbasic.Runtime
             result.SetFloat64(stats.GetMean());
         }
 
-        static void Array1dStddev(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dStddev(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
@@ -762,7 +762,7 @@ namespace Org.Puffinbasic.Runtime
             result.SetFloat64(Math.Sqrt(stats.GetVariance()));
         }
 
-        static void Array1dSum(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dSum(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var result = symbolTable[instruction.result].GetValue();
@@ -770,7 +770,7 @@ namespace Org.Puffinbasic.Runtime
             result.SetFloat64(stats.GetSum());
         }
 
-        static void Array1dMedian(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dMedian(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var result = symbolTable[instruction.result].GetValue();
@@ -778,7 +778,7 @@ namespace Org.Puffinbasic.Runtime
             result.SetFloat64(stats.GetPercentile(50));
         }
 
-        static void Array1dPercentile(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Array1dPercentile(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var arrayEntry = symbolTable[instruction.op1];
             var pct = symbolTable[instruction.op2].GetValue().GetFloat64();
@@ -898,7 +898,7 @@ namespace Org.Puffinbasic.Runtime
             return stats;
         }
 
-        static void Array2dFindRow(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void Array2dFindRow(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
             var i1 = @params[0];
             var i2 = @params[1];
@@ -943,7 +943,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        static void Array2dFindColumn(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
+        public static void Array2dFindColumn(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
             var i1 = @params[0];
             var i2 = @params[1];

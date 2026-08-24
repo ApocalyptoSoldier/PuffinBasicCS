@@ -771,7 +771,7 @@ namespace Org.Puffinbasic.Runtime
             symbolTable[instruction.result].GetValue().SetString(result);
         }
 
-        static void Splitdlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public static void Splitdlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var str = symbolTable[instruction.op1].GetValue().GetString();
             var regex = symbolTable[instruction.op2].GetValue().GetString();

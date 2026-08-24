@@ -74,6 +74,11 @@ namespace Org.Puffinbasic.Domain
             return null;
         }
 
+        public STEntry this[int id]
+        {
+            get => GetEntry(id);
+        }
+
         private STEntry GetEntry(int id)
         {
             var scope = GetCurrentScope();

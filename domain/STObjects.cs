@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 
 using static Org.Puffinbasic.Domain.Variable;
+using System.Collections;
 
 namespace Org.Puffinbasic.Domain
 {
@@ -81,7 +82,7 @@ namespace Org.Puffinbasic.Domain
             // 
             //     @Override
             //     public void copyArray(Collection<?> src, STValue dst) {
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.size());
             //         dst.setArrayDimensions(dims);
             //         int[] array = ((STInt32ArrayValue) dst).getValue();
@@ -94,7 +95,7 @@ namespace Org.Puffinbasic.Domain
             //     @Override
             //     public void copyArray(Object[] src, STValue dst) {
             //         Integer[] srcList = (Integer[]) src;
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.length);
             //         dst.setArrayDimensions(dims);
             //         int[] array = ((STInt32ArrayValue) dst).getValue();
@@ -153,7 +154,7 @@ namespace Org.Puffinbasic.Domain
             // 
             //     @Override
             //     public void copyArray(Collection<?> src, STValue dst) {
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.size());
             //         dst.setArrayDimensions(dims);
             //         long[] array = ((STInt64ArrayValue) dst).getValue();
@@ -166,7 +167,7 @@ namespace Org.Puffinbasic.Domain
             //     @Override
             //     public void copyArray(Object[] src, STValue dst) {
             //         Long[] srcList = (Long[]) src;
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.length);
             //         dst.setArrayDimensions(dims);
             //         long[] array = ((STInt64ArrayValue) dst).getValue();
@@ -225,7 +226,7 @@ namespace Org.Puffinbasic.Domain
             // 
             //     @Override
             //     public void copyArray(Collection<?> src, STValue dst) {
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.size());
             //         dst.setArrayDimensions(dims);
             //         float[] array = ((STFloat32ArrayValue) dst).getValue();
@@ -238,7 +239,7 @@ namespace Org.Puffinbasic.Domain
             //     @Override
             //     public void copyArray(Object[] src, STValue dst) {
             //         Float[] srcList = (Float[]) src;
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.length);
             //         dst.setArrayDimensions(dims);
             //         float[] array = ((STFloat32ArrayValue) dst).getValue();
@@ -297,7 +298,7 @@ namespace Org.Puffinbasic.Domain
             // 
             //     @Override
             //     public void copyArray(Collection<?> src, STValue dst) {
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.size());
             //         dst.setArrayDimensions(dims);
             //         double[] array = ((STFloat64ArrayValue) dst).getValue();
@@ -310,7 +311,7 @@ namespace Org.Puffinbasic.Domain
             //     @Override
             //     public void copyArray(Object[] src, STValue dst) {
             //         Double[] srcList = (Double[]) src;
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.length);
             //         dst.setArrayDimensions(dims);
             //         double[] array = ((STFloat64ArrayValue) dst).getValue();
@@ -376,7 +377,7 @@ namespace Org.Puffinbasic.Domain
             // 
             //     @Override
             //     public void copyArray(Collection<?> src, STValue dst) {
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.size());
             //         dst.setArrayDimensions(dims);
             //         String[] array = ((STStringArrayValue) dst).getValue();
@@ -389,7 +390,7 @@ namespace Org.Puffinbasic.Domain
             //     @Override
             //     public void copyArray(Object[] src, STValue dst) {
             //         String[] srcList = (String[]) src;
-            //         var dims = new IntArrayList(1);
+            //         var dims = new List<int>(1);
             //         dims.add(src.length);
             //         dst.setArrayDimensions(dims);
             //         String[] array = ((STStringArrayValue) dst).getValue();
@@ -516,7 +517,7 @@ namespace Org.Puffinbasic.Domain
             {
             }
 
-            bool IsCompatibleWith(PuffinBasicType other)
+            public bool IsCompatibleWith(PuffinBasicType other)
             {
                 return this.Equals(other);
             }
@@ -534,11 +535,11 @@ namespace Org.Puffinbasic.Domain
 
         public class ScalarType : PuffinBasicType
         {
-            static readonly ScalarType INT32 = new ScalarType(PuffinBasicAtomTypeId.INT32);
-            static readonly ScalarType INT64 = new ScalarType(PuffinBasicAtomTypeId.INT64);
-            static readonly ScalarType FLOAT32 = new ScalarType(FLOAT);
-            static readonly ScalarType FLOAT64 = new ScalarType(DOUBLE);
-            static readonly ScalarType STRING = new ScalarType(PuffinBasicAtomTypeId.STRING);
+            public static readonly ScalarType INT32 = new ScalarType(PuffinBasicAtomTypeId.INT32);
+            public static readonly ScalarType INT64 = new ScalarType(PuffinBasicAtomTypeId.INT64);
+            public static readonly ScalarType FLOAT32 = new ScalarType(FLOAT);
+            public static readonly ScalarType FLOAT64 = new ScalarType(DOUBLE);
+            public static readonly ScalarType STRING = new ScalarType(PuffinBasicAtomTypeId.STRING);
             private readonly PuffinBasicAtomTypeId atomType;
             public ScalarType(PuffinBasicAtomTypeId atomType)
             {
@@ -590,23 +591,23 @@ namespace Org.Puffinbasic.Domain
         public class ArrayType : PuffinBasicType
         {
             private readonly PuffinBasicAtomTypeId atomType;
-            private readonly IntList dims;
+            private readonly List<int> dims;
             private readonly bool canBeLValue;
             public ArrayType(PuffinBasicAtomTypeId atomType)
             {
                 this.atomType = atomType;
-                this.dims = new IntArrayList();
+                this.dims = new List<int>();
                 this.canBeLValue = false;
             }
 
-            public ArrayType(PuffinBasicAtomTypeId atomType, IntList dims, bool canBeLValue)
+            public ArrayType(PuffinBasicAtomTypeId atomType, List<int> dims, bool canBeLValue)
             {
                 this.atomType = atomType;
                 this.dims = dims;
                 this.canBeLValue = canBeLValue;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public override void SetArrayDimensions(List<int> dims)
             {
                 this.dims.Clear();
                 this.dims.AddAll(dims);
@@ -724,14 +725,14 @@ namespace Org.Puffinbasic.Domain
         public sealed class StructType : PuffinBasicType
         {
             private readonly string typeName;
-            private readonly Dictionary<int, PuffinBasicType> refIdToTypeMap;
-            private readonly Dictionary<VariableName, int> nameToRefIdMap;
+            internal readonly Dictionary<int, PuffinBasicType> refIdToTypeMap;
+            internal readonly Dictionary<VariableName, int> nameToRefIdMap;
             private int counter;
             public StructType(string typeName)
             {
                 this.typeName = typeName;
-                this.refIdToTypeMap = Dictionary<int, PuffinBasicType>();
-                this.nameToRefIdMap = Dictionary<VariableName, int>();
+                this.refIdToTypeMap = new Dictionary<int, PuffinBasicType>();
+                this.nameToRefIdMap = new Dictionary<VariableName, int>();
             }
 
             public string GetTypeName()
@@ -751,11 +752,8 @@ namespace Org.Puffinbasic.Domain
 
             public int GetMemberRefId(VariableName memberName)
             {
-                var memberRefId = nameToRefIdMap.GetOrDefault(memberName, -1);
-                if (memberRefId == -1)
-                {
+                if (!nameToRefIdMap.TryGetValue(memberName, out int memberRefId))
                     throw new PuffinBasicRuntimeError(BAD_FIELD, "Missing field " + typeName + "." + memberName);
-                }
 
                 return memberRefId;
             }
@@ -763,8 +761,8 @@ namespace Org.Puffinbasic.Domain
             public void DeclareField(VariableName memberName, PuffinBasicType type)
             {
                 int refId = counter++;
-                refIdToTypeMap.Put(refId, type);
-                nameToRefIdMap.Put(memberName, refId);
+                refIdToTypeMap.Add(refId, type);
+                nameToRefIdMap.Add(memberName, refId);
             }
 
             public PuffinBasicTypeId GetTypeId()
@@ -811,10 +809,10 @@ namespace Org.Puffinbasic.Domain
 
         private sealed class MemberFunction
         {
-            private readonly string functionName;
-            private readonly PuffinBasicType[] paramTypes;
-            private readonly PuffinBasicType returnType;
-            private readonly IMemberCallHandler callHandler;
+            internal readonly string functionName;
+            internal readonly PuffinBasicType[] paramTypes;
+            internal readonly PuffinBasicType returnType;
+            internal readonly IMemberCallHandler callHandler;
             MemberFunction(string functionName, PuffinBasicType[] paramTypes, PuffinBasicType returnType, IMemberCallHandler callHandler)
             {
                 this.functionName = functionName;
@@ -829,8 +827,14 @@ namespace Org.Puffinbasic.Domain
             private readonly Dictionary<string, MemberFunction> memberFunctions;
             MemberFunctions(IList<MemberFunction> memberFunctions)
             {
-                this.memberFunctions = new HashMap();
-                memberFunctions.ForEach((mf) => this.memberFunctions.Put(mf.functionName, mf));
+                this.memberFunctions = new Dictionary<string, MemberFunction>();
+                foreach (MemberFunction mf  in memberFunctions)
+                    this.memberFunctions.Add(mf.functionName, mf);
+            }
+
+            public MemberFunction this[string funcName]
+            {
+                get => Get(funcName);
             }
 
             public MemberFunction Get(string funcName)
@@ -844,15 +848,15 @@ namespace Org.Puffinbasic.Domain
                 return mf;
             }
 
-            void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes)
+            public void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes)
             {
                 PuffinBasicType[] expectedParamTypes = Get(funcName).paramTypes;
-                if (expectedParamTypes.length != paramTypes.Count)
+                if (expectedParamTypes.Length != paramTypes.Count)
                 {
                     throw new PuffinBasicRuntimeError(BAD_FUNCTION_CALL, "Function " + funcName + " expects " + expectedParamTypes.length + " params, but called with " + paramTypes.Count + " params");
                 }
 
-                for (int i = 0; i < expectedParamTypes.length; i++)
+                for (int i = 0; i < expectedParamTypes.Length; i++)
                 {
                     if (!expectedParamTypes[i].IsCompatibleWith(paramTypes[i]))
                     {
@@ -1099,7 +1103,8 @@ namespace Org.Puffinbasic.Domain
                     var dict = (Dictionary<object, object>)obj;
                     var key = keyType.GetAtomTypeId().GetValueFrom(@params[0]);
                     var value = valueType.GetAtomTypeId().GetValueFrom(@params[1]);
-                    var getRes = dict.GetOrDefault(key, value);
+                    if (!dict.TryGetValue(key, out var getRes))
+                        getRes = value;
                     valueType.GetAtomTypeId().SetValueIn(getRes, result);
                 })).Add(new MemberFunction("containsKey", new PuffinBasicType[] { keyType }, ScalarType.INT32, (obj, @params, result) =>
                 {
@@ -1180,23 +1185,23 @@ namespace Org.Puffinbasic.Domain
         {
             private readonly PuffinBasicType type;
             private STValue value;
-            AbstractSTEntry(STValue value, PuffinBasicType type)
+            public AbstractSTEntry(STValue value, PuffinBasicType type)
             {
                 this.value = value;
                 this.type = type;
             }
 
-            public override PuffinBasicType GetType()
+            public new PuffinBasicType GetType()
             {
                 return type;
             }
 
-            public override void SetValue(STValue value)
+            public void SetValue(STValue value)
             {
                 this.value = value;
             }
 
-            public override STValue GetValue()
+            public STValue GetValue()
             {
                 if (value == null)
                 {
@@ -1206,7 +1211,7 @@ namespace Org.Puffinbasic.Domain
                 return value;
             }
 
-            public override void CreateAndSetInstance(PuffinBasicSymbolTable symbolTable)
+            public void CreateAndSetInstance(PuffinBasicSymbolTable symbolTable)
             {
                 SetValue(GetType().NewInstance(symbolTable));
             }
@@ -1214,11 +1219,11 @@ namespace Org.Puffinbasic.Domain
 
         public class STLValue : AbstractSTEntry
         {
-            STLValue(STValue value, PuffinBasicType type) : base(value, type)
+            public STLValue(STValue value, PuffinBasicType type) : base(value, type)
             {
             }
 
-            public override bool IsLValue()
+            public bool IsLValue()
             {
                 return true;
             }
@@ -1232,7 +1237,7 @@ namespace Org.Puffinbasic.Domain
                 this.variable = variable;
             }
 
-            public override Variable GetVariable()
+            public Variable GetVariable()
             {
                 return variable;
             }
@@ -1240,12 +1245,12 @@ namespace Org.Puffinbasic.Domain
 
         public class STRef : STLValue
         {
-            private ISTEntry ref;
-            STRef(PuffinBasicType type) : base(null, type)
+            private ISTEntry @ref;
+            public STRef(PuffinBasicType type) : base(null, type)
             {
             }
 
-            public override void SetRef(ISTEntry @ref)
+            public void SetRef(ISTEntry @ref)
             {
                 if (!@ref.GetType().Equals(GetType()))
                 {
@@ -1271,19 +1276,19 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        sealed class STTmp : AbstractSTEntry
+        public sealed class STTmp : AbstractSTEntry
         {
-            STTmp(STValue value, PuffinBasicType type) : base(value, type)
+            public STTmp(STValue value, PuffinBasicType type) : base(value, type)
             {
             }
         }
 
         public sealed class STUDF : STVariable
         {
-            private readonly IntList paramIds;
+            private readonly List<int> paramIds;
             STUDF(STValue value, Variable variable) : base(value, variable)
             {
-                this.paramIds = new IntArrayList();
+                this.paramIds = new List<int>();
             }
 
             public void DeclareParam(int paramId)
@@ -1298,13 +1303,13 @@ namespace Org.Puffinbasic.Domain
 
             public int GetDeclaredParam(int i)
             {
-                return paramIds.GetInt(i);
+                return paramIds.ElementAt(i);
             }
         }
 
-        sealed class STLabel : AbstractSTEntry
+        public sealed class STLabel : AbstractSTEntry
         {
-            STLabel() : base(new STInt32ScalarValue(), null)
+            public STLabel() : base(new STInt32ScalarValue(), null)
             {
             }
 
@@ -1316,93 +1321,136 @@ namespace Org.Puffinbasic.Domain
 
         public interface ISTValue
         {
-            string PrintFormat();
-            string WriteFormat();
-            void Assign(ISTValue entry);
-            void Replace(ISTValue entry)
+            public string PrintFormat();
+            public string WriteFormat();
+            public void Assign(ISTValue entry);
+            public void Replace(ISTValue entry);
+
+            public int GetInt32();
+            public long GetInt64();
+            public float GetFloat32();
+            public double GetFloat64();
+            public int GetRoundedInt32();
+            public long GetRoundedInt64();
+            public string GetString();
+            public void SetInt32(int value);
+            public void SetInt64(long value);
+            public void SetFloat32(float value);
+            public void SetFloat64(double value);
+            public void SetString(string value);
+            public int GetFieldLength();
+
+            public void SetFieldLength(int fieldLength);
+
+            public void SetArrayDimensions(List<int> dims);
+
+            public List<int> GetArrayDimensions();
+
+            public int GetTotalLength();
+
+            public int GetNumArrayDimensions();
+
+            public void SetArrayIndex(int dim, int index);
+
+            public void ResetArrayIndex();
+
+            public int GetArrayIndex1D();
+
+            public void SetArrayReferenceIndex1D(int index1d);
+
+            public int[] GetInt32Array1D();
+
+            public void Fill(Number fill);
+
+            public void FillString(string fill);
+
+            public bool IsInitialized();
+
+            public void CheckInitialized();
+
+            public void SetInitialized();
+
+            public void Call(string funcName, STValue[] @params, ISTValue result);
+
+            public bool HasLen();
+
+            public int Len();
+        }
+
+        public abstract class STValue : ISTValue
+        {
+            public void Replace(ISTValue entry)
             {
                 Assign(entry);
             }
 
-            int GetInt32();
-            long GetInt64();
-            float GetFloat32();
-            double GetFloat64();
-            int GetRoundedInt32();
-            long GetRoundedInt64();
-            string GetString();
-            void SetInt32(int value);
-            void SetInt64(long value);
-            void SetFloat32(float value);
-            void SetFloat64(double value);
-            void SetString(string value);
-            int GetFieldLength()
+            public int GetFieldLength()
             {
                 return 0;
             }
 
-            void SetFieldLength(int fieldLength)
+            public void SetFieldLength(int fieldLength)
             {
             }
 
-            void SetArrayDimensions(IntList dims)
+            public void SetArrayDimensions(List<int> dims)
             {
             }
 
-            IntList GetArrayDimensions()
+            public List<int> GetArrayDimensions()
             {
-                return new IntArrayList();
+                return new List<int>();
             }
 
-            int GetTotalLength()
-            {
-                return 0;
-            }
-
-            int GetNumArrayDimensions()
+            public int GetTotalLength()
             {
                 return 0;
             }
 
-            void SetArrayIndex(int dim, int index)
-            {
-            }
-
-            void ResetArrayIndex()
-            {
-            }
-
-            int GetArrayIndex1D()
+            public int GetNumArrayDimensions()
             {
                 return 0;
             }
 
-            void SetArrayReferenceIndex1D(int index1d)
+            public void SetArrayIndex(int dim, int index)
+            {
+            }
+
+            public void ResetArrayIndex()
+            {
+            }
+
+            public int GetArrayIndex1D()
+            {
+                return 0;
+            }
+
+            public void SetArrayReferenceIndex1D(int index1d)
             {
                 throw new PuffinBasicInternalError("Unsupported");
             }
 
-            int[] GetInt32Array1D()
+            public int[] GetInt32Array1D()
             {
                 throw new PuffinBasicInternalError("Unsupported");
             }
 
-            void Fill(Number fill)
+            public void Fill(Number fill)
             {
                 throw new PuffinBasicInternalError("Unsupported");
             }
 
-            void FillString(string fill)
+            public void FillString(string fill)
             {
                 throw new PuffinBasicInternalError("Unsupported");
             }
 
-            bool IsInitialized()
+            public bool IsInitialized()
             {
                 return true;
             }
 
-            void CheckInitialized()
+            public void CheckInitialized()
             {
                 if (!IsInitialized())
                 {
@@ -1410,604 +1458,620 @@ namespace Org.Puffinbasic.Domain
                 }
             }
 
-            void SetInitialized()
+            public void SetInitialized()
             {
             }
 
-            void Call(string funcName, STValue[] @params, ISTValue result)
+            public void Call(string funcName, STValue[] @params, ISTValue result)
             {
                 throw new PuffinBasicRuntimeError(BAD_FIELD, "Function call is not supported: " + funcName);
             }
 
-            bool HasLen()
+            public bool HasLen()
             {
                 return false;
             }
 
-            int Len()
+            public int Len()
             {
                 throw new PuffinBasicInternalError("Not implemented");
             }
+
+            public abstract string PrintFormat();
+            public abstract string WriteFormat();
+            public abstract void Assign(ISTValue entry);
+            public abstract int GetInt32();
+            public abstract long GetInt64();
+            public abstract float GetFloat32();
+            public abstract double GetFloat64();
+            public abstract int GetRoundedInt32();
+            public abstract long GetRoundedInt64();
+            public abstract string GetString();
+            public abstract void SetInt32(int value);
+            public abstract void SetInt64(long value);
+            public abstract void SetFloat32(float value);
+            public abstract void SetFloat64(double value);
+            public abstract void SetString(string value);
         }
 
-        private sealed class STInt32ScalarValue : ISTValue
+        private sealed class STInt32ScalarValue : STValue
         {
             private bool isSet;
             private int value;
-            public bool IsInitialized()
+            public new bool IsInitialized()
             {
                 return isSet;
             }
 
-            public void SetInitialized()
+            public new void SetInitialized()
             {
                 isSet = true;
             }
 
-            public string PrintFormat()
+            public override string PrintFormat()
             {
                 CheckInitialized();
                 return Formatter.PrintFormatInt32(value);
             }
 
-            public string WriteFormat()
+            public override string WriteFormat()
             {
                 CheckInitialized();
                 return Formatter.WriteFormatInt32(value);
             }
 
-            public void Assign(ISTValue entry)
+            public override void Assign(ISTValue entry)
             {
                 SetInitialized();
                 this.value = entry.GetInt32();
             }
 
-            public int GetInt32()
+            public override int GetInt32()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public long GetInt64()
+            public override long GetInt64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public float GetFloat32()
+            public override float GetFloat32()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public double GetFloat64()
+            public override double GetFloat64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public int GetRoundedInt32()
+            public override int GetRoundedInt32()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public long GetRoundedInt64()
+            public override long GetRoundedInt64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public string GetString()
+            public override string GetString()
             {
                 throw new PuffinBasicInternalError("Can't cast int32 to String");
             }
 
-            public void SetInt32(int value)
+            public override void SetInt32(int value)
             {
                 SetInitialized();
                 this.value = value;
             }
 
-            public void SetInt64(long value)
+            public override void SetInt64(long value)
             {
                 this.isSet = true;
                 this.value = (int)value;
             }
 
-            public void SetFloat32(float value)
+            public override void SetFloat32(float value)
             {
                 this.isSet = true;
                 this.value = (int)value;
             }
 
-            public void SetFloat64(double value)
+            public override void SetFloat64(double value)
             {
                 this.isSet = true;
                 this.value = (int)value;
             }
 
-            public void SetString(string value)
+            public override void SetString(string value)
             {
                 throw new PuffinBasicInternalError("Can't cast String to int32: '" + value + "'");
             }
         }
 
-        private sealed class STInt64ScalarValue : ISTValue
+        private sealed class STInt64ScalarValue : STValue
         {
             private bool isSet;
             private long value;
-            public bool IsInitialized()
+            public new bool IsInitialized()
             {
                 return isSet;
             }
 
-            public void SetInitialized()
+            public new void SetInitialized()
             {
                 isSet = true;
             }
 
-            public string PrintFormat()
+            public override string PrintFormat()
             {
                 CheckInitialized();
                 return Formatter.PrintFormatInt64(value);
             }
 
-            public string WriteFormat()
+            public override string WriteFormat()
             {
                 CheckInitialized();
                 return Formatter.WriteFormatInt64(value);
             }
 
-            public void Assign(ISTValue entry)
+            public override void Assign(ISTValue entry)
             {
                 this.isSet = true;
                 this.value = entry.GetInt64();
             }
 
-            public int GetInt32()
+            public override int GetInt32()
             {
                 CheckInitialized();
                 return (int)value;
             }
 
-            public long GetInt64()
+            public override long GetInt64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public float GetFloat32()
+            public override float GetFloat32()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public double GetFloat64()
+            public override double GetFloat64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public int GetRoundedInt32()
+            public override int GetRoundedInt32()
             {
                 CheckInitialized();
                 return (int)value;
             }
 
-            public long GetRoundedInt64()
+            public override long GetRoundedInt64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public string GetString()
+            public override string GetString()
             {
                 throw new PuffinBasicInternalError("Can't cast int64 to String");
             }
 
-            public void SetInt32(int value)
+            public override void SetInt32(int value)
             {
                 this.isSet = true;
                 this.value = value;
             }
 
-            public void SetInt64(long value)
+            public override void SetInt64(long value)
             {
                 this.isSet = true;
                 this.value = value;
             }
 
-            public void SetFloat32(float value)
+            public override void SetFloat32(float value)
             {
                 this.isSet = true;
                 this.value = (long)value;
             }
 
-            public void SetFloat64(double value)
+            public override void SetFloat64(double value)
             {
                 this.isSet = true;
                 this.value = (long)value;
             }
 
-            public void SetString(string value)
+            public override void SetString(string value)
             {
                 throw new PuffinBasicInternalError("Can't cast String to int64: '" + value + "'");
             }
         }
 
-        private sealed class STFloat32ScalarValue : ISTValue
+        private sealed class STFloat32ScalarValue : STValue
         {
             private bool isSet;
             private float value;
-            public bool IsInitialized()
+            public new bool IsInitialized()
             {
                 return isSet;
             }
 
-            public void SetInitialized()
+            public new void SetInitialized()
             {
                 isSet = true;
             }
 
-            public string PrintFormat()
+            public override string PrintFormat()
             {
                 CheckInitialized();
                 return Formatter.PrintFormatFloat32(value);
             }
 
-            public string WriteFormat()
+            public override string WriteFormat()
             {
                 CheckInitialized();
                 return Formatter.WriteFormatFloat32(value);
             }
 
-            public void Assign(ISTValue entry)
+            public override void Assign(ISTValue entry)
             {
                 this.isSet = true;
                 this.value = entry.GetFloat32();
             }
 
-            public int GetInt32()
+            public override int GetInt32()
             {
                 CheckInitialized();
                 return (int)value;
             }
 
-            public long GetInt64()
+            public override long GetInt64()
             {
                 CheckInitialized();
                 return (long)value;
             }
 
-            public float GetFloat32()
+            public override float GetFloat32()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public double GetFloat64()
+            public override double GetFloat64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public int GetRoundedInt32()
-            {
-                CheckInitialized();
-                return Math.Round(value);
-            }
-
-            public long GetRoundedInt64()
-            {
-                CheckInitialized();
-                return Math.Round(value);
-            }
-
-            public string GetString()
-            {
-                throw new PuffinBasicInternalError("Can't cast float32 to String");
-            }
-
-            public void SetInt32(int value)
-            {
-                this.isSet = true;
-                this.value = value;
-            }
-
-            public void SetInt64(long value)
-            {
-                this.isSet = true;
-                this.value = value;
-            }
-
-            public void SetFloat32(float value)
-            {
-                this.isSet = true;
-                this.value = value;
-            }
-
-            public void SetFloat64(double value)
-            {
-                this.isSet = true;
-                this.value = (float)value;
-            }
-
-            public void SetString(string value)
-            {
-                throw new PuffinBasicInternalError("Can't cast String to float32: '" + value + "'");
-            }
-        }
-
-        private sealed class STFloat64ScalarValue : ISTValue
-        {
-            private bool isSet;
-            private double value;
-            public bool IsInitialized()
-            {
-                return isSet;
-            }
-
-            public void SetInitialized()
-            {
-                isSet = true;
-            }
-
-            public string PrintFormat()
-            {
-                CheckInitialized();
-                return Formatter.PrintFormatFloat64(value);
-            }
-
-            public string WriteFormat()
-            {
-                CheckInitialized();
-                return Formatter.WriteFormatFloat64(value);
-            }
-
-            public void Assign(ISTValue entry)
-            {
-                this.isSet = true;
-                this.value = entry.GetFloat64();
-            }
-
-            public int GetInt32()
-            {
-                CheckInitialized();
-                return (int)value;
-            }
-
-            public long GetInt64()
-            {
-                CheckInitialized();
-                return (long)value;
-            }
-
-            public float GetFloat32()
-            {
-                CheckInitialized();
-                return (float)value;
-            }
-
-            public double GetFloat64()
-            {
-                CheckInitialized();
-                return value;
-            }
-
-            public int GetRoundedInt32()
+            public override int GetRoundedInt32()
             {
                 CheckInitialized();
                 return (int)Math.Round(value);
             }
 
-            public long GetRoundedInt64()
+            public override long GetRoundedInt64()
             {
                 CheckInitialized();
-                return Math.Round(value);
+                return (long)Math.Round(value);
             }
 
-            public string GetString()
+            public override string GetString()
             {
-                throw new PuffinBasicInternalError("Can't cast float64 to String");
+                throw new PuffinBasicInternalError("Can't cast float32 to String");
             }
 
-            public void SetInt32(int value)
-            {
-                this.isSet = true;
-                this.value = value;
-            }
-
-            public void SetInt64(long value)
+            public override void SetInt32(int value)
             {
                 this.isSet = true;
                 this.value = value;
             }
 
-            public void SetFloat32(float value)
+            public override void SetInt64(long value)
             {
                 this.isSet = true;
                 this.value = value;
             }
 
-            public void SetFloat64(double value)
+            public override void SetFloat32(float value)
             {
                 this.isSet = true;
                 this.value = value;
             }
 
-            public void SetString(string value)
+            public override void SetFloat64(double value)
             {
-                throw new PuffinBasicInternalError("Can't cast String to float64: '" + value + "'");
+                this.isSet = true;
+                this.value = (float)value;
+            }
+
+            public override void SetString(string value)
+            {
+                throw new PuffinBasicInternalError("Can't cast String to float32: '" + value + "'");
             }
         }
 
-        private sealed class STStringScalarValue : ISTValue
+        private sealed class STFloat64ScalarValue : STValue
         {
             private bool isSet;
-            private int fieldLength;
-            private string value = "";
-            public bool IsInitialized()
+            private double value;
+            public new bool IsInitialized()
             {
                 return isSet;
             }
 
-            public void SetInitialized()
+            public new void SetInitialized()
             {
                 isSet = true;
             }
 
-            public string PrintFormat()
+            public override string PrintFormat()
             {
                 CheckInitialized();
-                return Formatter.PrintFormatString(value);
+                return Formatter.PrintFormatFloat64(value);
             }
 
-            public string WriteFormat()
+            public override string WriteFormat()
             {
                 CheckInitialized();
-                return Formatter.WriteFormatString(value);
+                return Formatter.WriteFormatFloat64(value);
             }
 
-            public void Assign(ISTValue entry)
+            public override void Assign(ISTValue entry)
             {
                 this.isSet = true;
-                this.value = entry.GetString();
+                this.value = entry.GetFloat64();
             }
 
-            public int GetInt32()
+            public override int GetInt32()
             {
-                throw new PuffinBasicInternalError("Can't cast String to int32");
+                CheckInitialized();
+                return (int)value;
             }
 
-            public long GetInt64()
+            public override long GetInt64()
             {
-                throw new PuffinBasicInternalError("Can't cast String to int64");
+                CheckInitialized();
+                return (long)value;
             }
 
-            public float GetFloat32()
+            public override float GetFloat32()
             {
-                throw new PuffinBasicInternalError("Can't cast String to float32");
+                CheckInitialized();
+                return (float)value;
             }
 
-            public double GetFloat64()
-            {
-                throw new PuffinBasicInternalError("Can't cast String to float64");
-            }
-
-            public int GetRoundedInt32()
-            {
-                throw new PuffinBasicInternalError("Can't cast String to int32");
-            }
-
-            public long GetRoundedInt64()
-            {
-                throw new PuffinBasicInternalError("Can't cast String to int64");
-            }
-
-            public string GetString()
+            public override double GetFloat64()
             {
                 CheckInitialized();
                 return value;
             }
 
-            public void SetInt32(int value)
+            public override int GetRoundedInt32()
             {
-                throw new PuffinBasicInternalError("Can't cast int32 to String");
+                CheckInitialized();
+                return (int)Math.Round(value);
             }
 
-            public void SetInt64(long value)
+            public override long GetRoundedInt64()
             {
-                throw new PuffinBasicInternalError("Can't cast int64 to String");
+                CheckInitialized();
+                return Math.Round(value);
             }
 
-            public void SetFloat32(float value)
-            {
-                throw new PuffinBasicInternalError("Can't cast float32 to String");
-            }
-
-            public void SetFloat64(double value)
+            public override string GetString()
             {
                 throw new PuffinBasicInternalError("Can't cast float64 to String");
             }
 
-            public void SetString(string value)
+            public override void SetInt32(int value)
             {
                 this.isSet = true;
                 this.value = value;
             }
 
-            public int GetFieldLength()
+            public override void SetInt64(long value)
             {
-                return fieldLength;
+                this.isSet = true;
+                this.value = value;
             }
 
-            public void SetFieldLength(int fieldLength)
+            public override void SetFloat32(float value)
             {
-                this.fieldLength = fieldLength;
+                this.isSet = true;
+                this.value = value;
             }
 
-            public bool HasLen()
+            public override void SetFloat64(double value)
             {
-                return true;
+                this.isSet = true;
+                this.value = value;
             }
 
-            public int Len()
+            public override void SetString(string value)
             {
-                return GetString().Length();
+                throw new PuffinBasicInternalError("Can't cast String to float64: '" + value + "'");
             }
         }
 
-        private sealed class STStringScalarTimeValue : ISTValue
+        private sealed class STStringScalarValue : STValue
         {
-            private static readonly DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_TIME;
-            private LocalTime time;
-            public string PrintFormat()
+            private bool isSet;
+            private int fieldLength;
+            private string value = "";
+            public new bool IsInitialized()
             {
-                return GetString();
+                return isSet;
             }
 
-            public string WriteFormat()
+            public new void SetInitialized()
             {
-                return GetString();
+                isSet = true;
             }
 
-            public void Assign(ISTValue entry)
+            public override string PrintFormat()
             {
-                SetString(entry.GetString());
+                CheckInitialized();
+                return Formatter.PrintFormatString(value);
             }
 
-            public int GetInt32()
+            public override string WriteFormat()
+            {
+                CheckInitialized();
+                return Formatter.WriteFormatString(value);
+            }
+
+            public override void Assign(ISTValue entry)
+            {
+                this.isSet = true;
+                this.value = entry.GetString();
+            }
+
+            public override int GetInt32()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int32");
             }
 
-            public long GetInt64()
+            public override long GetInt64()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int64");
             }
 
-            public float GetFloat32()
+            public override float GetFloat32()
             {
                 throw new PuffinBasicInternalError("Can't cast String to float32");
             }
 
-            public double GetFloat64()
+            public override double GetFloat64()
             {
                 throw new PuffinBasicInternalError("Can't cast String to float64");
             }
 
-            public int GetRoundedInt32()
+            public override int GetRoundedInt32()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int32");
             }
 
-            public long GetRoundedInt64()
+            public override long GetRoundedInt64()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int64");
             }
 
-            public string GetString()
+            public override string GetString()
+            {
+                CheckInitialized();
+                return value;
+            }
+
+            public override void SetInt32(int value)
+            {
+                throw new PuffinBasicInternalError("Can't cast int32 to String");
+            }
+
+            public override void SetInt64(long value)
+            {
+                throw new PuffinBasicInternalError("Can't cast int64 to String");
+            }
+
+            public override void SetFloat32(float value)
+            {
+                throw new PuffinBasicInternalError("Can't cast float32 to String");
+            }
+
+            public override void SetFloat64(double value)
+            {
+                throw new PuffinBasicInternalError("Can't cast float64 to String");
+            }
+
+            public override void SetString(string value)
+            {
+                this.isSet = true;
+                this.value = value;
+            }
+
+            public new int GetFieldLength()
+            {
+                return fieldLength;
+            }
+
+            public new void SetFieldLength(int fieldLength)
+            {
+                this.fieldLength = fieldLength;
+            }
+
+            public new bool HasLen()
+            {
+                return true;
+            }
+
+            public new int Len()
+            {
+                return GetString().Length;
+            }
+        }
+
+        private sealed class STStringScalarTimeValue : STValue
+        {
+            private static readonly DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_TIME;
+            private LocalTime time;
+            public override string PrintFormat()
+            {
+                return GetString();
+            }
+
+            public override string WriteFormat()
+            {
+                return GetString();
+            }
+
+            public override void Assign(ISTValue entry)
+            {
+                SetString(entry.GetString());
+            }
+
+            public override int GetInt32()
+            {
+                throw new PuffinBasicInternalError("Can't cast String to int32");
+            }
+
+            public override long GetInt64()
+            {
+                throw new PuffinBasicInternalError("Can't cast String to int64");
+            }
+
+            public override float GetFloat32()
+            {
+                throw new PuffinBasicInternalError("Can't cast String to float32");
+            }
+
+            public override double GetFloat64()
+            {
+                throw new PuffinBasicInternalError("Can't cast String to float64");
+            }
+
+            public override int GetRoundedInt32()
+            {
+                throw new PuffinBasicInternalError("Can't cast String to int32");
+            }
+
+            public override long GetRoundedInt64()
+            {
+                throw new PuffinBasicInternalError("Can't cast String to int64");
+            }
+
+            public override string GetString()
             {
                 return FormatLocalTime(time != null ? time : LocalTime.Now());
             }
@@ -2017,92 +2081,92 @@ namespace Org.Puffinbasic.Domain
                 return time.Format(FORMATTER);
             }
 
-            public void SetInt32(int value)
+            public override void SetInt32(int value)
             {
                 throw new PuffinBasicInternalError("Can't cast int32 to String");
             }
 
-            public void SetInt64(long value)
+            public override void SetInt64(long value)
             {
                 throw new PuffinBasicInternalError("Can't cast int64 to String");
             }
 
-            public void SetFloat32(float value)
+            public override void SetFloat32(float value)
             {
                 throw new PuffinBasicInternalError("Can't cast float32 to String");
             }
 
-            public void SetFloat64(double value)
+            public override void SetFloat64(double value)
             {
                 throw new PuffinBasicInternalError("Can't cast float64 to String");
             }
 
-            public void SetString(string value)
+            public override void SetString(string value)
             {
                 this.time = LocalTime.Parse(value, FORMATTER);
             }
 
-            public int GetFieldLength()
+            public new int GetFieldLength()
             {
                 return 0;
             }
 
-            public void SetFieldLength(int fieldLength)
+            public new void SetFieldLength(int fieldLength)
             {
                 throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "TIME$ cannot be used for setting field length!");
             }
         }
 
-        private sealed class STStringScalarDateValue : ISTValue
+        private sealed class STStringScalarDateValue : STValue
         {
             private static readonly DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
             private LocalDate date;
-            public string PrintFormat()
+            public override string PrintFormat()
             {
                 return GetString();
             }
 
-            public string WriteFormat()
+            public override string WriteFormat()
             {
                 return GetString();
             }
 
-            public void Assign(ISTValue entry)
+            public override void Assign(ISTValue entry)
             {
                 SetString(entry.GetString());
             }
 
-            public int GetInt32()
+            public override int GetInt32()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int32");
             }
 
-            public long GetInt64()
+            public override long GetInt64()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int64");
             }
 
-            public float GetFloat32()
+            public override float GetFloat32()
             {
                 throw new PuffinBasicInternalError("Can't cast String to float32");
             }
 
-            public double GetFloat64()
+            public override double GetFloat64()
             {
                 throw new PuffinBasicInternalError("Can't cast String to float64");
             }
 
-            public int GetRoundedInt32()
+            public override int GetRoundedInt32()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int32");
             }
 
-            public long GetRoundedInt64()
+            public override long GetRoundedInt64()
             {
                 throw new PuffinBasicInternalError("Can't cast String to int64");
             }
 
-            public string GetString()
+            public override string GetString()
             {
                 return FormatLocalDate(date != null ? date : LocalDate.Now());
             }
@@ -2112,47 +2176,47 @@ namespace Org.Puffinbasic.Domain
                 return date.Format(FORMATTER);
             }
 
-            public void SetInt32(int value)
+            public override void SetInt32(int value)
             {
                 throw new PuffinBasicInternalError("Can't cast int32 to String");
             }
 
-            public void SetInt64(long value)
+            public override void SetInt64(long value)
             {
                 throw new PuffinBasicInternalError("Can't cast int64 to String");
             }
 
-            public void SetFloat32(float value)
+            public override void SetFloat32(float value)
             {
                 throw new PuffinBasicInternalError("Can't cast float32 to String");
             }
 
-            public void SetFloat64(double value)
+            public override void SetFloat64(double value)
             {
                 throw new PuffinBasicInternalError("Can't cast float64 to String");
             }
 
-            public void SetString(string value)
+            public override void SetString(string value)
             {
                 this.date = LocalDate.Parse(value, FORMATTER);
             }
 
-            public int GetFieldLength()
+            public new int GetFieldLength()
             {
                 return 0;
             }
 
-            public void SetFieldLength(int fieldLength)
+            public new void SetFieldLength(int fieldLength)
             {
                 throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "DATE$ cannot be used for setting field length!");
             }
         }
 
-        class ArrayReferenceValue : ISTValue
+        public class ArrayReferenceValue :STValue
         {
             private readonly STLValue variable;
             private int index1d;
-            ArrayReferenceValue(STLValue variable)
+            public ArrayReferenceValue(STLValue variable)
             {
                 this.variable = variable;
             }
@@ -2162,7 +2226,7 @@ namespace Org.Puffinbasic.Domain
                 return (AbstractSTArrayValue)variable.GetValue();
             }
 
-            public override void SetArrayReferenceIndex1D(int index1d)
+            public new void SetArrayReferenceIndex1D(int index1d)
             {
                 this.index1d = index1d;
             }
@@ -2273,13 +2337,13 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        abstract class AbstractSTArrayValue : ISTValue
+        public abstract class AbstractSTArrayValue : STValue
         {
-            private IntList dimensions;
+            private List<int> dimensions;
             private int totalLength;
             private int index1d;
             private int ndim;
-            public override void Replace(ISTValue entry)
+            public new void Replace(ISTValue entry)
             {
                 var from = (AbstractSTArrayValue)entry;
                 dimensions = from.dimensions;
@@ -2287,61 +2351,61 @@ namespace Org.Puffinbasic.Domain
                 ndim = from.ndim;
             }
 
-            public override int GetTotalLength()
+            public new int GetTotalLength()
             {
                 return totalLength;
             }
 
-            public override int GetNumArrayDimensions()
+            public new int GetNumArrayDimensions()
             {
                 return ndim;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public new void SetArrayDimensions(List<int> dims)
             {
-                this.dimensions = new IntArrayList(dims);
+                this.dimensions = new List<int>(dims);
                 this.ndim = dimensions.Count;
                 int totalLen = 1;
                 for (int i = 0; i < ndim; i++)
                 {
-                    totalLen *= dimensions.GetInt(i);
+                    totalLen *= dimensions.ElementAt(i);
                 }
 
                 totalLength = totalLen;
             }
 
-            public override IntList GetArrayDimensions()
+            public new List<int> GetArrayDimensions()
             {
                 return dimensions;
             }
 
-            public override void ResetArrayIndex()
+            public new void ResetArrayIndex()
             {
                 this.index1d = 0;
             }
 
-            public override void SetArrayIndex(int dim, int index)
+            public new void SetArrayIndex(int dim, int index)
             {
                 if (dim < 0 || dim >= dimensions.Count)
                 {
                     throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, "Dimension index " + dim + " is out of range, #dims=" + dimensions.Count);
                 }
 
-                if (index < 0 || index >= dimensions.GetInt(dim))
+                if (index < 0 || index >= dimensions.ElementAt(dim))
                 {
                     throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, "Index " + index + " is out of range for dimension[" + dim + "]=" + dimensions.GetInt(dim));
                 }
 
-                int dIplus1 = dim + 1 < ndim ? dimensions.GetInt(dim + 1) : 1;
+                int dIplus1 = dim + 1 < ndim ? dimensions.ElementAt(dim + 1) : 1;
                 this.index1d = (this.index1d + index) * dIplus1;
             }
 
-            public override int GetArrayIndex1D()
+            public new int GetArrayIndex1D()
             {
                 return index1d;
             }
 
-            public override void SetArrayIndexID(int index1d)
+            public void SetArrayIndexID(int index1d)
             {
                 this.index1d = index1d;
             }
@@ -2350,14 +2414,14 @@ namespace Org.Puffinbasic.Domain
         public sealed class STInt32ArrayValue : AbstractSTArrayValue
         {
             private int[] value;
-            public override void Replace(ISTValue entry)
+            public new void Replace(ISTValue entry)
             {
                 base.Replace(entry);
                 var from = (STInt32ArrayValue)entry;
                 value = from.value;
             }
 
-            public override void Fill(Number fill)
+            public new void Fill(Number fill)
             {
                 Arrays.Fill(value, fill.IntValue());
             }
@@ -2367,12 +2431,12 @@ namespace Org.Puffinbasic.Domain
                 return value;
             }
 
-            public override int[] GetInt32Array1D()
+            public new int[] GetInt32Array1D()
             {
                 return value;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public new void SetArrayDimensions(List<int> dims)
             {
                 base.SetArrayDimensions(dims);
                 this.value = new int[GetTotalLength()];
@@ -2457,7 +2521,7 @@ namespace Org.Puffinbasic.Domain
         public sealed class STInt64ArrayValue : AbstractSTArrayValue
         {
             private long[] value;
-            public override void Fill(Number fill)
+            public new void Fill(Number fill)
             {
                 Arrays.Fill(value, fill.LongValue());
             }
@@ -2467,7 +2531,7 @@ namespace Org.Puffinbasic.Domain
                 return value;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public new void SetArrayDimensions(List<int> dims)
             {
                 base.SetArrayDimensions(dims);
                 this.value = new long[GetTotalLength()];
@@ -2552,7 +2616,7 @@ namespace Org.Puffinbasic.Domain
         public sealed class STFloat32ArrayValue : AbstractSTArrayValue
         {
             private float[] value;
-            public override void Fill(Number fill)
+            public new void Fill(Number fill)
             {
                 Arrays.Fill(value, fill.FloatValue());
             }
@@ -2562,7 +2626,7 @@ namespace Org.Puffinbasic.Domain
                 return value;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public new void SetArrayDimensions(List<int> dims)
             {
                 base.SetArrayDimensions(dims);
                 this.value = new float[GetTotalLength()];
@@ -2605,12 +2669,12 @@ namespace Org.Puffinbasic.Domain
 
             public override int GetRoundedInt32()
             {
-                return Math.Round(value[GetArrayIndex1D()]);
+                return (int)Math.Round(value[GetArrayIndex1D()]);
             }
 
             public override long GetRoundedInt64()
             {
-                return Math.Round(value[GetArrayIndex1D()]);
+                return (long)Math.Round(value[GetArrayIndex1D()]);
             }
 
             public override string GetString()
@@ -2647,7 +2711,7 @@ namespace Org.Puffinbasic.Domain
         public sealed class STFloat64ArrayValue : AbstractSTArrayValue
         {
             private double[] value;
-            public override void Fill(Number fill)
+            public new void Fill(Number fill)
             {
                 Arrays.Fill(value, fill.DoubleValue());
             }
@@ -2657,7 +2721,7 @@ namespace Org.Puffinbasic.Domain
                 return value;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public new void SetArrayDimensions(List<int> dims)
             {
                 base.SetArrayDimensions(dims);
                 this.value = new double[GetTotalLength()];
@@ -2705,7 +2769,7 @@ namespace Org.Puffinbasic.Domain
 
             public override long GetRoundedInt64()
             {
-                return Math.Round(value[GetArrayIndex1D()]);
+                return (long)Math.Round(value[GetArrayIndex1D()]);
             }
 
             public override string GetString()
@@ -2742,7 +2806,7 @@ namespace Org.Puffinbasic.Domain
         public sealed class STStringArrayValue : AbstractSTArrayValue
         {
             private String[] value;
-            public override void FillString(string fill)
+            public new void FillString(string fill)
             {
                 Arrays.Fill(value, fill);
             }
@@ -2752,7 +2816,7 @@ namespace Org.Puffinbasic.Domain
                 return value;
             }
 
-            public override void SetArrayDimensions(IntList dims)
+            public new void SetArrayDimensions(List<int> dims)
             {
                 base.SetArrayDimensions(dims);
                 this.value = new string[GetTotalLength()];
@@ -2835,11 +2899,11 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        abstract class STCompositeValue : ISTValue
+        public abstract class STCompositeValue : STValue
         {
             private readonly PuffinBasicTypeId type;
             private readonly PuffinBasicAtomTypeId atomType;
-            STCompositeValue(PuffinBasicTypeId type, PuffinBasicAtomTypeId atomType)
+            public STCompositeValue(PuffinBasicTypeId type, PuffinBasicAtomTypeId atomType)
             {
                 this.type = type;
                 this.atomType = atomType;
@@ -2925,10 +2989,10 @@ namespace Org.Puffinbasic.Domain
         {
             private readonly IList<object> list;
             private readonly MemberFunctions memberFunctions;
-            STList(PuffinBasicType type, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.LIST, type.GetAtomTypeId())
+            public STList(PuffinBasicType type, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.LIST, type.GetAtomTypeId())
             {
                 this.memberFunctions = memberFunctions;
-                this.list = new List();
+                this.list = new List<object>();
             }
 
             public void Call(string funcName, STValue[] @params, ISTValue result)
@@ -2936,12 +3000,12 @@ namespace Org.Puffinbasic.Domain
                 memberFunctions[funcName].callHandler.Call(list, @params, result);
             }
 
-            public override bool HasLen()
+            public new bool HasLen()
             {
                 return true;
             }
 
-            public override int Len()
+            public new int Len()
             {
                 return list.Count;
             }
@@ -2951,7 +3015,7 @@ namespace Org.Puffinbasic.Domain
         {
             private readonly HashSet<object> set;
             private readonly MemberFunctions memberFunctions;
-            STSet(PuffinBasicType type, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.SET, type.GetAtomTypeId())
+            public STSet(PuffinBasicType type, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.SET, type.GetAtomTypeId())
             {
                 this.memberFunctions = memberFunctions;
                 this.set = new HashSet<object>();
@@ -2962,12 +3026,12 @@ namespace Org.Puffinbasic.Domain
                 memberFunctions[funcName].callHandler.Call(set, @params, result);
             }
 
-            public override bool HasLen()
+            public new bool HasLen()
             {
                 return true;
             }
 
-            public override int Len()
+            public new int Len()
             {
                 return set.Count;
             }
@@ -2975,12 +3039,12 @@ namespace Org.Puffinbasic.Domain
 
         sealed class STDict : STCompositeValue
         {
-            private readonly Object2ObjectMap<object, object> dict;
+            private readonly Dictionary<object, object> dict;
             private readonly MemberFunctions memberFunctions;
-            STDict(PuffinBasicType valueType, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.DICT, valueType.GetAtomTypeId())
+            public STDict(PuffinBasicType valueType, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.DICT, valueType.GetAtomTypeId())
             {
                 this.memberFunctions = memberFunctions;
-                this.dict = new Object2ObjectOpenHashMap();
+                this.dict = new Dictionary<object, object>();
             }
 
             public void Call(string funcName, STValue[] @params, ISTValue result)
@@ -2988,12 +3052,12 @@ namespace Org.Puffinbasic.Domain
                 memberFunctions[funcName].callHandler.Call(dict, @params, result);
             }
 
-            public override bool HasLen()
+            public new bool HasLen()
             {
                 return true;
             }
 
-            public override int Len()
+            public new int Len()
             {
                 return dict.Count;
             }
@@ -3003,22 +3067,24 @@ namespace Org.Puffinbasic.Domain
         {
             private readonly StructType structType;
             private readonly Dictionary<int, int> memberRefIdToValueId;
-            STStruct(PuffinBasicSymbolTable symbolTable, StructType type) : base(PuffinBasicTypeId.STRUCT, PuffinBasicAtomTypeId.COMPOSITE)
+            public STStruct(PuffinBasicSymbolTable symbolTable, StructType type) : base(PuffinBasicTypeId.STRUCT, PuffinBasicAtomTypeId.COMPOSITE)
             {
                 this.structType = type;
                 this.memberRefIdToValueId = new Dictionary<int, int>();
-                foreach (var entry in structType.nameToRefIdMap.Object2IntEntrySet())
+                foreach (var entry in structType.nameToRefIdMap)
                 {
-                    var memberRefId = entry.GetIntValue();
+                    var memberRefId = entry.Value;
                     var valueType = structType.refIdToTypeMap[memberRefId];
                     var valueId = symbolTable.AddTmp(valueType, (e) => e.GetValue().SetInitialized());
-                    this.memberRefIdToValueId.Put(memberRefId, valueId);
+                    this.memberRefIdToValueId.Add(memberRefId, valueId);
                 }
             }
 
             public int GetMember(int memberRefId)
             {
-                return memberRefIdToValueId.GetOrDefault(memberRefId, NULL_ID);
+                if (memberRefIdToValueId.TryGetValue(memberRefId, out int memberValueId))
+                    return memberValueId;
+                return NULL_ID;
             }
 
             public override void Assign(ISTValue entry)
@@ -3035,7 +3101,8 @@ namespace Org.Puffinbasic.Domain
                 }
 
                 this.memberRefIdToValueId.Clear();
-                this.memberRefIdToValueId.PutAll(((STStruct)entry).memberRefIdToValueId);
+                foreach (var kv in other.memberRefIdToValueId)  
+                    this.memberRefIdToValueId[kv.Key] = kv.Value;
             }
         }
     }

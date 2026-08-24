@@ -35,11 +35,11 @@ namespace Org.Puffinbasic.Runtime
         private readonly ExecutorService executor;
         private readonly AtomicInteger counter;
         private readonly Dictionary<int, ClipState> state;
-        SoundState()
+        public SoundState()
         {
             this.executor = Executors.NewSingleThreadExecutor();
             this.counter = new AtomicInteger();
-            this.state = new Int2ObjectOpenHashMap();
+            this.state = new Dictionary<int, ClipState>();
         }
 
         public virtual int Load(string file)

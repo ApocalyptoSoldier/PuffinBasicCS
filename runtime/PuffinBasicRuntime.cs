@@ -55,7 +55,7 @@ namespace Org.Puffinbasic.Runtime
                 var instr = instructions[i];
                 if (instr.opCode == LABEL)
                 {
-                    labelToInstrNum.Put(instr.op1, i);
+                    labelToInstrNum.Add(instr.op1, i);
                 }
             }
 
@@ -104,10 +104,10 @@ namespace Org.Puffinbasic.Runtime
             this.lineNumToInstrNum = ComputeLineNumberToInstructionNumber(instructions);
             this.printBuffer = new PrintBuffer();
             this.arrayState = new ArrayState();
-            this.gosubReturnLabelStack = new ArrayList<int>();
+            this.gosubReturnLabelStack = new List<int>();
             this.random = new Random();
             this.formatterCache = new FormatterCache();
-            this.@params = new List<object>(4);
+            this.@params = new List<Instruction>();
             this.files = new PuffinBasicFiles(new SystemInputOutputFile(System.@in, @out));
             this.readData = ProcessDataInstructions(instructions);
             this.graphicsState = new GraphicsState();

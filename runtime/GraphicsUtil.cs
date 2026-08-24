@@ -1,13 +1,13 @@
-using It.Unimi.Dsi.Fastutil.Longs;
-using It.Unimi.Dsi.Fastutil.Objects;
+//using It.Unimi.Dsi.Fastutil.Longs;
+//using It.Unimi.Dsi.Fastutil.Objects;
 using Org.Puffinbasic.Error;
-using Javax.Swing;
-using Java.Awt;
-using Java.Awt.Event;
-using Java.Awt.Image;
-using Java.Util;
-using Java.Util.Concurrent.Locks;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+//using Javax.Swing;
+//using Java.Awt;
+//using Java.Awt.Event;
+//using Java.Awt.Image;
+//using Java.Util;
+//using Java.Util.Concurrent.Locks;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,26 +18,26 @@ namespace Org.Puffinbasic.Runtime
 {
     public sealed class GraphicsUtil
     {
-        static readonly int MAX_WIDTH = 4000;
-        static readonly int MAX_HEIGHT = 4000;
+        public static readonly int MAX_WIDTH = 4000;
+        public static readonly int MAX_HEIGHT = 4000;
         private static readonly int REFRESH_MILLIS = 40;
         private static readonly int KEY_BUFFER_SIZE = 16;
-        static readonly string PUT_XOR = "XOR";
+        public static readonly string PUT_XOR = "XOR";
         private static readonly string PUT_OR = "OR";
         private static readonly string PUT_AND = "AND";
         private static readonly string PUT_PSET = "PSET";
         private static readonly string PUT_MIX = "MIX";
         public static readonly int BUFFER_NUM_FRONT = 0;
         public static readonly int BUFFER_NUM_BACK1 = 1;
-        class BasicFrame : JFrame
+        public class BasicFrame : JFrame
         {
             private readonly DrawingCanvas drawingCanvas;
-            BasicFrame(string title, int w, int h, int iw, int ih, bool autoRepaint, bool doubleBuffer)
+            public BasicFrame(string title, int w, int h, int iw, int ih, bool autoRepaint, bool doubleBuffer)
             {
                 drawingCanvas = Init(title, w, h, iw, ih, autoRepaint, doubleBuffer);
             }
 
-            virtual DrawingCanvas GetDrawingCanvas()
+            public virtual DrawingCanvas GetDrawingCanvas()
             {
                 return drawingCanvas;
             }
@@ -116,11 +116,11 @@ namespace Org.Puffinbasic.Runtime
             void PrepareToRender();
         }
 
-        private sealed class SingleImageCanvas : ICanvas
+        internal sealed class SingleImageCanvas : ICanvas
         {
             private readonly BufferedImage image;
             private readonly Graphics2D graphics;
-            SingleImageCanvas(int imageWidth, int imageHeight)
+            public SingleImageCanvas(int imageWidth, int imageHeight)
             {
                 this.image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
                 this.graphics = (Graphics2D)image.GetGraphics();
@@ -151,12 +151,12 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        private sealed class DoubleBufferedImageCanvas : ICanvas
+        internal sealed class DoubleBufferedImageCanvas : ICanvas
         {
             private readonly BufferedImage[] images;
             private readonly Graphics2D[] graphics;
             private int imageIndex;
-            DoubleBufferedImageCanvas(int imageWidth, int imageHeight)
+            public DoubleBufferedImageCanvas(int imageWidth, int imageHeight)
             {
                 this.images = new BufferedImage[2];
                 this.images[0] = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
@@ -192,7 +192,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        class DrawingCanvas : JPanel, ActionListener
+        public class DrawingCanvas : JPanel, ActionListener
         {
             private readonly Timer timer;
             private readonly Deque<string> keyBuffer;
@@ -204,8 +204,8 @@ namespace Org.Puffinbasic.Runtime
             private readonly int[] clearBuffer;
             private readonly BasicMouseState mouseState;
             private readonly ICanvas canvas;
-            private readonly ObjectSet<string> keysPressed;
-            DrawingCanvas(int w, int h, int iw, int ih, int refreshMillis, int keyBufferSize, BasicMouseState mouseState, bool doubleBuffer)
+            private readonly HashSet<string> keysPressed;
+            public DrawingCanvas(int w, int h, int iw, int ih, int refreshMillis, int keyBufferSize, BasicMouseState mouseState, bool doubleBuffer)
             {
                 this.w = w;
                 this.h = h;
@@ -221,7 +221,7 @@ namespace Org.Puffinbasic.Runtime
                 this.keyBuffer = new ArrayDeque();
                 this.keyBufferSize = keyBufferSize;
                 this.mouseState = mouseState;
-                this.keysPressed = new ObjectOpenHashSet();
+                this.keysPressed = new HashSet<string>();
             }
 
             // Always use setPreferredSize() here.
@@ -255,7 +255,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual string TakeNextKey()
+            public virtual string TakeNextKey()
             {
                 lock (keyBuffer)
                 {
@@ -264,7 +264,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void SetKeyPressed(string key)
+            public virtual void SetKeyPressed(string key)
             {
                 lock (keyBuffer)
                 {
@@ -278,7 +278,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void SetKeyReleased(string key)
+            public virtual void SetKeyReleased(string key)
             {
                 lock (keyBuffer)
                 {
@@ -287,7 +287,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual bool IsKeyPressed(string key)
+            public virtual bool IsKeyPressed(string key)
             {
                 lock (keyBuffer)
                 {
@@ -296,19 +296,19 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void StartRefresh()
+            public virtual void StartRefresh()
             {
                 timer.Start();
             }
 
             // Always use setPreferredSize() here.
-            virtual void StopRefresh()
+            public virtual void StopRefresh()
             {
                 timer.Stop();
             }
 
             // Always use setPreferredSize() here.
-            virtual Graphics2D GetGraphics2D()
+            public virtual Graphics2D GetGraphics2D()
             {
                 return canvas.GetBackGraphics2D();
             }
@@ -336,14 +336,14 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void FloodFill(int x, int y, int r, int g, int b)
+            public virtual void FloodFill(int x, int y, int r, int g, int b)
             {
                 var image = canvas.GetBack1();
                 IterativeFloodFill(image, x, y, canvas.GetBackGraphics2D().GetColor(), new Color(r, g, b));
             }
 
             // Always use setPreferredSize() here.
-            virtual void Point(int x, int y, int r, int g, int b)
+            public virtual void Point(int x, int y, int r, int g, int b)
             {
                 var image = canvas.GetBack1();
                 var graphics = image.GetGraphics();
@@ -361,7 +361,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void BufferCopyHor(int srcx, int dstx, int copyW)
+            public virtual void BufferCopyHor(int srcx, int dstx, int copyW)
             {
                 var src = canvas.GetFront();
                 var dst = canvas.GetBack1();
@@ -371,7 +371,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void CopyGraphicsToArray(int bufferNumber, int x1, int y1, int x2, int y2, int[] dest)
+            public virtual void CopyGraphicsToArray(int bufferNumber, int x1, int y1, int x2, int y2, int[] dest)
             {
                 var image = canvas[bufferNumber];
                 int[] srcArray = ((DataBufferInt)image.GetRaster().GetDataBuffer()).GetData();
@@ -381,7 +381,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void CopyArrayToGraphics(int bufferNumber, int x, int y, int w, int h, string action, int[] src, int srcx, int srcy, int scanWidth)
+            public virtual void CopyArrayToGraphics(int bufferNumber, int x, int y, int w, int h, string action, int[] src, int srcx, int srcy, int scanWidth)
             {
                 var image = canvas[bufferNumber];
                 int[] dstArray = ((DataBufferInt)image.GetRaster().GetDataBuffer()).GetData();
@@ -393,7 +393,7 @@ namespace Org.Puffinbasic.Runtime
                 {
                     int srcVertOffset = srcy * iw + srcx;
                     int dstVertOffset = y * iw;
-                    if (action.EqualsIgnoreCase(PUT_XOR))
+                    if (String.Compare(action, PUT_XOR, true) == 0)
                     {
                         for (int yi = 0; yi < h; yi++)
                         {
@@ -408,7 +408,7 @@ namespace Org.Puffinbasic.Runtime
                             dstVertOffset += iw;
                         }
                     }
-                    else if (action.EqualsIgnoreCase(PUT_MIX))
+                    else if (action.Equals(PUT_MIX, StringComparison.OrdinalIgnoreCase))
                     {
                         for (int yi = 0; yi < h; yi++)
                         {
@@ -425,7 +425,7 @@ namespace Org.Puffinbasic.Runtime
                             dstVertOffset += iw;
                         }
                     }
-                    else if (action.EqualsIgnoreCase(PUT_OR))
+                    else if (action.Equals(PUT_OR, StringComparison.OrdinalIgnoreCase))
                     {
                         for (int yi = 0; yi < h; yi++)
                         {
@@ -463,24 +463,24 @@ namespace Org.Puffinbasic.Runtime
             }
 
             // Always use setPreferredSize() here.
-            virtual void Clear()
+            public virtual void Clear()
             {
                 var image = canvas.GetBack1();
                 image.SetRGB(0, 0, w, h, clearBuffer, 0, w);
             }
 
             // Always use setPreferredSize() here.
-            virtual void RenderAndRepaint()
+            public virtual void RenderAndRepaint()
             {
                 canvas.PrepareToRender();
                 Repaint();
             }
         }
 
-        private class InkeyDlrKeyListener : KeyAdapter
+        internal class InkeyDlrKeyListener : KeyAdapter
         {
             private readonly DrawingCanvas drawingCanvas;
-            InkeyDlrKeyListener(DrawingCanvas drawingCanvas)
+            public InkeyDlrKeyListener(DrawingCanvas drawingCanvas)
             {
                 this.drawingCanvas = drawingCanvas;
             }
@@ -600,7 +600,7 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        sealed class BasicMouseState
+        public sealed class BasicMouseState
         {
             private readonly ReadWriteLock lock;
             private int buttonClicked = -1;
@@ -610,14 +610,14 @@ namespace Org.Puffinbasic.Runtime
             private int draggedY = -1;
             private int movedX = -1;
             private int movedY = -1;
-            BasicMouseState(Component component)
+            public BasicMouseState(Component component)
             {
                 this.@lock = new ReentrantReadWriteLock();
                 component.AddMouseListener(new BasicMouseAdapter());
                 component.AddMouseMotionListener(new BasicMouseMotionAdapter());
             }
 
-            void OnMoved(MouseEvent e)
+            public void OnMoved(MouseEvent e)
             {
                 @lock.WriteLock().Lock();
                 try
@@ -631,7 +631,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            void OnDragged(MouseEvent e)
+            public void OnDragged(MouseEvent e)
             {
                 @lock.WriteLock().Lock();
                 try
@@ -645,7 +645,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            void OnClicked(MouseEvent e)
+            public void OnClicked(MouseEvent e)
             {
                 @lock.WriteLock().Lock();
                 try
@@ -658,7 +658,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            void OnPressed(MouseEvent e)
+            public void OnPressed(MouseEvent e)
             {
                 @lock.WriteLock().Lock();
                 try
@@ -684,7 +684,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetButtonClicked()
+            public int GetButtonClicked()
             {
                 @lock.WriteLock().Lock();
                 try
@@ -699,7 +699,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetButtonPressed()
+            public int GetButtonPressed()
             {
                 @lock.WriteLock().Lock();
                 try
@@ -714,7 +714,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetButtonReleased()
+            public int GetButtonReleased()
             {
                 @lock.WriteLock().Lock();
                 try
@@ -729,7 +729,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetMovedX()
+            public int GetMovedX()
             {
                 @lock.ReadLock().Lock();
                 try
@@ -742,7 +742,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetMovedY()
+            public int GetMovedY()
             {
                 @lock.ReadLock().Lock();
                 try
@@ -755,7 +755,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetDraggedX()
+            public int GetDraggedX()
             {
                 @lock.ReadLock().Lock();
                 try
@@ -768,7 +768,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
 
-            int GetDraggedY()
+            public int GetDraggedY()
             {
                 @lock.ReadLock().Lock();
                 try

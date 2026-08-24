@@ -23,7 +23,7 @@ namespace Org.Puffinbasic.File
             this.@out = @out;
         }
 
-        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, IntList recordParts)
+        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }
