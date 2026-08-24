@@ -26,6 +26,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Runtime.Remoting.Messaging;
 
 namespace Org.Puffinbasic
 {
@@ -50,30 +53,32 @@ namespace Org.Puffinbasic
 
         private static UserOptions ParseCommandLineArgs(params string[] args)
         {
-            var parser = ArgumentParsers.NewFor("PuffinBasic").Build();
-            parser.AddArgument("-d", "--logduplicate").Help("Log error on duplicate").Action(Arguments.StoreTrue());
-            parser.AddArgument("-l", "--list").Help("Print Sorted Source Code").Action(Arguments.StoreTrue());
-            parser.AddArgument("-i", "--ir").Help("Print IR").Action(Arguments.StoreTrue());
-            parser.AddArgument("-t", "--timing").Help("Print timing").Action(Arguments.StoreTrue());
-            parser.AddArgument("-g", "--graphics").Help("Enable graphics").Action(Arguments.StoreTrue());
-            parser.AddArgument("file").Nargs(1);
-            Namespace res = null;
-            try
-            {
-                res = parser.ParseArgs(args);
-            }
-            catch (ArgumentParserException e)
-            {
-                parser.HandleError(e);
+
+            RootCommand command = new RootCommand();
+
+            Option<bool> logDuplicate = new Option<bool>("-d", "--logduplicate") { Description = "Log error on duplicate"};
+            Option<bool> list= new Option<bool>("-l", "--list") { Description = "Print Sorted Source Code"};
+            Option<bool> ir = new Option<bool>("-i", "--ir") { Description = "Print IR"};
+            Option<bool> timing = new Option<bool>("-t", "--timing") { Description = "Print timing"};
+            Option<bool> graphics = new Option<bool>("-g", "--graphics") { Description = "Enable graphics" };
+
+            Option<FileInfo> file = new Option<FileInfo>("file");
+
+            command.Options.Add(logDuplicate);
+            command.Options.Add(list);
+            command.Options.Add(ir);
+            command.Options.Add(timing);
+            command.Options.Add(graphics);
+
+            command.Options.Add(file);
+
+            ParseResult res = command.Parse(args);
+
+            if (res.Errors.Count > 0) {
                 Environment.Exit(1);
-            }
 
-            if (res == null)
-            {
-                throw new InvalidOperationException();
-            }
-
-            return new UserOptions(res.GetBoolean("logduplicate"), res.GetBoolean("list"), res.GetBoolean("ir"), res.GetBoolean("timing"), res.GetBoolean("graphics"), (string)res.GetList("file")[0]);
+            return new UserOptions(res.GetValue(logDuplicate), res.GetValue(list), res.GetValue(ir), res.GetValue(timing), res.GetValue(graphics), res.GetValue(file).FullName);
+            //return new UserOptions(res.GetBoolean("logduplicate"), res.GetBoolean("list"), res.GetBoolean("ir"), res.GetBoolean("timing"), res.GetBoolean("graphics"), (string)res.GetList("file")[0]);
         }
 
         private static string LoadSource(string filename)
@@ -182,7 +187,7 @@ namespace Org.Puffinbasic
 
         private static PuffinBasicSourceFile SyntaxCheckAndSortByLineNumber(PuffinBasicImportPath importPath, string sourceFile, string input, ThrowOnDuplicate throwOnDuplicate, SourceFileMode sourceFileMode)
         {
-            var in = CharStreams.FromString(input);
+            var @in = CharStreams.FromString(input);
             var syntaxErrorListener = new ThrowingErrorListener(input);
             var lexer = new PuffinBasicLexer(@in);
             lexer.RemoveErrorListeners();
@@ -208,7 +213,7 @@ namespace Org.Puffinbasic
                 }
             }
 
-            LinkedHashSet<PuffinBasicSourceFile> importSourceFiles = new LinkedHashSet();
+            HashSet<PuffinBasicSourceFile> importSourceFiles = new HashSet<PuffinBasicSourceFile>();
             foreach (string importFilename in linenumListener.GetImportFiles())
             {
                 var importedInput = LoadSource(importPath.Find(importFilename));
@@ -265,7 +270,7 @@ namespace Org.Puffinbasic
             public readonly bool timing;
             public readonly bool graphics;
             public readonly string filename;
-            UserOptions(bool logOnDuplicate, bool listSourceCode, bool printIR, bool timing, bool graphics, string filename)
+            public UserOptions(bool logOnDuplicate, bool listSourceCode, bool printIR, bool timing, bool graphics, string filename)
             {
                 this.logOnDuplicate = logOnDuplicate;
                 this.listSourceCode = listSourceCode;

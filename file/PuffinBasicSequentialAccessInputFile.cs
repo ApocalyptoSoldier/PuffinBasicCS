@@ -5,7 +5,7 @@ using Org.Puffinbasic.Error;
 //using Org.Jetbrains.Annotations;
 //using Java.Io;
 //using Java.Nio.Charset;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

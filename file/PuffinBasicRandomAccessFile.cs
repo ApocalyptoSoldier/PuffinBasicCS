@@ -1,18 +1,19 @@
-using Com.Google.Common.Base;
-using It.Unimi.Dsi.Fastutil.Ints;
+//using Com.Google.Common.Base;
+//using It.Unimi.Dsi.Fastutil.Ints;
 using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
-using Org.Jetbrains.Annotations;
-using Java.Io;
-using Java.Nio;
-using Java.Util;
-using Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+//using Org.Jetbrains.Annotations;
+//using Java.Io;
+//using Java.Nio;
+//using Java.Util;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using static Org.Puffinbasic.File.IPuffinBasicFile;
 
 namespace Org.Puffinbasic.File
 {
@@ -30,9 +31,10 @@ namespace Org.Puffinbasic.File
         private FileState fileState;
         public PuffinBasicRandomAccessFile(string filename, FileAccessMode accessMode, int recordLen)
         {
-            Preconditions.CheckNotNull(filename);
-            Preconditions.CheckArgument(recordLen > 0);
-            Preconditions.CheckNotNull(accessMode);
+            if (String.IsNullOrWhiteSpace(filename)) throw new ArgumentNullException("filename");
+            if (recordLen  < 0) throw new ArgumentOutOfRangeException(nameof(recordLen));
+            if (accessMode == null) throw new ArgumentNullException(nameof(accessMode));
+
             this.filename = filename;
             this.accessMode = accessMode;
             this.recordLength = recordLen;
@@ -43,9 +45,9 @@ namespace Org.Puffinbasic.File
             {
                 this.file = new RandomAccessFile(filename, accessMode.mode);
             }
-            catch (FileNotFoundException e)
+            catch (System.IO.FileNotFoundException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.Message);
             }
 
             this.fileState = FileState.OPEN;
@@ -53,8 +55,9 @@ namespace Org.Puffinbasic.File
 
         public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
-            Preconditions.CheckNotNull(symbolTable);
-            Preconditions.CheckNotNull(recordParts);
+            if (symbolTable == null) throw new ArgumentNullException(nameof(symbolTable));
+            if (recordParts == null) throw new ArgumentNullException(nameof(recordParts));
+
             int totalComputedLength = 0;
             foreach (var recordPart in recordParts)
             {
@@ -90,9 +93,9 @@ namespace Org.Puffinbasic.File
             {
                 return file.Length();
             }
-            catch (IOException e)
+            catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to get length of the file '" + filename + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to get length of the file '" + filename + "', error: " + e.Message);
             }
         }
 
@@ -121,7 +124,7 @@ namespace Org.Puffinbasic.File
             var bb = ClearAndGetRecordBuffer();
             for (int i = 0; i < recordParts.Count; i++)
             {
-                var entry = symbolTable[recordParts.GetInt(i)].GetValue();
+                var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
                 var value = entry.GetString();
                 var valueLength = value.Length();
                 var fieldLength = entry.GetFieldLength();
@@ -147,9 +150,9 @@ namespace Org.Puffinbasic.File
             {
                 file.Write(recordBuffer);
             }
-            catch (IOException e)
+            catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write to file '" + filename + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write to file '" + filename + "', error: " + e.Message);
             }
 
             UpdateCurrentBytePos();
@@ -180,7 +183,7 @@ namespace Org.Puffinbasic.File
             {
                 file.ReadFully(recordBuffer);
             }
-            catch (IOException e)
+            catch (System.IO.IOException e)
             {
                 throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + ", recordNumber: " + recordNumber + "', error: " + e.GetMessage());
             }
@@ -188,7 +191,7 @@ namespace Org.Puffinbasic.File
             var bb = ByteBuffer.Wrap(recordBuffer);
             for (int i = 0; i < recordParts.Count; i++)
             {
-                var entry = symbolTable[recordParts.GetInt(i)].GetValue();
+                var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
                 var fieldLength = entry.GetFieldLength();
                 var strBytes = new byte[fieldLength];
                 bb[strBytes];
@@ -205,7 +208,7 @@ namespace Org.Puffinbasic.File
         // Seek to record number and read the record into record buffer
         private ByteBuffer ClearAndGetRecordBuffer()
         {
-            Arrays.Fill(recordBuffer, 0, recordBuffer.length, (byte)' ');
+            Arrays.Fill(recordBuffer, 0, recordBuffer.Length, (byte)' ');
             return ByteBuffer.Wrap(recordBuffer);
         }
 
@@ -247,9 +250,9 @@ namespace Org.Puffinbasic.File
                     currentFilePosBytes = destPosBytes;
                 }
             }
-            catch (IOException e)
+            catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + "', error: " + e.Message);
             }
         }
 
@@ -293,7 +296,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.Message);
             }
 
             this.fileState = FileState.CLOSED;

@@ -7,21 +7,26 @@
 //using Java.Time.Format;
 //using Java.Util;
 
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Domain.Variable;
 using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using Org.Puffinbasic.Runtime;
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Configuration;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 
+using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+using static Org.Puffinbasic.Domain.STObjects;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
 using static Org.Puffinbasic.Domain.Variable;
-using System.Collections;
+using static Org.Puffinbasic.Domain.Variable;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 
 namespace Org.Puffinbasic.Domain
 {
@@ -582,7 +587,7 @@ namespace Org.Puffinbasic.Domain
                 return Objects.Hash(GetTypeId(), GetAtomTypeId());
             }
 
-            public override bool IsCompatibleWith(PuffinBasicType other)
+            public new bool IsCompatibleWith(PuffinBasicType other)
             {
                 return GetAtomTypeId().IsCompatibleWith(other.GetAtomTypeId());
             }
@@ -607,18 +612,18 @@ namespace Org.Puffinbasic.Domain
                 this.canBeLValue = canBeLValue;
             }
 
-            public override void SetArrayDimensions(List<int> dims)
+            public void SetArrayDimensions(List<int> dims)
             {
                 this.dims.Clear();
-                this.dims.AddAll(dims);
+                this.dims.AddRange(dims);
             }
 
-            public override bool IsNDArray(int n)
+            public bool IsNDArray(int n)
             {
                 return dims != null && dims.Count == n;
             }
 
-            public override bool CanBeLValue()
+            public new bool CanBeLValue()
             {
                 return canBeLValue;
             }
@@ -666,7 +671,7 @@ namespace Org.Puffinbasic.Domain
                 return Objects.Hash(GetTypeId(), GetAtomTypeId());
             }
 
-            public override bool IsCompatibleWith(PuffinBasicType other)
+            public new bool IsCompatibleWith(PuffinBasicType other)
             {
                 return atomType.IsCompatibleWith(other.GetAtomTypeId());
             }
@@ -716,7 +721,7 @@ namespace Org.Puffinbasic.Domain
                 return Objects.Hash(GetTypeId(), GetAtomTypeId());
             }
 
-            public override bool IsCompatibleWith(PuffinBasicType other)
+            public new bool IsCompatibleWith(PuffinBasicType other)
             {
                 return GetTypeId() == other.GetTypeId() && GetAtomTypeId().IsCompatibleWith(other.GetAtomTypeId());
             }
@@ -802,12 +807,12 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private interface IMemberCallHandler
+        internal interface IMemberCallHandler
         {
             void Call(object o, STValue[] @params, STValue result);
         }
 
-        private sealed class MemberFunction
+        internal sealed class MemberFunction
         {
             internal readonly string functionName;
             internal readonly PuffinBasicType[] paramTypes;
@@ -822,7 +827,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class MemberFunctions
+        internal sealed class MemberFunctions
         {
             private readonly Dictionary<string, MemberFunction> memberFunctions;
             MemberFunctions(IList<MemberFunction> memberFunctions)
@@ -853,7 +858,7 @@ namespace Org.Puffinbasic.Domain
                 PuffinBasicType[] expectedParamTypes = Get(funcName).paramTypes;
                 if (expectedParamTypes.Length != paramTypes.Count)
                 {
-                    throw new PuffinBasicRuntimeError(BAD_FUNCTION_CALL, "Function " + funcName + " expects " + expectedParamTypes.length + " params, but called with " + paramTypes.Count + " params");
+                    throw new PuffinBasicRuntimeError(BAD_FUNCTION_CALL, "Function " + funcName + " expects " + expectedParamTypes.Length + " params, but called with " + paramTypes.Count + " params");
                 }
 
                 for (int i = 0; i < expectedParamTypes.Length; i++)
@@ -944,17 +949,17 @@ namespace Org.Puffinbasic.Domain
                 })).Build());
             }
 
-            public PuffinBasicTypeId GetTypeId()
+            public override PuffinBasicTypeId GetTypeId()
             {
                 return PuffinBasicTypeId.LIST;
             }
 
-            public PuffinBasicAtomTypeId GetAtomTypeId()
+            public override PuffinBasicAtomTypeId GetAtomTypeId()
             {
                 return COMPOSITE;
             }
 
-            public STValue NewInstance(PuffinBasicSymbolTable symbolTable)
+            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable)
             {
                 return new STList(type, memberFunctions);
             }
@@ -1028,17 +1033,17 @@ namespace Org.Puffinbasic.Domain
                 })).Build());
             }
 
-            public PuffinBasicTypeId GetTypeId()
+            public override PuffinBasicTypeId GetTypeId()
             {
                 return PuffinBasicTypeId.SET;
             }
 
-            public PuffinBasicAtomTypeId GetAtomTypeId()
+            public override PuffinBasicAtomTypeId GetAtomTypeId()
             {
                 return COMPOSITE;
             }
 
-            public STValue NewInstance(PuffinBasicSymbolTable symbolTable)
+            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable)
             {
                 return new STSet(type, memberFunctions);
             }
@@ -1123,17 +1128,17 @@ namespace Org.Puffinbasic.Domain
                 })).Build());
             }
 
-            public PuffinBasicTypeId GetTypeId()
+            public override PuffinBasicTypeId GetTypeId()
             {
                 return PuffinBasicTypeId.DICT;
             }
 
-            public PuffinBasicAtomTypeId GetAtomTypeId()
+            public override PuffinBasicAtomTypeId GetAtomTypeId()
             {
                 return COMPOSITE;
             }
 
-            public STValue NewInstance(PuffinBasicSymbolTable symbolTable)
+            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable)
             {
                 return new STDict(valueType, memberFunctions);
             }
@@ -1172,10 +1177,7 @@ namespace Org.Puffinbasic.Domain
 
         public interface ISTEntry
         {
-            bool IsLValue()
-            {
-                return false;
-            }
+            bool IsLValue();
 
             STValue GetValue();
             PuffinBasicType GetType();
@@ -1215,6 +1217,8 @@ namespace Org.Puffinbasic.Domain
             {
                 SetValue(GetType().NewInstance(symbolTable));
             }
+
+            public bool IsLValue() => false;
         }
 
         public class STLValue : AbstractSTEntry
@@ -1223,10 +1227,7 @@ namespace Org.Puffinbasic.Domain
             {
             }
 
-            public bool IsLValue()
-            {
-                return true;
-            }
+            public new bool IsLValue() => true;
         }
 
         public class STVariable : STLValue
@@ -1270,7 +1271,7 @@ namespace Org.Puffinbasic.Domain
                 return @ref;
             }
 
-            public override STValue GetValue()
+            public new STValue GetValue()
             {
                 return GetRef().GetValue();
             }
@@ -1286,7 +1287,7 @@ namespace Org.Puffinbasic.Domain
         public sealed class STUDF : STVariable
         {
             private readonly List<int> paramIds;
-            STUDF(STValue value, Variable variable) : base(value, variable)
+            public STUDF(STValue value, Variable variable) : base(value, variable)
             {
                 this.paramIds = new List<int>();
             }
@@ -1313,7 +1314,7 @@ namespace Org.Puffinbasic.Domain
             {
             }
 
-            public override PuffinBasicType GetType()
+            public new PuffinBasicType GetType()
             {
                 throw new PuffinBasicInternalError("Labels don't have a type!");
             }
@@ -1494,7 +1495,7 @@ namespace Org.Puffinbasic.Domain
             public abstract void SetString(string value);
         }
 
-        private sealed class STInt32ScalarValue : STValue
+        internal sealed class STInt32ScalarValue : STValue
         {
             private bool isSet;
             private int value;
@@ -1597,7 +1598,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class STInt64ScalarValue : STValue
+        internal sealed class STInt64ScalarValue : STValue
         {
             private bool isSet;
             private long value;
@@ -1700,7 +1701,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class STFloat32ScalarValue : STValue
+        internal sealed class STFloat32ScalarValue : STValue
         {
             private bool isSet;
             private float value;
@@ -1803,7 +1804,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class STFloat64ScalarValue : STValue
+        internal sealed class STFloat64ScalarValue : STValue
         {
             private bool isSet;
             private double value;
@@ -1868,7 +1869,7 @@ namespace Org.Puffinbasic.Domain
             public override long GetRoundedInt64()
             {
                 CheckInitialized();
-                return Math.Round(value);
+                return (long)Math.Round(value);
             }
 
             public override string GetString()
@@ -1906,7 +1907,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class STStringScalarValue : STValue
+        internal sealed class STStringScalarValue : STValue
         {
             private bool isSet;
             private int fieldLength;
@@ -2022,7 +2023,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class STStringScalarTimeValue : STValue
+        internal sealed class STStringScalarTimeValue : STValue
         {
             private static readonly DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_TIME;
             private LocalTime time;
@@ -2117,7 +2118,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        private sealed class STStringScalarDateValue : STValue
+        internal sealed class STStringScalarDateValue : STValue
         {
             private static readonly DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
             private LocalDate date;
@@ -2393,7 +2394,7 @@ namespace Org.Puffinbasic.Domain
 
                 if (index < 0 || index >= dimensions.ElementAt(dim))
                 {
-                    throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, "Index " + index + " is out of range for dimension[" + dim + "]=" + dimensions.GetInt(dim));
+                    throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, "Index " + index + " is out of range for dimension[" + dim + "]=" + dimensions.ElementAt(dim));
                 }
 
                 int dIplus1 = dim + 1 < ndim ? dimensions.ElementAt(dim + 1) : 1;
@@ -2820,7 +2821,7 @@ namespace Org.Puffinbasic.Domain
             {
                 base.SetArrayDimensions(dims);
                 this.value = new string[GetTotalLength()];
-                Arrays.Fill(value, 0, value.length, "");
+                Arrays.Fill(value, 0, value.Length, "");
             }
 
             public override string PrintFormat()
@@ -2995,7 +2996,7 @@ namespace Org.Puffinbasic.Domain
                 this.list = new List<object>();
             }
 
-            public void Call(string funcName, STValue[] @params, ISTValue result)
+            public void Call(string funcName, STValue[] @params, STValue result)
             {
                 memberFunctions[funcName].callHandler.Call(list, @params, result);
             }
@@ -3021,7 +3022,7 @@ namespace Org.Puffinbasic.Domain
                 this.set = new HashSet<object>();
             }
 
-            public void Call(string funcName, STValue[] @params, ISTValue result)
+            public void Call(string funcName, STValue[] @params, STValue result)
             {
                 memberFunctions[funcName].callHandler.Call(set, @params, result);
             }
@@ -3047,7 +3048,7 @@ namespace Org.Puffinbasic.Domain
                 this.dict = new Dictionary<object, object>();
             }
 
-            public void Call(string funcName, STValue[] @params, ISTValue result)
+            public void Call(string funcName, STValue[] @params, STValue result)
             {
                 memberFunctions[funcName].callHandler.Call(dict, @params, result);
             }
@@ -3104,6 +3105,252 @@ namespace Org.Puffinbasic.Domain
                 foreach (var kv in other.memberRefIdToValueId)  
                     this.memberRefIdToValueId[kv.Key] = kv.Value;
             }
+        }
+    }
+
+    public static class PuffinBasicAtomTypeIdExtensions
+    {
+        public static STVariable CreateVariableEntry(this PuffinBasicAtomTypeId atomTypeId, Variable variable)
+        {
+            switch (atomTypeId) {
+                case PuffinBasicAtomTypeId.INT32:
+                    if (variable.IsArray())
+                        return new STVariable(new STInt32ArrayValue(), variable);
+                    else if (variable.IsUDF())
+                        return new STUDF(new STInt32ScalarValue(), variable);
+                    else if (variable.IsScalar())
+                        return new STVariable(new STInt32ArrayValue(), variable);
+                    else
+                        throw new PuffinBasicInternalError("Variable type not supported: " + variable);
+                    
+                case PuffinBasicAtomTypeId.INT64:
+                    if (variable.IsArray())
+                        return new STVariable(new STInt64ArrayValue(), variable);
+                    else if (variable.IsUDF())
+                        return new STUDF(new STInt64ArrayValue(), variable);
+                    else if (variable.IsScalar())
+                        return new STVariable(new STInt64ScalarValue(), variable);
+                    else
+                        throw new PuffinBasicInternalError("Variable type not supported: " + variable);
+
+                case PuffinBasicAtomTypeId.FLOAT:
+                    if (variable.IsArray())
+                        return new STVariable(new STFloat32ArrayValue(), variable);
+                    else if (variable.IsUDF())
+                        return new STUDF(new STFloat32ScalarValue(), variable);
+                    else if (variable.IsScalar())
+                        return new STVariable(new STFloat32ScalarValue(), variable);
+                    else
+                        throw new PuffinBasicInternalError("Variable type not supported: " + variable);
+
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    if (variable.IsArray())
+                        return new STVariable(new STFloat64ArrayValue(), variable);
+                    else if (variable.IsUDF())
+                        return new STUDF(new STFloat64ScalarValue(), variable);
+                    else if (variable.IsScalar())
+                        return new STVariable(new STFloat64ScalarValue(), variable);
+                    else
+                        throw new PuffinBasicInternalError("Variable type not supported: " + variable);
+
+                case PuffinBasicAtomTypeId.STRING:
+                    if (variable.IsArray())
+                        return new STVariable(new STStringArrayValue(), variable);
+                    else if (variable.IsUDF())
+                        return new STUDF(new STStringScalarValue(), variable);
+                    else if (variable.IsScalar())
+                    { 
+                        string varname = variable.GetVariableName().GetVarname();
+                        if (varname.Equals("date", StringComparison.OrdinalIgnoreCase))
+                            return new STVariable(new STStringScalarDateValue(), variable);
+                        else if (varname.Equals("time", StringComparison.OrdinalIgnoreCase))
+                            return new STVariable(new STStringScalarTimeValue(), variable);
+                        else
+                            return new STVariable(new STStringScalarValue(), variable);
+                    }
+                    else
+                        throw new PuffinBasicInternalError("Variable type not supported: " + variable);
+
+                case PuffinBasicAtomTypeId.COMPOSITE:
+                    return new STVariable(null, variable);
+
+                default:
+                    return null;
+            }
+        }
+
+        public static STTmp CreateTmpEntry(this PuffinBasicAtomTypeId atomTypeId, STVariable variable)
+        {
+            switch (atomTypeId)
+            {
+                case PuffinBasicAtomTypeId.INT32:
+                    return new STTmp(new STInt32ScalarValue(), ScalarType.INT32);
+                case PuffinBasicAtomTypeId.INT64:
+                    return new STTmp(new STInt64ScalarValue(), ScalarType.INT64);
+                case PuffinBasicAtomTypeId.FLOAT:
+                    return new STTmp(new STFloat32ScalarValue(), ScalarType.FLOAT32);
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    return new STTmp(new STFloat64ScalarValue(), ScalarType.FLOAT64);
+                case PuffinBasicAtomTypeId.STRING:
+                    return new STTmp(new STStringScalarValue(), ScalarType.STRING);
+                case PuffinBasicAtomTypeId.COMPOSITE:
+                default:
+                    throw new PuffinBasicInternalError("Not implemented");
+            }
+        }
+
+        public static STTmp CreateArrayEntry(this PuffinBasicAtomTypeId atomTypeId)
+        {
+            switch (atomTypeId)
+            {
+                case PuffinBasicAtomTypeId.INT32:
+                    return new STTmp(new STInt32ArrayValue(), ScalarType.INT32);
+                case PuffinBasicAtomTypeId.INT64:
+                    return new STTmp(new STInt64ArrayValue(), ScalarType.INT64);
+                case PuffinBasicAtomTypeId.FLOAT:
+                    return new STTmp(new STFloat32ArrayValue(), ScalarType.FLOAT32);
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    return new STTmp(new STFloat64ArrayValue(), ScalarType.FLOAT64);
+                case PuffinBasicAtomTypeId.STRING:
+                    return new STTmp(new STStringArrayValue(), ScalarType.STRING);
+                case PuffinBasicAtomTypeId.COMPOSITE:
+                default:
+                    throw new PuffinBasicInternalError("Not implemented");
+            }
+        }
+
+        public static STValue CreateValue(this PuffinBasicAtomTypeId atomTypeId)
+        {
+            switch (atomTypeId) {
+                case PuffinBasicAtomTypeId.INT32:
+                    return new STInt32ScalarValue();
+                case PuffinBasicAtomTypeId.INT64:
+                    return new STInt64ScalarValue();
+                case PuffinBasicAtomTypeId.FLOAT:
+                    return new STFloat32ScalarValue();
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    return new STFloat64ScalarValue();
+                case PuffinBasicAtomTypeId.STRING:
+                    return new STStringScalarValue();
+                case PuffinBasicAtomTypeId.COMPOSITE:
+                default:
+                    throw new PuffinBasicInternalError("Not implemented");
+            }
+        }
+
+        public static object GetValueFrom(this PuffinBasicAtomTypeId atomTypeId, STValue src)
+        {
+            switch (atomTypeId) { 
+                case PuffinBasicAtomTypeId.INT32:
+                    return src.GetInt32();
+                case PuffinBasicAtomTypeId.INT64:
+                    return src.GetInt64();
+                case PuffinBasicAtomTypeId.FLOAT:
+                    return src.GetFloat32();
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    return src.GetFloat64();
+                case PuffinBasicAtomTypeId.STRING:
+                    return src.GetString();
+                case PuffinBasicAtomTypeId.COMPOSITE:
+                default:
+                    throw new PuffinBasicInternalError("Not implemented");
+            }
+        }
+
+
+        public static void GetValueFrom(this PuffinBasicAtomTypeId atomTypeId, object value, STValue dest)
+        {
+            switch (atomTypeId)
+            {
+                case PuffinBasicAtomTypeId.INT32:
+                    dest.SetInt32((int)value);
+                    break;
+                case PuffinBasicAtomTypeId.INT64:
+                    dest.SetInt64((long)value);
+                    break;
+                case PuffinBasicAtomTypeId.FLOAT:
+                    dest.SetFloat32((float)value);
+                    break;
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    dest.SetFloat64((double)value);
+                    break;
+                case PuffinBasicAtomTypeId.STRING:
+                    dest.SetString((string)value);
+                    break;
+                case PuffinBasicAtomTypeId.COMPOSITE:
+                default:
+                    throw new PuffinBasicInternalError("Not implemented");
+            }
+        }
+
+        public static void CopyArray(this PuffinBasicAtomTypeId atomTypeId, ICollection src, STValue dst)
+        {
+
+            if (atomTypeId == PuffinBasicAtomTypeId.INT32)
+            {
+                dst.SetArrayDimensions(new List<int> { src.Count });
+                int[] array = (dst as STInt32ArrayValue).GetValue();
+                int i = 0;
+                foreach (int o in src)
+                {
+                    array[i++] = o;
+                }
+            }
+            else if (atomTypeId == PuffinBasicAtomTypeId.INT64)
+            {
+                dst.SetArrayDimensions(new List<int> { src.Count });
+                long[] array = (dst as STInt64ArrayValue).GetValue();
+                int i = 0;
+                foreach (long o in src)
+                {
+                    array[i++] = o;
+                }
+            }
+            else if (atomTypeId == PuffinBasicAtomTypeId.FLOAT)
+            {
+                dst.SetArrayDimensions(new List<int> { src.Count });
+                float[] array = (dst as STFloat32ArrayValue).GetValue();
+                int i = 0;
+                foreach (float o in src)
+                {
+                    array[i++] = o;
+                }
+            }
+            else if (atomTypeId == PuffinBasicAtomTypeId.DOUBLE)
+            {
+                dst.SetArrayDimensions(new List<int> { src.Count });
+                double[] array = (dst as STFloat64ArrayValue).GetValue();
+                int i = 0;
+                foreach (double o in src)
+                {
+                    array[i++] = o;
+                }
+            }
+            else if (atomTypeId == PuffinBasicAtomTypeId.STRING)
+            {
+                dst.SetArrayDimensions(new List<int> { src.Count });
+                string[] array = (dst as STStringArrayValue).GetValue();
+                int i = 0;
+                foreach (string o in src)
+                {
+                    array[i++] = o;
+                }
+            }
+            else
+                throw new PuffinBasicInternalError("Not implemented");
+        }
+
+        public static bool IsCompatibleWith(this PuffinBasicAtomTypeId atomTypeId, PuffinBasicAtomTypeId other)
+        {
+            return atomTypeId switch
+            {
+                PuffinBasicAtomTypeId.INT32 or PuffinBasicAtomTypeId.INT64 or PuffinBasicAtomTypeId.FLOAT or PuffinBasicAtomTypeId.DOUBLE => other == PuffinBasicAtomTypeId.INT32
+                                        || other == PuffinBasicAtomTypeId.INT64
+                                        || other == PuffinBasicAtomTypeId.FLOAT
+                                        || other == PuffinBasicAtomTypeId.DOUBLE,
+                PuffinBasicAtomTypeId.STRING or PuffinBasicAtomTypeId.COMPOSITE => other == atomTypeId,
+                _ => throw new PuffinBasicInternalError("Not implemented"),
+            };
         }
     }
 }

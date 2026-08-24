@@ -1,10 +1,11 @@
-using Org.Antlr.V4.Runtime;
-using Java.Util;
+//using Org.Antlr.V4.Runtime;
+//using Java.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace Org.Puffinbasic.Parser
 {
@@ -13,18 +14,18 @@ namespace Org.Puffinbasic.Parser
         private readonly string relativePath;
         private readonly string libtag;
         private readonly string sourceCode;
-        private readonly CharStream sourceCodeStream;
-        private readonly LinkedHashSet<PuffinBasicSourceFile> importFiles;
-        public PuffinBasicSourceFile(string relativePath, string libtag, string sourceCode, CodePointCharStream sourceCodeStream, LinkedHashSet<PuffinBasicSourceFile> importFiles)
+        private readonly TextReader sourceCodeStream;
+        private readonly HashSet<PuffinBasicSourceFile> importFiles;
+        public PuffinBasicSourceFile(string relativePath, string libtag, string sourceCode, TextReader sourceCodeStream, HashSet<PuffinBasicSourceFile> importFiles)
         {
             this.relativePath = relativePath;
             this.libtag = libtag;
             this.sourceCode = sourceCode;
             this.sourceCodeStream = sourceCodeStream;
-            this.importFiles = new LinkedHashSet(importFiles);
+            this.importFiles = new HashSet<PuffinBasicSourceFile>(importFiles);
         }
 
-        public virtual LinkedHashSet<PuffinBasicSourceFile> GetImportFiles()
+        public virtual HashSet<PuffinBasicSourceFile> GetImportFiles()
         {
             return importFiles;
         }
@@ -44,12 +45,12 @@ namespace Org.Puffinbasic.Parser
             return sourceCode;
         }
 
-        public virtual CharStream GetSourceCodeStream()
+        public virtual TextReader GetSourceCodeStream()
         {
             return sourceCodeStream;
         }
 
-        public virtual bool Equals(object o)
+        public new virtual bool Equals(object o)
         {
             if (this == o)
                 return true;
@@ -59,12 +60,12 @@ namespace Org.Puffinbasic.Parser
             return libtag.Equals(that.libtag);
         }
 
-        public virtual int GetHashCode()
+        public new virtual int GetHashCode()
         {
-            return Objects.Hash(libtag);
+            return libtag.GetHashCode();
         }
 
-        public virtual string ToString()
+        public new virtual string ToString()
         {
             return GetRelativePath();
         }

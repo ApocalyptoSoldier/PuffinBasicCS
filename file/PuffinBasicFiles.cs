@@ -1,7 +1,7 @@
-using It.Unimi.Dsi.Fastutil.Ints;
+//using It.Unimi.Dsi.Fastutil.Ints;
 using Org.Puffinbasic.Error;
-using Org.Puffinbasic.File.PuffinBasicFile;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.File.IPuffinBasicFile;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +16,7 @@ namespace Org.Puffinbasic.File
         private readonly Dictionary<int, IPuffinBasicFile> files;
         public PuffinBasicFiles(IPuffinBasicFile sys)
         {
-            this.files = new Int2ObjectOpenHashMap();
+            this.files = new Dictionary<int, IPuffinBasicFile>();
             this.sys = sys;
         }
 
@@ -47,7 +47,7 @@ namespace Org.Puffinbasic.File
                 throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "FileNumber: " + fileNumber + " is already open, cannot open another file: " + filename + " with same file number.");
             }
 
-            files.Put(fileNumber, file);
+            files.Add(fileNumber, file);
             return file;
         }
 
@@ -73,7 +73,7 @@ namespace Org.Puffinbasic.File
 
         public virtual void CloseAll()
         {
-            foreach (var file in files.Values())
+            foreach (var file in files.Values)
             {
                 if (file.IsOpen())
                 {
