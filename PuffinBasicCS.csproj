@@ -95,7 +95,6 @@
   <ItemGroup>
     <Compile Include="domain\PuffinBasicSymbolTable.cs" />
     <Compile Include="domain\IScope.cs" />
-    <Compile Include="domain\STEntry.cs" />
     <Compile Include="domain\STObjects.cs" />
     <Compile Include="domain\Variable.cs" />
     <Compile Include="error\PuffinBasicInternalError.cs" />

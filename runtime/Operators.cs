@@ -1,8 +1,8 @@
 using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
-using Org.Puffinbasic.Parser.PuffinBasicIR;
-using Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Parser.PuffinBasicIR;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

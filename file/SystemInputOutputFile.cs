@@ -10,16 +10,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace Org.Puffinbasic.File
 {
     public class SystemInputOutputFile : IPuffinBasicFile
     {
-        private readonly BufferedReader in;
-        private readonly PrintStream out;
-        public SystemInputOutputFile(InputStream @in, PrintStream @out)
+        private readonly TextReader @in;
+        private readonly TextWriter @out;
+        public SystemInputOutputFile(TextReader @in, TextWriter @out)
         {
-            this.@in = new BufferedReader(new InputStreamReader(@in));
+            this.@in = @in;
             this.@out = @out;
         }
 
@@ -67,7 +68,7 @@ namespace Org.Puffinbasic.File
 
         public virtual void Print(string s)
         {
-            @out.Print(s);
+            @out.Write(s);
         }
 
         public virtual void WriteByte(byte b)

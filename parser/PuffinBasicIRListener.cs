@@ -1,28 +1,28 @@
-using It.Unimi.Dsi.Fastutil.Ints;
-using It.Unimi.Dsi.Fastutil.Objects;
-using Org.Antlr.V4.Runtime;
-using Org.Antlr.V4.Runtime.Misc;
-using Org.Antlr.V4.Runtime.Tree;
-using Org.Jetbrains.Annotations;
-using Org.Puffinbasic.Antlr4;
-using Org.Puffinbasic.Antlr4.PuffinBasicParser;
+//using It.Unimi.Dsi.Fastutil.Ints;
+//using It.Unimi.Dsi.Fastutil.Objects;
+//using Org.Antlr.V4.Runtime;
+//using Org.Antlr.V4.Runtime.Misc;
+//using Org.Antlr.V4.Runtime.Tree;
+//using Org.Jetbrains.Annotations;
+//using Org.Puffinbasic.Antlr4;
+//using Org.Puffinbasic.Antlr4.PuffinBasicParser;
 using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Domain.STObjects;
-using Org.Puffinbasic.Domain.Variable;
+using static Org.Puffinbasic.Domain.STObjects;
+using static Org.Puffinbasic.Domain.Variable;
 using Org.Puffinbasic.Error;
-using Org.Puffinbasic.File.PuffinBasicFile;
-using Org.Puffinbasic.Parser.PuffinBasicIR;
+using static Org.Puffinbasic.File.IPuffinBasicFile;
+using static Org.Puffinbasic.Parser.PuffinBasicIR;
 using Org.Puffinbasic.Runtime;
 //using Java.Util;
 //using Java.Util.Concurrent.Atomic;
 //using Java.Util.Function;
 //using Java.Util.Stream;
-using Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
-using Org.Puffinbasic.Parser.LinenumberListener;
-using Org.Puffinbasic.Runtime.Types;
+using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+using static Org.Puffinbasic.Parser.LinenumberListener;
+using static Org.Puffinbasic.Runtime.Types;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -60,21 +60,23 @@ namespace Org.Puffinbasic.Parser
             this.linenumGenerator = new AtomicInteger();
             this.graphics = graphics;
             this.nodeToInstruction = new ParseTreeProperty();
-            this.udfStateMap = new Object2ObjectOpenHashMap();
-            this.whileLoopStateList = new LinkedList();
-            this.forLoopStateList = new LinkedList();
-            this.ifStateList = new LinkedList();
+            this.udfStateMap = new Dictionary<Variable, UDFState>();
+            this.whileLoopStateList = new LinkedList<WhileLoopState>();
+            this.forLoopStateList = new LinkedList<ForLoopState>();
+            this.ifStateList = new LinkedList<IfState>();
             this.nodeToIfState = new ParseTreeProperty();
         }
 
         public virtual void SemanticCheckAfterParsing()
         {
-            if (!whileLoopStateList.IsEmpty())
+            //if (!whileLoopStateList.IsEmpty())
+            if (whileLoopStateList.Any())
             {
                 throw new PuffinBasicSemanticError(WHILE_WITHOUT_WEND, "<UNKNOWN LINE>", "WHILE without WEND");
             }
 
-            if (!forLoopStateList.IsEmpty())
+            //if (!forLoopStateList.IsEmpty())
+            if (forLoopStateList.Any())
             {
                 throw new PuffinBasicSemanticError(FOR_WITHOUT_NEXT, "<UNKNOWN LINE>", "FOR without NEXT");
             }
@@ -277,11 +279,11 @@ namespace Org.Puffinbasic.Parser
             var parentTypeName = structType.GetTypeName();
             for (int i = 1; i < ctx.Varname().Count; i++)
             {
-                var @struct = ir.GetSymbolTable().GetStructType(parentTypeName);
+                var localStruct = ir.GetSymbolTable().GetStructType(parentTypeName);
                 var childVarname = ctx.Varname(i).VARNAME().GetText();
                 var childName = new VariableName(childVarname, null, COMPOSITE);
-                var childRefId = @struct.GetMemberRefId(childName);
-                var childTypeName = @struct.GetMemberType(childName).AsStruct().GetTypeName();
+                var childRefId = localStruct.GetMemberRefId(childName);
+                var childTypeName = localStruct.GetMemberType(childName).AsStruct().GetTypeName();
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.start.GetStartIndex(), ctx.stop.GetStopIndex(), OpCode.PARAM1, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(childRefId)), NULL_ID, NULL_ID);
                 parentTypeName = childTypeName;
             }
@@ -3703,7 +3705,7 @@ namespace Org.Puffinbasic.Parser
 
                     //PuffinBasicAtomTypeId.lookup(compCtx.var2.getText());
                     var name = new VariableName(scalarVarName, scalarAtomTypeId.GetRepr(), scalarAtomTypeId);
-                    struct.DeclareField(name, new ScalarType(name.GetDataType()));
+                    @struct.DeclareField(name, new ScalarType(name.GetDataType()));
                 }
                 else if (compCtx.DIM() != null)
                 {
@@ -3717,7 +3719,7 @@ namespace Org.Puffinbasic.Parser
                         dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), () => GetCtxString(ctx)));
                     }
 
-                    struct.DeclareField(new VariableName(arrayName, arrayAtomType.GetRepr(), arrayAtomType), new ArrayType(arrayAtomType, dims, true));
+                    @struct.DeclareField(new VariableName(arrayName, arrayAtomType.GetRepr(), arrayAtomType), new ArrayType(arrayAtomType, dims, true));
                 }
                 else if (compCtx.LIST() != null)
                 {
@@ -3738,14 +3740,14 @@ namespace Org.Puffinbasic.Parser
                         itemType = new ScalarType(PuffinBasicAtomTypeId.Lookup(compCtx.list2.GetText()));
                     }
 
-                    struct.DeclareField(name, new ListType(itemType));
+                    @struct.DeclareField(name, new ListType(itemType));
                 }
                 else if (compCtx.SET() != null)
                 {
 
                     // set
                     var name = new VariableName(compCtx.elem.VARNAME().GetText(), null, COMPOSITE);
-                    struct.DeclareField(name, new SetType(new ScalarType(PuffinBasicAtomTypeId.Lookup(compCtx.set2.GetText()))));
+                    @struct.DeclareField(name, new SetType(new ScalarType(PuffinBasicAtomTypeId.Lookup(compCtx.set2.GetText()))));
                 }
                 else if (compCtx.DICT() != null)
                 {
@@ -3767,7 +3769,7 @@ namespace Org.Puffinbasic.Parser
                         valueType = new ScalarType(PuffinBasicAtomTypeId.Lookup(compCtx.dictv2.GetText()));
                     }
 
-                    struct.DeclareField(name, new DictType(keyType, valueType));
+                    @struct.DeclareField(name, new DictType(keyType, valueType));
                 }
                 else if (compCtx.struct1 != null)
                 {
@@ -3775,7 +3777,7 @@ namespace Org.Puffinbasic.Parser
                     // struct
                     var memberType = compCtx.struct1.VARNAME().GetText();
                     var name = new VariableName(compCtx.elem.VARNAME().GetText(), null, COMPOSITE);
-                    struct.DeclareField(name, ir.GetSymbolTable().GetStructType(memberType));
+                    @struct.DeclareField(name, ir.GetSymbolTable().GetStructType(memberType));
                 }
                 else
                 {
@@ -3785,7 +3787,7 @@ namespace Org.Puffinbasic.Parser
                 }
             }
 
-            ir.GetSymbolTable().AddStructType(typeName, struct);
+            ir.GetSymbolTable().AddStructType(typeName, @struct);
         }
 
         //

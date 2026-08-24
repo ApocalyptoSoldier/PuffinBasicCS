@@ -8,6 +8,7 @@ using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -16,7 +17,7 @@ namespace Org.Puffinbasic.File
     public class PuffinBasicSequentialAccessOutputFile : IPuffinBasicFile
     {
         private readonly string filename;
-        private readonly PrintStream out;
+        private readonly TextWriter @out;
         private long bytesAccessed;
         private PuffinBasicFile.FileState fileState;
         private string lastLine;
@@ -65,7 +66,7 @@ namespace Org.Puffinbasic.File
         public virtual void Print(string s)
         {
             bytesAccessed += s.Length();
-            @out.Print(s);
+            @out.Write(s);
         }
 
         public virtual void WriteByte(byte b)

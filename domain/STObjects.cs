@@ -522,7 +522,7 @@ namespace Org.Puffinbasic.Domain
                 return this.Equals(other);
             }
 
-            StructType AsStruct()
+            public StructType AsStruct()
             {
                 if (GetTypeId() != PuffinBasicTypeId.STRUCT)
                 {
@@ -765,22 +765,22 @@ namespace Org.Puffinbasic.Domain
                 nameToRefIdMap.Add(memberName, refId);
             }
 
-            public PuffinBasicTypeId GetTypeId()
+            public override PuffinBasicTypeId GetTypeId()
             {
                 return PuffinBasicTypeId.STRUCT;
             }
 
-            public PuffinBasicAtomTypeId GetAtomTypeId()
+            public override PuffinBasicAtomTypeId GetAtomTypeId()
             {
                 return PuffinBasicAtomTypeId.COMPOSITE;
             }
 
-            public STValue NewInstance(PuffinBasicSymbolTable symbolTable)
+            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable)
             {
                 return new STStruct(symbolTable, this);
             }
 
-            public bool Equals(object obj)
+            public new bool Equals(object obj)
             {
                 if (this == obj)
                 {
@@ -796,7 +796,7 @@ namespace Org.Puffinbasic.Domain
                 return GetTypeId() == o.GetTypeId() && GetAtomTypeId() == o.GetAtomTypeId() && GetTypeName().Equals(o.GetTypeName());
             }
 
-            public int GetHashCode()
+            public new int GetHashCode()
             {
                 return Objects.Hash(GetTypeId(), GetAtomTypeId());
             }
@@ -813,7 +813,7 @@ namespace Org.Puffinbasic.Domain
             internal readonly PuffinBasicType[] paramTypes;
             internal readonly PuffinBasicType returnType;
             internal readonly IMemberCallHandler callHandler;
-            MemberFunction(string functionName, PuffinBasicType[] paramTypes, PuffinBasicType returnType, IMemberCallHandler callHandler)
+            public MemberFunction(string functionName, PuffinBasicType[] paramTypes, PuffinBasicType returnType, IMemberCallHandler callHandler)
             {
                 this.functionName = functionName;
                 this.paramTypes = paramTypes;

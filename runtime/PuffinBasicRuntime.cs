@@ -36,7 +36,7 @@ namespace Org.Puffinbasic.Runtime
         private FormatterCache formatterCache;
         private PuffinBasicFiles files;
         private ReadData readData;
-        private readonly PrintStream @out;
+        private readonly TextWriter @out;
         private readonly IEnvironment env;
         private GraphicsState graphicsState;
         private SoundState soundState;

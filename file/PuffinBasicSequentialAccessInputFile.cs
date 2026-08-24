@@ -17,7 +17,7 @@ namespace Org.Puffinbasic.File
     public class PuffinBasicSequentialAccessInputFile : IPuffinBasicFile
     {
         private readonly string filename;
-        private readonly BufferedReader in;
+        private readonly BufferedReader @in;
         private long bytesAccessed;
         private FileState fileState;
         private string lastLine;
