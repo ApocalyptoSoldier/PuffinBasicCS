@@ -371,7 +371,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Float.Compare(e1.GetFloat32(), e2.GetFloat32()) < 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat32() < e2.GetFloat32() ? -1 : 0);
         }
 
         public static void LtFloat64(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -379,7 +379,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Double.Compare(e1.GetFloat64(), e2.GetFloat64()) < 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat64() < e2.GetFloat64() ? -1 : 0);
         }
 
         public static void LtStr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -411,7 +411,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Float.Compare(e1.GetFloat32(), e2.GetFloat32()) <= 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat32() <= e2.GetFloat32() ? -1 : 0);
         }
 
         public static void LeFloat64(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -419,7 +419,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Double.Compare(e1.GetFloat64(), e2.GetFloat64()) <= 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat64() <= e2.GetFloat64() ? -1 : 0);
         }
 
         public static void LeStr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -453,7 +453,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Float.Compare(e1.GetFloat32(), e2.GetFloat32()) > 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat32() > e2.GetFloat32() ? -1 : 0);
         }
 
         public static void GtFloat64(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -461,7 +461,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Double.Compare(e1.GetFloat64(), e2.GetFloat64()) > 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat64() > e2.GetFloat64() ? -1 : 0);
         }
 
         public static void GtStr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -493,7 +493,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Float.Compare(e1.GetFloat32(), e2.GetFloat32()) >= 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat32() >= e2.GetFloat32() ? -1 : 0);
         }
 
         public static void GeFloat64(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -501,7 +501,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Double.Compare(e1.GetFloat64(), e2.GetFloat64()) >= 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat64() >= e2.GetFloat64() ? -1 : 0);
         }
 
         public static void GeStr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -533,7 +533,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Float.Compare(e1.GetFloat32(), e2.GetFloat32()) == 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat32() == e2.GetFloat32() ? -1 : 0);
         }
 
         public static void EqFloat64(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -541,7 +541,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Double.Compare(e1.GetFloat64(), e2.GetFloat64()) == 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat64() == e2.GetFloat64() ? -1 : 0);
         }
 
         public static void EqStr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -573,7 +573,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Float.Compare(e1.GetFloat32(), e2.GetFloat32()) != 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat32() != e2.GetFloat32() ? -1 : 0);
         }
 
         public static void NeFloat64(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -581,7 +581,7 @@ namespace Org.Puffinbasic.Runtime
             var e1 = symbolTable[instruction.op1].GetValue();
             var e2 = symbolTable[instruction.op2].GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            result.SetInt64(Double.Compare(e1.GetFloat64(), e2.GetFloat64()) != 0 ? -1 : 0);
+            result.SetInt64(e1.GetFloat64() != e2.GetFloat64() ? -1 : 0);
         }
 
         public static void NeStr(PuffinBasicSymbolTable symbolTable, Instruction instruction)

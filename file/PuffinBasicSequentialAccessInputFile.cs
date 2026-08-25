@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using static Org.Puffinbasic.File.IPuffinBasicFile;
+using System.IO;
 
 namespace Org.Puffinbasic.File
 {
@@ -23,16 +25,17 @@ namespace Org.Puffinbasic.File
         private string lastLine;
         public PuffinBasicSequentialAccessInputFile(string filename)
         {
-            Preconditions.CheckNotNull(filename);
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
             this.filename = filename;
             this.bytesAccessed = 0;
             try
             {
                 this.@in = new BufferedReader(new FileReader(filename));
             }
-            catch (FileNotFoundException e)
+            catch (System.IO.FileNotFoundException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for reading, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for reading, error: " + e.Message);
             }
 
             this.fileState = FileState.OPEN;
@@ -52,7 +55,7 @@ namespace Org.Puffinbasic.File
         public virtual long GetFileSizeInBytes()
         {
             AssertOpen();
-            return new File(filename).Length();
+            return new FileInfo(filename).Length;
         }
 
         public virtual string ReadLine()
@@ -65,28 +68,28 @@ namespace Org.Puffinbasic.File
                     lastLine = @in.ReadLine();
                 }
 
-                bytesAccessed += lastLine.Length();
-                var result = lastLine.StripTrailing();
+                bytesAccessed += lastLine.Length;
+                var result = lastLine.TrimEnd();
                 lastLine = null;
                 return result;
             }
-            catch (IOException e)
+            catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
             }
         }
 
         public virtual byte[] ReadBytes(int n)
         {
             byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
-            if (n >= line.length)
+            if (n >= line.Length)
             {
                 return line;
             }
             else
             {
-                byte[] copy = new byte[Math.Min(n, line.length)];
-                System.Arraycopy(line, 0, copy, 0, n);
+                byte[] copy = new byte[Math.Min(n, line.Length)];
+                Array.Copy(line, 0, copy, 0, n);
                 return copy;
             }
         }
@@ -108,9 +111,9 @@ namespace Org.Puffinbasic.File
             {
                 this.lastLine = @in.ReadLine();
             }
-            catch (IOException e)
+            catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
             }
 
             return lastLine == null;
@@ -145,7 +148,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.Message);
             }
 
             this.fileState = FileState.CLOSED;

@@ -29,6 +29,7 @@ namespace Org.Puffinbasic.Runtime
         private static readonly string PUT_MIX = "MIX";
         public static readonly int BUFFER_NUM_FRONT = 0;
         public static readonly int BUFFER_NUM_BACK1 = 1;
+        /*
         public class BasicFrame : JFrame
         {
             private readonly DrawingCanvas drawingCanvas;
@@ -85,7 +86,7 @@ namespace Org.Puffinbasic.Runtime
             int dstVerticalOffset = dsty * dstWidth;
             for (int yi = srcy; yi < srcy + copyH; yi++)
             {
-                System.Arraycopy(srcArray, srcVerticalOffset + srcx, dstArray, dstVerticalOffset + dstx, copyW);
+                Array.Copy(srcArray, srcVerticalOffset + srcx, dstArray, dstVerticalOffset + dstx, copyW);
                 srcVerticalOffset += srcWidth;
                 dstVerticalOffset += dstWidth;
             }
@@ -491,7 +492,7 @@ namespace Org.Puffinbasic.Runtime
                 int keyCode = e.GetKeyCode();
                 if (charCode == 65535)
                 {
-                    return ((char)0) + String.ValueOf((char)keyCode);
+                    return ((char)0) + ((char)keyCode).ToString();
                 }
                 else
                 {
@@ -502,7 +503,7 @@ namespace Org.Puffinbasic.Runtime
                         charCode += 32;
                     }
 
-                    return String.ValueOf((char)charCode);
+                    return ((char)charCode).ToString();
                 }
             }
 
@@ -602,7 +603,7 @@ namespace Org.Puffinbasic.Runtime
 
         public sealed class BasicMouseState
         {
-            private readonly ReadWriteLock lock;
+            private readonly ReadWriteLock @lock;
             private int buttonClicked = -1;
             private int buttonPressed = -1;
             private int buttonReleased = -1;
@@ -812,6 +813,7 @@ namespace Org.Puffinbasic.Runtime
                 }
             }
         }
+        */
     }
 }
 

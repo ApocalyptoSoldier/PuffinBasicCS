@@ -1,10 +1,10 @@
-using It.Unimi.Dsi.Fastutil.Ints;
+//using It.Unimi.Dsi.Fastutil.Ints;
 using Org.Puffinbasic.Error;
-using Javax.Sound.Sampled;
-using Java.Io;
-using Java.Util.Concurrent;
-using Java.Util.Concurrent.Atomic;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+//using Javax.Sound.Sampled;
+//using Java.Io;
+//using Java.Util.Concurrent;
+//using Java.Util.Concurrent.Atomic;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +15,7 @@ namespace Org.Puffinbasic.Runtime
 {
     public class SoundState : IDisposable
     {
+        /*
         private sealed class ClipState : IDisposable
         {
             readonly AudioInputStream stream;
@@ -137,10 +138,11 @@ namespace Org.Puffinbasic.Runtime
             });
         }
 
+        */
         public virtual void Dispose()
         {
-            state.Values().ForEach((s) => s.clip.Dispose());
-            executor.ShutdownNow();
+            //state.Values().ForEach((s) => s.clip.Dispose());
+            //executor.ShutdownNow();
         }
     }
 }

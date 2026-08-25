@@ -4,7 +4,7 @@ using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
 //using Org.Jetbrains.Annotations;
 //using Java.Io;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,11 +19,12 @@ namespace Org.Puffinbasic.File
         private readonly string filename;
         private readonly TextWriter @out;
         private long bytesAccessed;
-        private PuffinBasicFile.FileState fileState;
+        private IPuffinBasicFile.FileState fileState;
         private string lastLine;
         public PuffinBasicSequentialAccessOutputFile(string filename, bool append)
         {
-            Preconditions.CheckNotNull(filename);
+            if (filename == null) throw new ArgumentNullException("filename");
+
             this.filename = filename;
             this.bytesAccessed = 0;
             try
@@ -32,10 +33,10 @@ namespace Org.Puffinbasic.File
             }
             catch (FileNotFoundException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.Message);
             }
 
-            this.fileState = PuffinBasicFile.FileState.OPEN;
+            this.fileState = IPuffinBasicFile.FileState.OPEN;
         }
 
         public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
@@ -45,7 +46,7 @@ namespace Org.Puffinbasic.File
 
         public virtual int GetCurrentRecordNumber()
         {
-            return (int)(bytesAccessed / PuffinBasicFile.DEFAULT_RECORD_LEN);
+            return (int)(bytesAccessed / IPuffinBasicFile.DEFAULT_RECORD_LEN);
         }
 
         public virtual long GetFileSizeInBytes()
@@ -65,7 +66,7 @@ namespace Org.Puffinbasic.File
 
         public virtual void Print(string s)
         {
-            bytesAccessed += s.Length();
+            bytesAccessed += s.Length;
             @out.Write(s);
         }
 
@@ -78,7 +79,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write buffer to output, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write buffer to output, error: " + e.Message);
             }
         }
 
@@ -104,7 +105,7 @@ namespace Org.Puffinbasic.File
 
         public virtual bool IsOpen()
         {
-            return fileState == PuffinBasicFile.FileState.OPEN;
+            return fileState == IPuffinBasicFile.FileState.OPEN;
         }
 
         public virtual void Dispose()
@@ -116,10 +117,10 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.Message);
             }
 
-            this.fileState = PuffinBasicFile.FileState.CLOSED;
+            this.fileState = IPuffinBasicFile.FileState.CLOSED;
         }
 
         private void AssertOpen()

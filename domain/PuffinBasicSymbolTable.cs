@@ -34,8 +34,8 @@ namespace Org.Puffinbasic.Domain
         private IScope currentScope;
         private int lastId;
         private int lastLastId;
-        private STEntry lastEntry;
-        private STEntry lastLastEntry;
+        private AbstractSTEntry lastEntry;
+        private AbstractSTEntry lastLastEntry;
         public PuffinBasicSymbolTable()
         {
             this.defaultDataTypes = new Dictionary<char, PuffinBasicAtomTypeId>();
@@ -74,12 +74,12 @@ namespace Org.Puffinbasic.Domain
             return null;
         }
 
-        public STEntry this[int id]
+        public AbstractSTEntry this[int id]
         {
             get => GetEntry(id);
         }
 
-        private STEntry GetEntry(int id)
+        private AbstractSTEntry GetEntry(int id)
         {
             var scope = GetCurrentScope();
             var entry = scope.GetNullableEntry(id);
@@ -105,7 +105,7 @@ namespace Org.Puffinbasic.Domain
             throw new PuffinBasicInternalError("Failed to find entry for id: " + id);
         }
 
-        public virtual STEntry Get(int id)
+        public virtual AbstractSTEntry Get(int id)
         {
 
             // Cache for better performance
@@ -138,7 +138,7 @@ namespace Org.Puffinbasic.Domain
             return id;
         }
 
-        public virtual STEntry GetVariable(int id)
+        public virtual AbstractSTEntry GetVariable(int id)
         {
             var entry = Get(id);
             if (!entry.IsLValue())
@@ -149,7 +149,7 @@ namespace Org.Puffinbasic.Domain
             return entry;
         }
 
-        public virtual int AddVariableOrUDF(VariableName variableName, Function<VariableName, Variable> variableCreator, IVariableConsumer consumer)
+        public virtual int AddVariableOrUDF(VariableName variableName, Func<VariableName, Variable> variableCreator, IVariableConsumer consumer)
         {
             var scope = FindScope((s) => s.ContainsVariable(variableName)) ?? GetCurrentScope();
             int id = scope.GetIdForVariable(variableName);
@@ -158,7 +158,7 @@ namespace Org.Puffinbasic.Domain
             {
                 id = GenerateNextId();
                 scope.PutVariable(variableName, id);
-                var variable = variableCreator.Apply(variableName);
+                var variable = variableCreator.Invoke(variableName);
                 entry = variableName.GetDataType().CreateVariableEntry(variable);
                 scope.PutEntry(id, entry);
             }
@@ -218,7 +218,7 @@ namespace Org.Puffinbasic.Domain
             return id;
         }
 
-        public virtual int AddTmp(PuffinBasicType type, Consumer<STEntry> consumer)
+        public virtual int AddTmp(PuffinBasicType type, Consumer<AbstractSTEntry> consumer)
         {
             var scope = GetCurrentScope();
             int id = GenerateNextId();
@@ -229,7 +229,7 @@ namespace Org.Puffinbasic.Domain
             return id;
         }
 
-        public virtual int AddTmp(PuffinBasicAtomTypeId dataType, Consumer<STEntry> consumer)
+        public virtual int AddTmp(PuffinBasicAtomTypeId dataType, Consumer<AbstractSTEntry> consumer)
         {
             var scope = GetCurrentScope();
             int id = GenerateNextId();

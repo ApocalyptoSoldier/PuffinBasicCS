@@ -6,8 +6,8 @@ using static Org.Puffinbasic.Parser.PuffinBasicIR;
 //using Java.Util.Function;
 using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
 using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+using RuntimeErrorCode = Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using SemanticErrorCode = Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -39,7 +39,7 @@ namespace Org.Puffinbasic.Runtime
             }
             else
             {
-                throw new PuffinBasicRuntimeError(BAD_FIELD, "Expected LValue, but found: " + toEntry.GetType());
+                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, "Expected LValue, but found: " + toEntry.GetType());
             }
         }
 
@@ -53,7 +53,7 @@ namespace Org.Puffinbasic.Runtime
             }
             else
             {
-                throw new PuffinBasicRuntimeError(BAD_FIELD, "Expected LValue, but found: " + dst.GetType());
+                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, "Expected LValue, but found: " + dst.GetType());
             }
         }
 
@@ -76,47 +76,47 @@ namespace Org.Puffinbasic.Runtime
             }
         }
 
-        public static void AssertString(PuffinBasicAtomTypeId dt, Supplier<string> line)
+        public static void AssertString(PuffinBasicAtomTypeId dt, string line)
         {
             if (dt != STRING)
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line.Get(), "Expected String type but found: " + dt);
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected String type but found: " + dt);
             }
         }
 
-        public static void AssertNumeric(PuffinBasicAtomTypeId dt, Supplier<string> line)
+        public static void AssertNumeric(PuffinBasicAtomTypeId dt, string line)
         {
             if (dt == STRING)
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line.Get(), "Expected numeric type but found String!");
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected numeric type but found String!");
             }
         }
 
-        public static void AssertIntType(PuffinBasicAtomTypeId dt, Supplier<string> line)
+        public static void AssertIntType(PuffinBasicAtomTypeId dt, string line)
         {
             if (dt != INT32 && dt != INT64)
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line.Get(), "Expected int type but found: " + dt);
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected int type but found: " + dt);
             }
         }
 
-        public static void AssertNumeric(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, Supplier<string> line)
+        public static void AssertNumeric(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, string line)
         {
             if (dt1 == STRING || dt2 == STRING)
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line.Get(), "Expected numeric type but found String!");
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected numeric type but found String!");
             }
         }
 
-        public static void AssertBothStringOrNumeric(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, Supplier<string> line)
+        public static void AssertBothStringOrNumeric(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, string line)
         {
             if ((dt1 != STRING || dt2 != STRING) && (dt1 == STRING || dt2 == STRING))
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line.Get(), "Expected either both numeric or both string type but found: " + dt1 + " and " + dt2);
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected either both numeric or both string type but found: " + dt1 + " and " + dt2);
             }
         }
 
-        public static PuffinBasicAtomTypeId Upcast(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, Supplier<string> line)
+        public static PuffinBasicAtomTypeId Upcast(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, string line)
         {
             AssertNumeric(dt1, dt2, line);
             if (dt1 == PuffinBasicAtomTypeId.DOUBLE || dt2 == PuffinBasicAtomTypeId.DOUBLE)

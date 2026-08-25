@@ -1,5 +1,6 @@
 //using Org.Antlr.V4.Runtime;
 //using Java.Util;
+using Antlr4.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,9 +15,9 @@ namespace Org.Puffinbasic.Parser
         private readonly string relativePath;
         private readonly string libtag;
         private readonly string sourceCode;
-        private readonly TextReader sourceCodeStream;
+        private readonly ICharStream sourceCodeStream;
         private readonly HashSet<PuffinBasicSourceFile> importFiles;
-        public PuffinBasicSourceFile(string relativePath, string libtag, string sourceCode, TextReader sourceCodeStream, HashSet<PuffinBasicSourceFile> importFiles)
+        public PuffinBasicSourceFile(string relativePath, string libtag, string sourceCode, ICharStream sourceCodeStream, HashSet<PuffinBasicSourceFile> importFiles)
         {
             this.relativePath = relativePath;
             this.libtag = libtag;
@@ -45,7 +46,7 @@ namespace Org.Puffinbasic.Parser
             return sourceCode;
         }
 
-        public virtual TextReader GetSourceCodeStream()
+        public virtual ICharStream GetSourceCodeStream()
         {
             return sourceCodeStream;
         }

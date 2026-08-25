@@ -1,10 +1,10 @@
-using It.Unimi.Dsi.Fastutil.Objects;
+//using It.Unimi.Dsi.Fastutil.Objects;
 
 //using Java.Text;
 //using Java.Util;
 
 using Org.Puffinbasic.Error;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 
 using System;
 using System.Collections.Generic;
@@ -193,7 +193,7 @@ namespace Org.Puffinbasic.Runtime
                 }
                 else
                 {
-                    throw new PuffinBasicInternalError(typeof(NumberFormatter).GetSimpleName() + ": data type mismatch: " + o.GetType());
+                    throw new PuffinBasicInternalError(typeof(NumberFormatter).Name + ": data type mismatch: " + o.GetType());
                 }
             }
 
@@ -353,7 +353,7 @@ namespace Org.Puffinbasic.Runtime
                 }
                 else
                 {
-                    throw new PuffinBasicInternalError(typeof(FirstCharFormatter).GetSimpleName() + ": data type mismatch: " + o.GetType());
+                    throw new PuffinBasicInternalError(typeof(FirstCharFormatter).Name + ": data type mismatch: " + o.GetType());
                 }
             }
 
@@ -404,14 +404,14 @@ namespace Org.Puffinbasic.Runtime
                     else
                     {
                         byte[] bytes = new byte[this.length];
-                        System.Arraycopy(str.GetBytes(), 0, bytes, 0, str.Length);
-                        java.util.Arrays.Fill(bytes, str.Length, length, (byte)' ');
+                        Array.Copy(str.GetBytes(), 0, bytes, 0, str.Length);
+                        Arrays.Fill(bytes, str.Length, length, (byte)' ');
                         return new string (bytes);
                     }
                 }
                 else
                 {
-                    throw new PuffinBasicInternalError(typeof(FirstCharFormatter).GetSimpleName() + ": data type mismatch: " + o.GetType());
+                    throw new PuffinBasicInternalError(typeof(FirstCharFormatter).Name + ": data type mismatch: " + o.GetType());
                 }
             }
 
@@ -436,7 +436,7 @@ namespace Org.Puffinbasic.Runtime
                 }
                 else
                 {
-                    throw new PuffinBasicInternalError(typeof(FirstCharFormatter).GetSimpleName() + ": data type mismatch: " + o.GetType());
+                    throw new PuffinBasicInternalError(typeof(FirstCharFormatter).Name + ": data type mismatch: " + o.GetType());
                 }
             }
 

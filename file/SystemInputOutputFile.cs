@@ -1,10 +1,10 @@
-using It.Unimi.Dsi.Fastutil.Ints;
+//using It.Unimi.Dsi.Fastutil.Ints;
 using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
-using Org.Jetbrains.Annotations;
-using Java.Io;
-using Java.Nio.Charset;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+//using Org.Jetbrains.Annotations;
+//using Java.Io;
+//using Java.Nio.Charset;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -42,14 +42,14 @@ namespace Org.Puffinbasic.File
         public virtual byte[] ReadBytes(int n)
         {
             byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
-            if (n >= line.length)
+            if (n >= line.Length)
             {
                 return line;
             }
             else
             {
-                byte[] copy = new byte[Math.Min(n, line.length)];
-                System.Arraycopy(line, 0, copy, 0, n);
+                byte[] copy = new byte[Math.Min(n, line.Length)];
+                Array.Copy(line, 0, copy, 0, n);
                 return copy;
             }
         }
@@ -58,7 +58,7 @@ namespace Org.Puffinbasic.File
         {
             try
             {
-                return @in.ReadLine().StripTrailing();
+                return @in.ReadLine().TrimEnd();
             }
             catch (IOException e)
             {
@@ -79,7 +79,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write buffer to output, error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write buffer to output, error: " + e.Message);
             }
         }
 

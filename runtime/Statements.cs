@@ -4,7 +4,7 @@ using Org.Puffinbasic.Domain;
 using static Org.Puffinbasic.Domain.STObjects;
 using Org.Puffinbasic.Error;
 using Org.Puffinbasic.File;
-using Org.Puffinbasic.File.PuffinBasicFile;
+using static Org.Puffinbasic.File.IPuffinBasicFile;
 using static Org.Puffinbasic.Parser.PuffinBasicIR;
 using static Org.Puffinbasic.Runtime.Formatter;
 //using Java.Io;
@@ -40,7 +40,7 @@ namespace Org.Puffinbasic.Runtime
         {
             private readonly IList<ISTEntry> data;
             private int cursor;
-            ReadData(IList<ISTEntry> data)
+            public ReadData(IList<ISTEntry> data)
             {
                 this.data = data;
             }
@@ -196,7 +196,7 @@ namespace Org.Puffinbasic.Runtime
             else
             {
                 byte[] bytes = new byte[destLen];
-                System.Arraycopy(value.GetBytes(), 0, bytes, 0, valLen);
+                Array.Copy(value.GetBytes(), 0, bytes, 0, valLen);
                 java.util.Arrays.Fill(bytes, valLen, destLen, (byte)' ');
                 result = new string (bytes);
             }
@@ -212,7 +212,7 @@ namespace Org.Puffinbasic.Runtime
             var destLen = destEntry.GetFieldLength();
             if (destLen == 0)
             {
-                destLen = destEntry.GetString().Length();
+                destLen = destEntry.GetString().Length;
                 destEntry.SetFieldLength(destLen);
             }
 
@@ -230,7 +230,7 @@ namespace Org.Puffinbasic.Runtime
                 byte[] bytes = new byte[destLen];
                 int offset = destLen - valLen;
                 Arrays.Fill(bytes, 0, offset, (byte)' ');
-                System.Arraycopy(value.GetBytes(), 0, bytes, offset, valLen);
+                Array.Copy(value.GetBytes(), 0, bytes, offset, valLen);
                 result = new string (bytes);
             }
 
@@ -295,7 +295,7 @@ namespace Org.Puffinbasic.Runtime
 
         public static void RandomizeTimer(Random random)
         {
-            var seed = Instant.Now().GetEpochSecond();
+            var seed = DateTime.Now().GetEpochSecond();
             random.SetSeed(seed);
         }
 
@@ -328,7 +328,7 @@ namespace Org.Puffinbasic.Runtime
                 {
                     if (printPrompt)
                     {
-                        System.err.Println("?Redo from start");
+                        Console.Error.WriteLine("?Redo from start");
                     }
                     else
                     {
@@ -341,9 +341,9 @@ namespace Org.Puffinbasic.Runtime
                 {
                     parser = CSVParser.Parse(file.ReadLine(), CSVFormat.DEFAULT);
                 }
-                catch (IOException e)
+                catch (System.IO.IOException e)
                 {
-                    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read inputs, error: " + e.GetMessage());
+                    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read inputs, error: " + e.Message);
                 }
 
                 record = parser.Iterator().Next();
@@ -358,16 +358,16 @@ namespace Org.Puffinbasic.Runtime
                 switch (entry.GetType().GetAtomTypeId())
                 {
                     case INT32:
-                        value.SetInt32(Integer.ParseInt(record[i].Trim()));
+                        value.SetInt32(int.Parse(record[i].Trim()));
                         break;
                     case INT64:
-                        value.SetInt64(Long.ParseLong(record[i].Trim()));
+                        value.SetInt64(long.Parse(record[i].Trim()));
                         break;
                     case FLOAT:
-                        value.SetFloat32(Float.ParseFloat(record[i].Trim()));
+                        value.SetFloat32(float.Parse(record[i].Trim()));
                         break;
                     case DOUBLE:
-                        value.SetFloat64(Double.ParseDouble(record[i].Trim()));
+                        value.SetFloat64(Double.Parse(record[i].Trim()));
                         break;
                     case STRING:
                         value.SetString(record[i].Trim());
@@ -410,7 +410,7 @@ namespace Org.Puffinbasic.Runtime
             var m = symbolTable[instr.op1].GetValue().GetInt32();
             var replacement = symbolTable[instr.op2].GetValue().GetString();
             string varValue = dest.GetString();
-            var varlen = varValue.Length();
+            var varlen = varValue.Length;
             string result;
             if (n <= 0)
             {
@@ -452,9 +452,9 @@ namespace Org.Puffinbasic.Runtime
             var root = (STObjects.STStruct)symbolTable[instruction.op1].GetValue();
             for (int i = 0; i < @params.Count - 1; i++)
             {
-                var childId = symbolTable[@params[i].op1].GetValue().GetInt32();
-                var valueId = root.GetMember(childId);
-                root = (STObjects.STStruct)symbolTable[valueId].GetValue();
+                var localChildId = symbolTable[@params[i].op1].GetValue().GetInt32();
+                var localValueId = root.GetMember(localChildId);
+                root = (STObjects.STStruct)symbolTable[localValueId].GetValue();
             }
 
             var childId = symbolTable[@params[@params.Count - 1].op1].GetValue().GetInt32();
@@ -464,7 +464,7 @@ namespace Org.Puffinbasic.Runtime
 
         public static void MemberFuncCall(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
-            STValue[] funcParams = new ISTValue[@params.Count];
+            STValue[] funcParams = (STValue[])(new ISTValue[@params.Count]);
             var @object = symbolTable[instruction.op1].GetValue();
             var funcName = symbolTable[instruction.op2].GetValue().GetString();
             ISTValue result = symbolTable[instruction.result].GetValue();
@@ -481,9 +481,9 @@ namespace Org.Puffinbasic.Runtime
             var root = (STObjects.STStruct)symbolTable[instruction.op1].GetValue();
             for (int i = 0; i < @params.Count - 1; i++)
             {
-                var childId = symbolTable[@params[i].op1].GetValue().GetInt32();
-                var valueId = root.GetMember(childId);
-                root = (STObjects.STStruct)symbolTable[valueId].GetValue();
+                var localChildId = symbolTable[@params[i].op1].GetValue().GetInt32();
+                var localValueId = root.GetMember(localChildId);
+                root = (STObjects.STStruct)symbolTable[localValueId].GetValue();
             }
 
             var childId = symbolTable[@params[@params.Count - 1].op1].GetValue().GetInt32();

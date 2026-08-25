@@ -97,19 +97,19 @@ namespace Org.Puffinbasic.Runtime
             var fill = fillEntry.GetValue();
             switch (fillEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                     array.Fill(fill.GetInt32());
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                     array.Fill(fill.GetInt64());
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                     array.Fill(fill.GetFloat32());
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                     array.Fill(fill.GetFloat64());
                     break;
-                case STRING:
+                case PuffinBasicAtomTypeId.STRING:
                     array.FillString(fill.GetString());
                     break;
                 default:
@@ -136,38 +136,38 @@ namespace Org.Puffinbasic.Runtime
 
             switch (array1Entry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array1).GetValue();
-                    System.Arraycopy(value, 0, ((STInt32ArrayValue)array2).GetValue(), 0, value.length);
+                    Array.Copy(value, 0, ((STInt32ArrayValue)array2).GetValue(), 0, value.Length);
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array1).GetValue();
-                    System.Arraycopy(value, 0, ((STInt64ArrayValue)array2).GetValue(), 0, value.length);
+                    Array.Copy(value, 0, ((STInt64ArrayValue)array2).GetValue(), 0, value.Length);
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array1).GetValue();
-                    System.Arraycopy(value, 0, ((STFloat32ArrayValue)array2).GetValue(), 0, value.length);
+                    Array.Copy(value, 0, ((STFloat32ArrayValue)array2).GetValue(), 0, value.Length);
                 }
 
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array1).GetValue();
-                    System.Arraycopy(value, 0, ((STFloat64ArrayValue)array2).GetValue(), 0, value.length);
+                    Array.Copy(value, 0, ((STFloat64ArrayValue)array2).GetValue(), 0, value.Length);
                 }
 
                     break;
-                case STRING:
+                case PuffinBasicAtomTypeId.STRING:
                 {
                     String[] value = ((STStringArrayValue)array1).GetValue();
-                    System.Arraycopy(value, 0, ((STStringArrayValue)array2).GetValue(), 0, value.length);
+                    Array.Copy(value, 0, ((STStringArrayValue)array2).GetValue(), 0, value.Length);
                 }
 
                     break;
@@ -205,42 +205,42 @@ namespace Org.Puffinbasic.Runtime
 
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array).GetValue();
-                    System.Arraycopy(value, src0, value, dst0, len);
+                    Array.Copy(value, src0, value, dst0, len);
                     Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array).GetValue();
-                    System.Arraycopy(value, src0, value, dst0, len);
+                    Array.Copy(value, src0, value, dst0, len);
                     Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array).GetValue();
-                    System.Arraycopy(value, src0, value, dst0, len);
+                    Array.Copy(value, src0, value, dst0, len);
                     Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
                 }
 
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array).GetValue();
-                    System.Arraycopy(value, src0, value, dst0, len);
+                    Array.Copy(value, src0, value, dst0, len);
                     Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
                 }
 
                     break;
-                case STRING:
+                case PuffinBasicAtomTypeId.STRING:
                 {
                     String[] value = ((STStringArrayValue)array).GetValue();
-                    System.Arraycopy(value, src0, value, dst0, len);
+                    Array.Copy(value, src0, value, dst0, len);
                     Arrays.Fill(value, fillSrc0, fillSrc0 + delta, "");
                 }
 
@@ -279,7 +279,7 @@ namespace Org.Puffinbasic.Runtime
 
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array).GetValue();
                     if (shift >= 0)
@@ -315,7 +315,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array).GetValue();
                     if (shift >= 0)
@@ -351,7 +351,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array).GetValue();
                     if (shift >= 0)
@@ -387,7 +387,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array).GetValue();
                     if (shift >= 0)
@@ -423,7 +423,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case STRING:
+                case PuffinBasicAtomTypeId.STRING:
                 {
                     String[] value = ((STStringArrayValue)array).GetValue();
                     if (shift >= 0)
@@ -491,38 +491,38 @@ namespace Org.Puffinbasic.Runtime
 
             switch (srcEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)src).GetValue();
-                    System.Arraycopy(value, src0, ((STInt32ArrayValue)dst).GetValue(), dst0, len);
+                    Array.Copy(value, src0, ((STInt32ArrayValue)dst).GetValue(), dst0, len);
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)src).GetValue();
-                    System.Arraycopy(value, src0, ((STInt64ArrayValue)dst).GetValue(), dst0, len);
+                    Array.Copy(value, src0, ((STInt64ArrayValue)dst).GetValue(), dst0, len);
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)src).GetValue();
-                    System.Arraycopy(value, src0, ((STFloat32ArrayValue)dst).GetValue(), dst0, len);
+                    Array.Copy(value, src0, ((STFloat32ArrayValue)dst).GetValue(), dst0, len);
                 }
 
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)src).GetValue();
-                    System.Arraycopy(value, src0, ((STFloat64ArrayValue)dst).GetValue(), dst0, len);
+                    Array.Copy(value, src0, ((STFloat64ArrayValue)dst).GetValue(), dst0, len);
                 }
 
                     break;
-                case STRING:
+                case PuffinBasicAtomTypeId.STRING:
                 {
                     String[] value = ((STStringArrayValue)src).GetValue();
-                    System.Arraycopy(value, src0, ((STStringArrayValue)dst).GetValue(), dst0, len);
+                    Array.Copy(value, src0, ((STStringArrayValue)dst).GetValue(), dst0, len);
                 }
 
                     break;
@@ -538,20 +538,20 @@ namespace Org.Puffinbasic.Runtime
             var array = entry.GetValue();
             switch (entry.GetType().GetAtomTypeId())
             {
-                case INT32:
-                    Arrays.Sort(((STInt32ArrayValue)array).GetValue());
+                case PuffinBasicAtomTypeId.INT32:
+                    Array.Sort(((STInt32ArrayValue)array).GetValue());
                     break;
-                case INT64:
-                    Arrays.Sort(((STInt64ArrayValue)array).GetValue());
+                case PuffinBasicAtomTypeId.INT64:
+                    Array.Sort(((STInt64ArrayValue)array).GetValue());
                     break;
-                case FLOAT:
-                    Arrays.Sort(((STFloat32ArrayValue)array).GetValue());
+                case PuffinBasicAtomTypeId.FLOAT:
+                    Array.Sort(((STFloat32ArrayValue)array).GetValue());
                     break;
-                case DOUBLE:
-                    Arrays.Sort(((STFloat64ArrayValue)array).GetValue());
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    Array.Sort(((STFloat64ArrayValue)array).GetValue());
                     break;
-                case STRING:
-                    Arrays.Sort(((STStringArrayValue)array).GetValue());
+                case PuffinBasicAtomTypeId.STRING:
+                    Array.Sort(((STStringArrayValue)array).GetValue());
                     break;
                 default:
                     ThrowUnsupportedType(entry.GetType().GetAtomTypeId());
@@ -568,20 +568,20 @@ namespace Org.Puffinbasic.Runtime
             var index = -1;
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
-                    index = Arrays.BinarySearch(((STInt32ArrayValue)array).GetValue(), search.GetInt32());
+                case PuffinBasicAtomTypeId.INT32:
+                    index = Array.BinarySearch(((STInt32ArrayValue)array).GetValue(), search.GetInt32());
                     break;
-                case INT64:
-                    index = Arrays.BinarySearch(((STInt64ArrayValue)array).GetValue(), search.GetInt64());
+                case PuffinBasicAtomTypeId.INT64:
+                    index = Array.BinarySearch(((STInt64ArrayValue)array).GetValue(), search.GetInt64());
                     break;
-                case FLOAT:
-                    index = Arrays.BinarySearch(((STFloat32ArrayValue)array).GetValue(), search.GetFloat32());
+                case PuffinBasicAtomTypeId.FLOAT:
+                    index = Array.BinarySearch(((STFloat32ArrayValue)array).GetValue(), search.GetFloat32());
                     break;
-                case DOUBLE:
-                    index = Arrays.BinarySearch(((STFloat64ArrayValue)array).GetValue(), search.GetFloat64());
+                case PuffinBasicAtomTypeId.DOUBLE:
+                    index = Array.BinarySearch(((STFloat64ArrayValue)array).GetValue(), search.GetFloat64());
                     break;
-                case STRING:
-                    index = Arrays.BinarySearch(((STStringArrayValue)array).GetValue(), search.GetString());
+                case PuffinBasicAtomTypeId.STRING:
+                    index = Array.BinarySearch(((STStringArrayValue)array).GetValue(), search.GetString());
                     break;
                 default:
                     ThrowUnsupportedType(arrayEntry.GetType().GetAtomTypeId());
@@ -598,10 +598,10 @@ namespace Org.Puffinbasic.Runtime
             var result = symbolTable[instruction.result].GetValue();
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array).GetValue();
-                    var min = Integer.MAX_VALUE;
+                    var min = int.MaxValue;
                     foreach (var v in value)
                     {
                         if (v < min)
@@ -614,10 +614,10 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array).GetValue();
-                    var min = Long.MAX_VALUE;
+                    var min = long.MaxValue;
                     foreach (var v in value)
                     {
                         if (v < min)
@@ -630,10 +630,10 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array).GetValue();
-                    var min = Float.MAX_VALUE;
+                    var min = float.MaxValue;
                     foreach (var v in value)
                     {
                         if (v < min)
@@ -646,10 +646,10 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array).GetValue();
-                    var min = Double.MAX_VALUE;
+                    var min = Double.MaxValue;
                     foreach (var v in value)
                     {
                         if (v < min)
@@ -675,10 +675,10 @@ namespace Org.Puffinbasic.Runtime
             var result = symbolTable[instruction.result].GetValue();
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array).GetValue();
-                    var max = Integer.MIN_VALUE;
+                    var max = int.MinValue;
                     foreach (var v in value)
                     {
                         if (v > max)
@@ -691,10 +691,10 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array).GetValue();
-                    var max = Long.MIN_VALUE;
+                    var max = long.MinValue;
                     foreach (var v in value)
                     {
                         if (v > max)
@@ -707,10 +707,10 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array).GetValue();
-                    var max = Float.MIN_VALUE;
+                    var max = float.MinValue;
                     foreach (var v in value)
                     {
                         if (v > max)
@@ -723,10 +723,10 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array).GetValue();
-                    var max = Double.MIN_VALUE;
+                    var max = Double.MinValue;
                     foreach (var v in value)
                     {
                         if (v > max)
@@ -749,7 +749,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var arrayEntry = symbolTable[instruction.op1];
             var result = symbolTable[instruction.result].GetValue();
-            var stats = Array1dSummaryStats(arrayEntry);
+            var stats = Array1dStats(arrayEntry);
             result.SetFloat64(stats.GetMean());
         }
 
@@ -758,7 +758,7 @@ namespace Org.Puffinbasic.Runtime
             var arrayEntry = symbolTable[instruction.op1];
             var array = arrayEntry.GetValue();
             var result = symbolTable[instruction.result].GetValue();
-            var stats = Array1dSummaryStats(arrayEntry);
+            var stats = Array1dStats(arrayEntry);
             result.SetFloat64(Math.Sqrt(stats.GetVariance()));
         }
 
@@ -766,7 +766,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var arrayEntry = symbolTable[instruction.op1];
             var result = symbolTable[instruction.result].GetValue();
-            var stats = Array1dSummaryStats(arrayEntry);
+            var stats = Array1dStats(arrayEntry);
             result.SetFloat64(stats.GetSum());
         }
 
@@ -774,7 +774,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var arrayEntry = symbolTable[instruction.op1];
             var result = symbolTable[instruction.result].GetValue();
-            var stats = Array1dDescriptiveStats(arrayEntry);
+            var stats = Array1dStats(arrayEntry);
             result.SetFloat64(stats.GetPercentile(50));
         }
 
@@ -788,16 +788,16 @@ namespace Org.Puffinbasic.Runtime
             }
 
             var result = symbolTable[instruction.result].GetValue();
-            var stats = Array1dDescriptiveStats(arrayEntry);
+            var stats = Array1dStats(arrayEntry);
             result.SetFloat64(stats.GetPercentile(pct));
         }
 
-        private static SummaryStatistics Array1dSummaryStats(ISTEntry array)
+        private static ArrayStatistics Array1dStats(ISTEntry array)
         {
-            var stats = new SummaryStatistics();
+            var stats;
             switch (array.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array.GetValue()).GetValue();
                     foreach (int v in value)
@@ -807,7 +807,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array.GetValue()).GetValue();
                     foreach (long v in value)
@@ -817,7 +817,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array.GetValue()).GetValue();
                     foreach (float v in value)
@@ -827,60 +827,7 @@ namespace Org.Puffinbasic.Runtime
                 }
 
                     break;
-                case DOUBLE:
-                {
-                    double[] value = ((STFloat64ArrayValue)array.GetValue()).GetValue();
-                    foreach (double v in value)
-                    {
-                        stats.AddValue(v);
-                    }
-                }
-
-                    break;
-                default:
-                    ThrowUnsupportedType(array.GetType().GetAtomTypeId());
-                    break;
-            }
-
-            return stats;
-        }
-
-        private static DescriptiveStatistics Array1dDescriptiveStats(ISTEntry array)
-        {
-            var stats = new DescriptiveStatistics();
-            switch (array.GetType().GetAtomTypeId())
-            {
-                case INT32:
-                {
-                    int[] value = ((STInt32ArrayValue)array.GetValue()).GetValue();
-                    foreach (int v in value)
-                    {
-                        stats.AddValue(v);
-                    }
-                }
-
-                    break;
-                case INT64:
-                {
-                    long[] value = ((STInt64ArrayValue)array.GetValue()).GetValue();
-                    foreach (long v in value)
-                    {
-                        stats.AddValue(v);
-                    }
-                }
-
-                    break;
-                case FLOAT:
-                {
-                    float[] value = ((STFloat32ArrayValue)array.GetValue()).GetValue();
-                    foreach (float v in value)
-                    {
-                        stats.AddValue(v);
-                    }
-                }
-
-                    break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array.GetValue()).GetValue();
                     foreach (double v in value)
@@ -923,14 +870,14 @@ namespace Org.Puffinbasic.Runtime
 
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] int32Array = ((STInt32ArrayValue)array).GetValue();
                     result.SetInt32(FindRowWithValue(int32Array, numCols, x1, y1, x2, y2, search.GetInt32()));
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] int64Array = ((STInt64ArrayValue)array).GetValue();
                     result.SetInt32(FindRowWithValue(int64Array, numCols, x1, y1, x2, y2, search.GetInt64()));
@@ -968,14 +915,14 @@ namespace Org.Puffinbasic.Runtime
 
             switch (arrayEntry.GetType().GetAtomTypeId())
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] int32Array = ((STInt32ArrayValue)array).GetValue();
                     result.SetInt32(FindColumnWithValue(int32Array, numCols, x1, y1, x2, y2, search.GetInt32()));
                 }
 
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] int64Array = ((STInt64ArrayValue)array).GetValue();
                     result.SetInt32(FindColumnWithValue(int64Array, numCols, x1, y1, x2, y2, search.GetInt64()));
@@ -1156,6 +1103,24 @@ namespace Org.Puffinbasic.Runtime
             }
 
             return -1;
+        }
+    }
+
+    // TODO: Rework this
+    public static class Arrays
+    {
+        public static void Fill<T>(T[] array, T value, int startIndex, int count)
+        {
+            if (array.Length < (startIndex + count))
+                Array.Resize(ref array, (startIndex + count));
+
+            for (int i = startIndex; i < count; i++)
+                array[i] = value; 
+        }
+
+        public static void Fill<T>(T[] array, T value)
+        {
+            Arrays.Fill(array, value, 0, array.Length);
         }
     }
 }

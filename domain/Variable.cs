@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Runtime.Remoting.Messaging;
 
 namespace Org.Puffinbasic.Domain
 {
@@ -17,30 +18,23 @@ namespace Org.Puffinbasic.Domain
     {
         public sealed class VariableName
         {
-            private readonly string varname;
-            private readonly string suffix;
-            private readonly PuffinBasicAtomTypeId dataType;
+            internal readonly string varname;
+            internal readonly string suffix;
+            internal readonly PuffinBasicAtomTypeId dataType;
             public VariableName(string varname, string suffix, STObjects.PuffinBasicAtomTypeId dataType)
             {
-                this.varname = Preconditions.CheckNotNull(varname);
+                if (varname == null) throw new ArgumentNullException(nameof(varname));
+                if (dataType == null) throw new ArgumentNullException(nameof(dataType));
+                this.varname = varname;
                 this.suffix = suffix == null ? "" : suffix;
-                this.dataType = Preconditions.CheckNotNull(dataType);
+                this.dataType = dataType;
             }
 
-            public string GetVarname()
-            {
-                return varname;
-            }
+            public string GetVarname() => varname;
 
-            public PuffinBasicAtomTypeId GetDataType()
-            {
-                return dataType;
-            }
+            public PuffinBasicAtomTypeId GetDataType() => dataType;
 
-            public string ToString()
-            {
-                return varname + ":" + suffix + ":" + dataType;
-            }
+            public new string ToString() => varname + ":" + suffix + ":" + dataType;
 
             public bool Equals(object o)
             {
@@ -49,12 +43,15 @@ namespace Org.Puffinbasic.Domain
                 if (o == null || GetType() != o.GetType())
                     return false;
                 VariableName variable = (VariableName)o;
-                return varname.Equals(variable.varname) && Objects.Equals(suffix, variable.suffix);
+                return varname.Equals(variable.varname) && suffix == variable.suffix;
             }
 
             public int GetHashCode()
             {
-                return Objects.Hash(varname, suffix);
+                int hash = 17;
+                hash = hash * 23 + varname.GetHashCode();
+                hash = hash * 23 + suffix.GetHashCode();
+                return hash;
             }
         }
 
@@ -66,7 +63,7 @@ namespace Org.Puffinbasic.Domain
             UDF
         }
 
-        public static Variable Of(VariableName variableName, VariableKindHint hint, Supplier<string> lineSupplier)
+        public static Variable Of(VariableName variableName, VariableKindHint hint, string line)
         {
             if (hint == VariableKindHint.ARRAY)
             {
@@ -76,7 +73,7 @@ namespace Org.Puffinbasic.Domain
                 }
                 else
                 {
-                    throw new PuffinBasicSemanticError(PuffinBasicSemanticError.ErrorCode.ARRAY_VARIABLE_CANNOT_STARTWITH_FN, lineSupplier.Get(), "Array variable cannot start with " + UDF_PREFIX + ": " + variableName.varname);
+                    throw new PuffinBasicSemanticError(PuffinBasicSemanticError.ErrorCode.ARRAY_VARIABLE_CANNOT_STARTWITH_FN, line, "Array variable cannot start with " + UDF_PREFIX + ": " + variableName.varname);
                 }
             }
             else
@@ -93,44 +90,28 @@ namespace Org.Puffinbasic.Domain
         }
 
         private readonly VariableName variableName;
-        private readonly IPuffinBasicType type;
+        private readonly PuffinBasicType type;
         public Variable(VariableName variableName, STObjects.PuffinBasicType type)
         {
-            this.variableName = Preconditions.CheckNotNull(variableName);
-            this.type = Preconditions.CheckNotNull(type);
+            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (variableName == null) throw new ArgumentNullException(nameof(variableName));
+            this.variableName = variableName;
+            this.type = type;
         }
 
-        public virtual VariableName GetVariableName()
-        {
-            return variableName;
-        }
+        public virtual VariableName GetVariableName() => variableName;
 
-        public virtual IPuffinBasicType GetType()
-        {
-            return type;
-        }
+        public virtual PuffinBasicType GetType() => type;
 
-        public virtual bool IsScalar()
-        {
-            return type.GetTypeId() == SCALAR;
-        }
+        public virtual bool IsScalar() => type.GetTypeId() == SCALAR;
 
-        public virtual bool IsArray()
-        {
-            return type.GetTypeId() == ARRAY;
-        }
+        public virtual bool IsArray() => type.GetTypeId() == ARRAY;
 
-        public virtual bool IsUDF()
-        {
-            return type.GetTypeId() == UDF;
-        }
+        public virtual bool IsUDF() => type.GetTypeId() == UDF;
 
-        public virtual string ToString()
-        {
-            return variableName + ":" + type.GetTypeId();
-        }
+        public virtual string ToString() => variableName + ":" + type.GetTypeId();
 
-        public virtual bool Equals(object o)
+        public virtual bool Equals(Variable o)
         {
             if (this == o)
                 return true;
@@ -142,7 +123,10 @@ namespace Org.Puffinbasic.Domain
 
         public virtual int GetHashCode()
         {
-            return Objects.Hash(variableName, type);
+            int hash = 17;
+            hash = hash * 23 + variableName.GetHashCode();
+            hash = hash * 23 + type.GetHashCode();
+            return hash;
         }
     }
 }

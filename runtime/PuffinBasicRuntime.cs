@@ -27,7 +27,7 @@ namespace Org.Puffinbasic.Runtime
         private readonly PuffinBasicIR ir;
         private PrintBuffer printBuffer;
         private ArrayState arrayState;
-        private IntStack gosubReturnLabelStack;
+        private Stack<int> gosubReturnLabelStack;
         private int programCounter;
         private Random random;
         private Dictionary<int, int> labelToInstrNum;
@@ -38,8 +38,8 @@ namespace Org.Puffinbasic.Runtime
         private ReadData readData;
         private readonly TextWriter @out;
         private readonly IEnvironment env;
-        private GraphicsState graphicsState;
-        private SoundState soundState;
+        //private GraphicsState graphicsState;
+        //private SoundState soundState;
         public PuffinBasicRuntime(PuffinBasicIR ir, TextWriter @out, IEnvironment env)
         {
             this.ir = ir;
@@ -104,11 +104,11 @@ namespace Org.Puffinbasic.Runtime
             this.lineNumToInstrNum = ComputeLineNumberToInstructionNumber(instructions);
             this.printBuffer = new PrintBuffer();
             this.arrayState = new ArrayState();
-            this.gosubReturnLabelStack = new List<int>();
+            this.gosubReturnLabelStack = new Stack<int>();
             this.random = new Random();
             this.formatterCache = new FormatterCache();
             this.@params = new List<Instruction>();
-            this.files = new PuffinBasicFiles(new SystemInputOutputFile(System.@in, @out));
+            this.files = new PuffinBasicFiles(new SystemInputOutputFile(Console.In, @out));
             this.readData = ProcessDataInstructions(instructions);
             this.graphicsState = new GraphicsState();
             this.soundState = new SoundState();
@@ -135,7 +135,8 @@ namespace Org.Puffinbasic.Runtime
             }
             catch (Exception e)
             { 
-                e.PrintStackTrace(Console.Error);
+                Console.Error.WriteLine(e.ToString());
+                //e.PrintStackTrace(Console.Error);
             }
             finally
             {
@@ -292,13 +293,13 @@ namespace Org.Puffinbasic.Runtime
                 {
                     if (instruction.op1 == NULL_ID)
                     {
-                        nextProgramCounter = GetInstrNumForLabel(gosubReturnLabelStack.PopInt());
+                        nextProgramCounter = GetInstrNumForLabel(gosubReturnLabelStack.Pop());
                     }
                     else
                     {
 
                         // Ignore label because we need to return to the lineNumber
-                        gosubReturnLabelStack.PopInt();
+                        gosubReturnLabelStack.Pop();
                         var lineNumber = ir.GetSymbolTable()[instruction.op1].GetValue().GetInt32();
                         nextProgramCounter = GetInstrNumForLineNumber(lineNumber);
                     }

@@ -5,6 +5,8 @@
 //using Org.Antlr.V4.Runtime;
 //using Org.Antlr.V4.Runtime.Tree;
 //using Org.Puffinbasic.Antlr4;
+using Antlr4.Runtime;
+using Antlr4.Runtime.Tree;
 using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
 using Org.Puffinbasic.Parser;
@@ -29,6 +31,7 @@ using System.IO;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Runtime.Remoting.Messaging;
+using Antlr4.Runtime.Atn;
 
 namespace Org.Puffinbasic
 {
@@ -45,7 +48,7 @@ namespace Org.Puffinbasic
         {
             var userOptions = ParseCommandLineArgs(args);
             string mainSource = userOptions.filename;
-            Instant t0 = Instant.Now();
+            DateTime t0 = DateTime.Now;
             var sourceCode = LoadSource(mainSource);
             LogTimeTaken("LOAD", t0, userOptions.timing);
             InterpretAndRun(userOptions, mainSource, sourceCode, Console.Out, new SystemEnv());
@@ -74,7 +77,7 @@ namespace Org.Puffinbasic
 
             ParseResult res = command.Parse(args);
 
-            if (res.Errors.Count > 0) {
+            if (res.Errors.Count > 0)
                 Environment.Exit(1);
 
             return new UserOptions(res.GetValue(logDuplicate), res.GetValue(list), res.GetValue(ir), res.GetValue(timing), res.GetValue(graphics), res.GetValue(file).FullName);
@@ -88,14 +91,10 @@ namespace Org.Puffinbasic
             {
                 foreach (string line in System.IO.File.ReadLines(Paths[filename], Encoding.ASCII))
                     sb.AppendLine(line);
-                //using (Stream<string> stream = Files.Lines(Paths[filename], StandardCharsets.US_ASCII))
-                //{
-                //    stream.ForEach((s) => sb.Append(s).Append(Environment.NewLine()));
-                //}
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read source code: " + filename + ", error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read source code: " + filename + ", error: " + e.Message);
             }
 
             return sb.ToString();
@@ -109,7 +108,7 @@ namespace Org.Puffinbasic
         static void InterpretAndRun(UserOptions userOptions, string sourceFilename, string sourceCode, TextWriter @out, IEnvironment env)
         {
             var importPath = new PuffinBasicImportPath(sourceFilename);
-            Instant t1 = Instant.Now();
+            DateTime t1 = DateTime.Now;
             var sourceFile = SyntaxCheckAndSortByLineNumber(importPath, sourceFilename, sourceCode, userOptions.logOnDuplicate ? LOG : THROW, SourceFileMode.MAIN);
             if (String.IsNullOrEmpty(sourceFile.GetSourceCode()))
             {
@@ -119,7 +118,7 @@ namespace Org.Puffinbasic
             LogTimeTaken("SORT", t1, userOptions.timing);
             Log("LIST", userOptions.listSourceCode);
             Log(sourceFile.GetSourceCode(), userOptions.listSourceCode);
-            Instant t2 = Instant.Now();
+            DateTime t2 = DateTime.Now;
             var ir = GenerateIR(sourceFile, userOptions.graphics);
             LogTimeTaken("IR", t2, userOptions.timing);
             Log("IR", userOptions.printIR);
@@ -133,7 +132,7 @@ namespace Org.Puffinbasic
             }
 
             Log("RUN", userOptions.timing);
-            Instant t3 = Instant.Now();
+            DateTime t3 = DateTime.Now;
             Run(ir, @out, env);
             LogTimeTaken("RUN", t3, userOptions.timing);
         }
@@ -146,11 +145,10 @@ namespace Org.Puffinbasic
             }
         }
 
-        private static void LogTimeTaken(string tag, Instant t1, bool log)
+        private static void LogTimeTaken(string tag, DateTime t1, bool log)
         {
-            var duration = Duration.Between(t1, Instant.Now());
-            var timeSec = duration.GetSeconds() + duration.GetNano() / 1000000000;
-            Log("[" + tag + "] time taken = " + timeSec + " s", log);
+            var duration = DateTime.Now - t1;
+            Log("[" + tag + "] time taken = " + duration.TotalSeconds + " s", log);
         }
 
         private static void Run(PuffinBasicIR ir, TextWriter @out, IEnvironment env)
@@ -178,7 +176,7 @@ namespace Org.Puffinbasic
             var lexer = new PuffinBasicLexer(@in);
             var tokens = new CommonTokenStream(lexer);
             var parser = new PuffinBasicParser(tokens);
-            var tree = parser.Prog();
+            var tree = parser.prog();
             var walker = new ParseTreeWalker();
             var irListener = new PuffinBasicIRListener(sourceFile, @in, ir, graphics);
             walker.Walk(irListener, tree);
@@ -187,7 +185,7 @@ namespace Org.Puffinbasic
 
         private static PuffinBasicSourceFile SyntaxCheckAndSortByLineNumber(PuffinBasicImportPath importPath, string sourceFile, string input, ThrowOnDuplicate throwOnDuplicate, SourceFileMode sourceFileMode)
         {
-            var @in = CharStreams.FromString(input);
+            var @in = CharStreams.fromString(input);
             var syntaxErrorListener = new ThrowingErrorListener(input);
             var lexer = new PuffinBasicLexer(@in);
             lexer.RemoveErrorListeners();
@@ -196,7 +194,7 @@ namespace Org.Puffinbasic
             var parser = new PuffinBasicParser(tokens);
             parser.RemoveErrorListeners();
             parser.AddErrorListener(syntaxErrorListener);
-            var tree = parser.Prog();
+            var tree = parser.prog();
             var walker = new ParseTreeWalker();
             var linenumListener = new LinenumberListener(@in, throwOnDuplicate);
             walker.Walk(linenumListener, tree);
@@ -219,22 +217,24 @@ namespace Org.Puffinbasic
                 var importedInput = LoadSource(importPath.Find(importFilename));
                 var importSourceFile = SyntaxCheckAndSortByLineNumber(importPath, importFilename, importedInput, throwOnDuplicate, SourceFileMode.LIB);
                 importSourceFiles.Add(importSourceFile);
-                importSourceFiles.AddAll(importSourceFile.GetImportFiles());
+                foreach (var importFile in importSourceFile.GetImportFiles())
+                    importSourceFiles.Add(importFile);
             }
 
             string sortedCode = linenumListener.GetSortedCode();
-            return new PuffinBasicSourceFile(sourceFile, linenumListener.GetLibtag(), sortedCode, CharStreams.FromString(sortedCode), importSourceFiles);
+ 
+            return new PuffinBasicSourceFile(sourceFile, linenumListener.GetLibtag(), sortedCode, CharStreams.fromString(sortedCode), importSourceFiles);
         }
 
-        private sealed class ThrowingErrorListener : BaseErrorListener
+        internal sealed class ThrowingErrorListener : BaseErrorListener
         {
             private readonly string input;
-            ThrowingErrorListener(string input)
+            public ThrowingErrorListener(string input)
             {
                 this.input = input;
             }
 
-            public override void SyntaxError(Recognizer<?, ?> recognizer, object offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+            public /*override*/ void SyntaxError(Recognizer<Symbol, Antlr4.Runtime.Atn.ATNSimulator> recognizer, object offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
             {
                 var lineIndex = line - 1;
 
@@ -243,9 +243,9 @@ namespace Org.Puffinbasic
                 if (lineIndex >= 0 && lineIndex < lines.Length)
                 {
                     inputLine = lines[lineIndex];
-                    if (charPositionInLine >= 0 && charPositionInLine <= inputLine.Length())
+                    if (charPositionInLine >= 0 && charPositionInLine <= inputLine.Length)
                     {
-                        inputLine = inputLine + Environment.NewLine() + String.Repeat(" ", Math.Max(0, charPositionInLine)) + '^';
+                        inputLine += Environment.NewLine + "^".PadLeft(Math.Max(0, charPositionInLine));
                     }
                 }
                 else
@@ -253,7 +253,7 @@ namespace Org.Puffinbasic
                     inputLine = "<LINE OUT OF RANGE>";
                 }
 
-                throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine() + inputLine);
+                throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine + inputLine);
             }
         }
 

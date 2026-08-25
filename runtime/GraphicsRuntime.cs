@@ -21,13 +21,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Org.Puffinbasic.Runtime
 {
     public class GraphicsRuntime
     {
-        private static readonly Pattern DRAW_ARG1 = Pattern.Compile("([UDLREFGHA])([BN]+)?([0-9]+)");
-        private static readonly Pattern DRAW_ARG2 = Pattern.Compile("M([+\\-]?[0-9]+),([+\\-]?[0-9]+)");
+        /*
+        private static readonly Regex DRAW_ARG1 = new Regex("([UDLREFGHA])([BN]+)?([0-9]+)", RegexOptions.Compiled);
+        private static readonly Regex DRAW_ARG2 = new Regex("M([+\\-]?[0-9]+),([+\\-]?[0-9]+)", RegexOptions.Compiled);
         public class GraphicsState
         {
             private BasicFrame frame;
@@ -291,8 +293,8 @@ namespace Org.Puffinbasic.Runtime
                 var curr = path.GetCurrentPoint();
                 if (i.CharAt(0) == 'M')
                 {
-                    var m = DRAW_ARG2.Matcher(i);
-                    m.Find();
+                    var m = DRAW_ARG2.Match(i);
+
                     string x = m.Group(1);
                     string y = m.Group(2);
                     int newX = (int)curr.GetX();
@@ -319,8 +321,8 @@ namespace Org.Puffinbasic.Runtime
                 }
                 else
                 {
-                    var m = DRAW_ARG1.Matcher(i);
-                    m.Find();
+                    var m = DRAW_ARG1.Match(i);
+
                     char cmd = m.Group(1).CharAt(0);
                     string opts = m.Group(2) != null ? m.Group(2) : "";
                     int s = Integer.ParseInt(m.Group(3));
@@ -626,6 +628,7 @@ namespace Org.Puffinbasic.Runtime
             var key = symbolTable[instruction.op1].GetValue().GetString();
             symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().IsKeyPressed(key) ? -1 : 0);
         }
+        */
     }
 }
 

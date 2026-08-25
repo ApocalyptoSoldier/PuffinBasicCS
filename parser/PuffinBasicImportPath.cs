@@ -25,11 +25,11 @@ namespace Org.Puffinbasic.Parser
 
         private IList<string> GetSearchPaths()
         {
-            IList<string> searchPaths = new List<string>();
+            List<string> searchPaths = new List<string>();
             var paths = Environment.GetEnvironmentVariable(PUFFIN_BASIC_PATH_ENVVAR);
             if (paths != null)
             {
-                searchPaths.AddAll(Arrays.Stream(paths.Split(File.pathSeparator)).Collect(Collectors.ToList()));
+                searchPaths.AddRange(Arrays.Stream(paths.Split(File.pathSeparator)).Collect(Collectors.ToList()));
             }
 
             searchPaths.Add(mainModulePath);

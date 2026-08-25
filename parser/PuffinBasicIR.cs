@@ -1,7 +1,7 @@
-using Org.Antlr.V4.Runtime.Misc;
-using Org.Jetbrains.Annotations;
+//using Org.Antlr.V4.Runtime.Misc;
+//using Org.Jetbrains.Annotations;
 using Org.Puffinbasic.Domain;
-using Java.Util;
+//using Java.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -465,7 +465,7 @@ namespace Org.Puffinbasic.Parser
         public PuffinBasicIR(PuffinBasicSymbolTable symbolTable)
         {
             this.symbolTable = symbolTable;
-            this.instructions = new List();
+            this.instructions = new List<Instruction>();
         }
 
         public virtual string GetCodeStreamFor(Instruction instruction)
@@ -476,13 +476,13 @@ namespace Org.Puffinbasic.Parser
             }
             catch (Exception e)
             {
-                return "Internal error: " + e.GetMessage();
+                return "Internal error: " + e.Message;
             }
         }
 
         public virtual IList<Instruction> GetInstructions()
         {
-            return new List(instructions);
+            return new List<Instruction>(instructions);
         }
 
         public virtual Instruction AddInstruction(PuffinBasicSourceFile sourceFile, int linenum, int startIndex, int stopIndex, OpCode opCode, int op1, int op2, int result)
@@ -511,7 +511,7 @@ namespace Org.Puffinbasic.Parser
                 this.inputStopIndex = inputStopIndex;
             }
 
-            public bool Equals(object o)
+            public new bool Equals(object o)
             {
                 if (this == o)
                     return true;
@@ -521,12 +521,17 @@ namespace Org.Puffinbasic.Parser
                 return sourceFile.Equals(other.sourceFile) && lineNumber == other.lineNumber && inputStartIndex == other.inputStartIndex && inputStopIndex == other.inputStopIndex;
             }
 
-            public int GetHashCode()
+            public new int GetHashCode()
             {
-                return Objects.Hash(sourceFile, lineNumber, inputStartIndex, inputStopIndex);
+                int hash = 17;
+                hash = hash * 23 + sourceFile.GetHashCode();
+                hash = hash * 23 + lineNumber.GetHashCode();
+                hash = hash * 23 + inputStartIndex.GetHashCode();
+                hash = hash * 23 + inputStopIndex.GetHashCode();
+                return hash;
             }
 
-            public string ToString()
+            public new string ToString()
             {
                 return "[" + sourceFile.GetRelativePath() + ":" + lineNumber + "(" + inputStartIndex + "-" + inputStopIndex + ")]";
             }
@@ -563,7 +568,7 @@ namespace Org.Puffinbasic.Parser
                 this.op2 = op2;
             }
 
-            public string ToString()
+            public new string ToString()
             {
                 return String.Format("[%s:%4d]\t%4s\t%4s %4s %4s", inputRef.sourceFile.GetRelativePath(), inputRef.lineNumber, opCode.repr, op1, op2, result);
             }

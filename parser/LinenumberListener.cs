@@ -1,19 +1,20 @@
-using Com.Google.Common.Base;
-using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Antlr.V4.Runtime;
-using Org.Antlr.V4.Runtime.Misc;
-using Org.Jetbrains.Annotations;
-using Org.Puffinbasic.Antlr4;
+//using Com.Google.Common.Base;
+//using It.Unimi.Dsi.Fastutil.Ints;
+//using Org.Antlr.V4.Runtime;
+//using Org.Antlr.V4.Runtime.Misc;
+//using Org.Jetbrains.Annotations;
+//using Org.Puffinbasic.Antlr4;
 using Org.Puffinbasic.Error;
-using Java.Util;
-using Java.Util.Concurrent.Atomic;
-using Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using Org.Puffinbasic.Runtime.Types;
+//using Java.Util;
+//using Java.Util.Concurrent.Atomic;
+using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Runtime.Types;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using Org.Puffinbasic.Antlr;
 
 namespace Org.Puffinbasic.Parser
 {
@@ -26,21 +27,23 @@ namespace Org.Puffinbasic.Parser
         }
 
         private readonly AtomicInteger linenumGenerator;
-        private readonly CharStream input;
+        private readonly Antlr4.Runtime.ICharStream input;
         private readonly ThrowOnDuplicate throwOnDuplicate;
-        private readonly Int2ObjectSortedMap<string> sortedLines;
+        private readonly SortedDictionary<int, string> sortedLines;
         private readonly HashSet<string> importFiles;
         private int numLinenum;
         private int numNoLinenum;
         private int numStmtWithLinenum;
         private string libtag;
-        public LinenumberListener(CharStream input, ThrowOnDuplicate throwOnDuplicate)
+        public LinenumberListener(Antlr4.Runtime.ICharStream input, ThrowOnDuplicate throwOnDuplicate)
         {
+            if (input == null) throw new ArgumentNullException("input");
+            if (throwOnDuplicate == null) throw new ArgumentNullException("throwOnDuplicate");
             this.linenumGenerator = new AtomicInteger();
-            this.input = Preconditions.CheckNotNull(input);
-            this.throwOnDuplicate = Preconditions.CheckNotNull(throwOnDuplicate);
-            this.sortedLines = new Int2ObjectAVLTreeMap();
-            this.importFiles = new LinkedHashSet();
+            this.input = input;
+            this.throwOnDuplicate = throwOnDuplicate;
+            this.sortedLines = new SortedDictionary<int, string>();
+            this.importFiles = new HashSet<string>();
         }
 
         public virtual bool HasLineNumbers()
@@ -51,7 +54,7 @@ namespace Org.Puffinbasic.Parser
         public virtual string GetSortedCode()
         {
             CheckLinenumberMode();
-            return String.Join("", sortedLines.Values());
+            return String.Join("", sortedLines.Values);
         }
 
         public virtual HashSet<string> GetImportFiles()
@@ -95,17 +98,17 @@ namespace Org.Puffinbasic.Parser
                 numNoLinenum++;
             }
 
-            var oldLine = sortedLines.Put(linenum, line);
+            var oldLine = sortedLines.Add(linenum, line);
             if (oldLine != null)
             {
-                var message = "Duplicate line number!" + Environment.NewLine() + "OLD:" + Environment.NewLine() + oldLine + "NEW:" + Environment.NewLine() + line;
+                var message = "Duplicate line number!" + Environment.NewLine + "OLD:" + Environment.NewLine + oldLine + "NEW:" + Environment.NewLine + line;
                 if (throwOnDuplicate == ThrowOnDuplicate.THROW)
                 {
                     throw new PuffinBasicSyntaxError(message);
                 }
                 else
                 {
-                    System.err.Println(message);
+                    Console.Error.WriteLine(message);
                 }
             }
         }
@@ -155,13 +158,13 @@ namespace Org.Puffinbasic.Parser
             }
         }
 
-        static int ParseLinenum(string txt)
+        public static int ParseLinenum(string txt)
         {
             try
             {
-                return Integer.ParseInt(txt);
+                return int.Parse(txt);
             }
-            catch (NumberFormatException e)
+            catch (FormatException e)
             {
                 throw new PuffinBasicSyntaxError("Bad line number: '" + txt + "'");
             }

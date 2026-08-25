@@ -65,5 +65,66 @@ namespace Org.Puffinbasic.File
             CLOSED
         }
     }
+
+    public static class FileEnumExtensions
+    {
+        public static IPuffinBasicFile.FileAccessMode ValueOf(this IPuffinBasicFile.FileAccessMode _, string name)
+        {
+            switch (name) {
+                case "r":
+                    return IPuffinBasicFile.FileAccessMode.READ_ONLY;
+                case "w":
+                    return IPuffinBasicFile.FileAccessMode.WRITE_ONLY;
+                case "rw":
+                    return IPuffinBasicFile.FileAccessMode.READ_WRITE;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static IPuffinBasicFile.FileOpenMode ValueOf(this IPuffinBasicFile.FileOpenMode _, string name)
+        {
+           switch (name) {
+                case "INPUT":
+                    return IPuffinBasicFile.FileOpenMode.INPUT;
+                case "OUTPUT":
+                    return IPuffinBasicFile.FileOpenMode.OUTPUT;
+                case "APPEND":
+                    return IPuffinBasicFile.FileOpenMode.APPEND;
+                case "RANDOM":
+                    return IPuffinBasicFile.FileOpenMode.RANDOM;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static IPuffinBasicFile.LockMode ValueOf(this IPuffinBasicFile.LockMode _, string name)
+        {
+            switch (name)
+            {
+                case "SHARED":
+                    return IPuffinBasicFile.LockMode.SHARED;
+                case "READ":
+                    return IPuffinBasicFile.LockMode.READ;
+                case "WRITE":
+                    return IPuffinBasicFile.LockMode.WRITE;
+                case "READ_WRITE":
+                    return IPuffinBasicFile.LockMode.READ_WRITE;
+                case "DEFAULT":
+                    return IPuffinBasicFile.LockMode.DEFAULT;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static IPuffinBasicFile.FileState ValueOf(this IPuffinBasicFile.FileState _, string name) {
+            if (name == "OPEN")
+                return IPuffinBasicFile.FileState.OPEN;
+            if (name == "CLOSED")
+                return IPuffinBasicFile.FileState.CLOSED;
+
+            throw new ArgumentOutOfRangeException();
+        }
+    }
 }
 

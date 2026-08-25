@@ -21,7 +21,7 @@ namespace Org.Puffinbasic.File
     {
         private readonly string filename;
         private readonly FileAccessMode accessMode;
-        private readonly RandomAccessFile file;
+        private readonly System.IO.FileInfo file; // System.IO.RandomAccess?
         private readonly int recordLength;
         private readonly byte[] recordBuffer;
         private List<int> recordParts;
@@ -185,7 +185,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + ", recordNumber: " + recordNumber + "', error: " + e.GetMessage());
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + ", recordNumber: " + recordNumber + "', error: " + e.Message);
             }
 
             var bb = ByteBuffer.Wrap(recordBuffer);
