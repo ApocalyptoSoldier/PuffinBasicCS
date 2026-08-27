@@ -33,6 +33,8 @@ using Antlr4.Runtime.Tree;
 using Antlr4.Runtime.Misc;
 using Org.Puffinbasic.Antlr;
 using static Org.Puffinbasic.Antlr.PuffinBasicParser;
+using System.Threading;
+using Org.Puffinbasic.Domain.Scope;
 
 namespace Org.Puffinbasic.Parser
 {
@@ -44,13 +46,13 @@ namespace Org.Puffinbasic.Parser
             STRING
         }
 
-        private readonly AtomicInteger linenumGenerator;
         private readonly PuffinBasicSourceFile sourceFile;
         private readonly ICharStream @in;
         private readonly PuffinBasicIR ir;
         private readonly bool graphics;
         private readonly ParseTreeProperty<Instruction> nodeToInstruction;
-        private readonly Dictionary<Variable, UDFState> udfStateMap;
+        //private readonly Dictionary<Variable, UDFState> udfStateMap;
+        private readonly Dictionary<string, UDFState> udfStateMap = new Dictionary<string, UDFState>();
         private readonly LinkedList<WhileLoopState> whileLoopStateList;
         private readonly LinkedList<ForLoopState> forLoopStateList;
         private readonly LinkedList<IfState> ifStateList;
@@ -62,7 +64,6 @@ namespace Org.Puffinbasic.Parser
             this.sourceFile = sourceFile;
             this.@in = @in;
             this.ir = ir;
-            this.linenumGenerator = new AtomicInteger();
             this.graphics = graphics;
             this.nodeToInstruction = new ParseTreeProperty<Instruction>();
             //this.udfStateMap = new Dictionary<Variable, UDFState>();
@@ -74,13 +75,11 @@ namespace Org.Puffinbasic.Parser
 
         public virtual void SemanticCheckAfterParsing()
         {
-            //if (!whileLoopStateList.IsEmpty())
             if (whileLoopStateList.Any())
             {
                 throw new PuffinBasicSemanticError(WHILE_WITHOUT_WEND, "<UNKNOWN LINE>", "WHILE without WEND");
             }
 
-            //if (!forLoopStateList.IsEmpty())
             if (forLoopStateList.Any())
             {
                 throw new PuffinBasicSemanticError(FOR_WITHOUT_NEXT, "<UNKNOWN LINE>", "FOR without NEXT");
@@ -94,7 +93,7 @@ namespace Org.Puffinbasic.Parser
 
         private Instruction LookupInstruction(ParserRuleContext ctx)
         {
-            var exprInstruction = nodeToInstruction[ctx];
+            var exprInstruction = nodeToInstruction.Get(ctx);
             if (exprInstruction == null)
             {
                 throw new PuffinBasicInternalError("Failed to find instruction for node: " + ctx.GetText());
@@ -105,7 +104,7 @@ namespace Org.Puffinbasic.Parser
 
         public override void EnterLine(PuffinBasicParser.LineContext ctx)
         {
-            this.currentLineNumber = ctx.linenum() != null ? ParseLinenum(ctx.linenum().DECIMAL().GetText()) : linenumGenerator.IncrementAndGet();
+            this.currentLineNumber = ctx.linenum() != null ? ParseLinenum(ctx.linenum().DECIMAL().GetText()) : Interlocked.Increment(ref this.currentLineNumber);
         }
 
         //
@@ -140,12 +139,12 @@ namespace Org.Puffinbasic.Parser
 
                 if (isLong || isDouble)
                 {
-                    long parsed = Numbers.ParseInt64(strValue, @base, () => GetCtxString(ctx));
-                    id = ir.GetSymbolTable().AddTmp(isLong ? INT64 : DOUBLE, (entry) => entry.GetValue().SetInt64(parsed));
+                    long parsed = Numbers.ParseInt64(strValue, @base, GetCtxString(ctx));
+                    id = ir.GetSymbolTable().AddTmp(isLong ? PuffinBasicAtomTypeId.INT64 : PuffinBasicAtomTypeId.DOUBLE, (entry) => entry.GetValue().SetInt64(parsed));
                 }
                 else
                 {
-                    id = ir.GetSymbolTable().AddTmp(isFloat ? FLOAT : INT32, (entry) => entry.GetValue().SetInt32(Numbers.ParseInt32(strValue, @base, () => GetCtxString(ctx))));
+                    id = ir.GetSymbolTable().AddTmp(isFloat ? PuffinBasicAtomTypeId.FLOAT : PuffinBasicAtomTypeId.INT32, (entry) => entry.GetValue().SetInt32(Numbers.ParseInt32(strValue, @base, GetCtxString(ctx))));
                 }
             }
             else if (ctx.FLOAT() != null)
@@ -156,8 +155,8 @@ namespace Org.Puffinbasic.Parser
                     floatStr = floatStr.Substring(0, floatStr.Length - 1);
                 }
 
-                var floatValue = Numbers.ParseFloat32(floatStr, () => GetCtxString(ctx));
-                id = ir.GetSymbolTable().AddTmp(FLOAT, (entry) => entry.GetValue().SetFloat32(floatValue));
+                var floatValue = Numbers.ParseFloat32(floatStr, GetCtxString(ctx));
+                id = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.FLOAT, (entry) => entry.GetValue().SetFloat32(floatValue));
             }
             else
             {
@@ -167,8 +166,8 @@ namespace Org.Puffinbasic.Parser
                     doubleStr = doubleStr.Substring(0, doubleStr.Length - 1);
                 }
 
-                var doubleValue = Numbers.ParseFloat64(doubleStr, () => GetCtxString(ctx));
-                id = ir.GetSymbolTable().AddTmp(DOUBLE, (entry) => entry.GetValue().SetFloat64(doubleValue));
+                var doubleValue = Numbers.ParseFloat64(doubleStr, GetCtxString(ctx));
+                id = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (entry) => entry.GetValue().SetFloat64(doubleValue));
             }
 
             var instr = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.VALUE, id, NULL_ID, id);
@@ -189,37 +188,42 @@ namespace Org.Puffinbasic.Parser
         //
         private Instruction ExitLeafVariable(PuffinBasicParser.LeafvariableContext ctx)
         {
+            //throw new NotImplementedException();
+
             ir.GetSymbolTable().CheckUnused(ctx.varname().VARNAME().GetText());
             var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
-            var idHolder = new AtomicInteger();
-            ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, () => GetCtxString(ctx)), (varId, varEntry, variable) =>
+            //var idHolder = new AtomicInteger();
+            int refId = 0;
+            ir.GetSymbolTable().AddVariableOrUDF(variableName, 
+                (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), 
+                (varId, varEntry, variable) =>
             {
-                idHolder.Set(varId);
+                refId = varId;
                 if (variable.IsScalar())
                 {
 
                     // Scalar
-                    if (!ctx.Expr().IsEmpty())
+                    if (ctx.expr().Count() != 0)
                     {
+                        var expr = ctx.expr().ToList();
                         throw new PuffinBasicSemanticError(PuffinBasicSemanticError.ErrorCode.SCALAR_VARIABLE_CANNOT_BE_INDEXED, GetCtxString(ctx), "Scalar variable cannot be indexed: " + variable);
                     }
                 }
                 else if (variable.IsArray())
                 {
-                    if (!ctx.Expr().IsEmpty())
+                    if (ctx.expr().Count() != 0)
                     {
 
                         // Array
                         ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RESET_ARRAY_IDX, varId, NULL_ID, NULL_ID);
-                        foreach (var exprCtx in ctx.Expr())
+                        foreach (var exprCtx in ctx.expr())
                         {
                             var exprInstr = LookupInstruction(exprCtx);
                             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.SET_ARRAY_IDX, varId, exprInstr.result, NULL_ID);
                         }
 
-                        var refId = ir.GetSymbolTable().AddArrayReference(varEntry);
+                        refId = ir.GetSymbolTable().AddArrayReference((STLValue)varEntry);
                         ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAYREF, varId, refId, refId);
-                        idHolder.Set(refId);
                     }
                 }
                 else if (variable.IsUDF())
@@ -227,19 +231,19 @@ namespace Org.Puffinbasic.Parser
 
                     // UDF
                     var udfEntry = (STUDF)varEntry;
-                    var udfState = udfStateMap[variable];
+                    var udfState = udfStateMap[variable.ToString()];
 
                     // Create & Push Runtime scope
                     var pushScopeInstr = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PUSH_RT_SCOPE, varId, NULL_ID, NULL_ID);
 
                     // Copy caller params to Runtime scope
-                    if (ctx.Expr().Count != udfEntry.GetNumDeclaredParams())
+                    if (ctx.expr().Count() != udfEntry.GetNumDeclaredParams())
                     {
-                        throw new PuffinBasicSemanticError(INSUFFICIENT_UDF_ARGS, GetCtxString(ctx), variable + " expects " + udfEntry.GetNumDeclaredParams() + ", #args passed: " + ctx.Expr().Count);
+                        throw new PuffinBasicSemanticError(INSUFFICIENT_UDF_ARGS, GetCtxString(ctx), variable + " expects " + udfEntry.GetNumDeclaredParams() + ", #args passed: " + ctx.expr().Count());
                     }
 
                     int i = 0;
-                    foreach (var exprCtx in ctx.Expr())
+                    foreach (var exprCtx in ctx.expr())
                     {
                         var exprInstr = LookupInstruction(exprCtx);
                         var declParamId = udfEntry.GetDeclaredParam(i++);
@@ -260,7 +264,7 @@ namespace Org.Puffinbasic.Parser
                     ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.POP_RT_SCOPE, varId, NULL_ID, NULL_ID);
                 }
             });
-            var refId = idHolder.Get();
+
             return ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.VARIABLE, refId, NULL_ID, refId);
         }
 
@@ -295,17 +299,17 @@ namespace Org.Puffinbasic.Parser
 
             var @struct = ir.GetSymbolTable().GetStructType(parentTypeName);
             var leafCtx = ctx.leafvariable();
-            var leafVarname = leafCtx.Varname().VARNAME().GetText();
-            var leafDataType = @struct.ContainsMember(new VariableName(leafVarname, null, COMPOSITE)) ? @struct.GetMemberType(new VariableName(leafVarname, null, COMPOSITE)).GetAtomTypeId() : ir.GetSymbolTable().GetDataTypeFor(leafVarname, leafCtx.Varsuffix() != null ? leafCtx.Varsuffix().GetText() : null);
+            var leafVarname = leafCtx.varname().VARNAME().GetText();
+            var leafDataType = @struct.ContainsMember(new VariableName(leafVarname, null, COMPOSITE)) ? @struct.GetMemberType(new VariableName(leafVarname, null, COMPOSITE)).GetAtomTypeId() : ir.GetSymbolTable().GetDataTypeFor(leafVarname, leafCtx.varsuffix() != null ? leafCtx.varsuffix().GetText() : null);
             var leafName = new VariableName(leafVarname, leafDataType.GetRepr(), leafDataType);
             var leafRefId = @struct.GetMemberRefId(leafName);
             var leafType = @struct.GetMemberType(leafName);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(leafRefId)), NULL_ID, NULL_ID);
             var result = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.STRUCT_LVALUE, rootId, NULL_ID, ir.GetSymbolTable().AddRef(leafType));
-            if (!ctx.Expr().IsEmpty())
+            if (ctx.expr().Any())
             {
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RESET_ARRAY_IDX, result.result, NULL_ID, NULL_ID);
-                foreach (var exprCtx in ctx.Expr())
+                foreach (var exprCtx in ctx.expr())
                 {
                     var exprInstr = LookupInstruction(exprCtx);
                     ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.SET_ARRAY_IDX, result.result, exprInstr.result, NULL_ID);
@@ -361,12 +365,12 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprVariable(PuffinBasicParser.ExprVariableContext ctx)
         {
-            var instruction = nodeToInstruction[ctx.Variable()];
+            var instruction = nodeToInstruction.Get(ctx.variable());
             var varEntry = ir.GetSymbolTable()[instruction.result];
             bool copy = (varEntry is STVariable) && ((STVariable)varEntry).GetVariable().IsUDF();
             if (ctx.MINUS() != null)
             {
-                if (ir.GetSymbolTable()[instruction.result].GetType().GetAtomTypeId() == STRING)
+                if (ir.GetSymbolTable()[instruction.result].GetType().GetAtomTypeId() == PuffinBasicAtomTypeId.STRING)
                 {
                     throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, GetCtxString(ctx), "Unary minus cannot be used with a String!");
                 }
@@ -395,7 +399,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprParen(PuffinBasicParser.ExprParenContext ctx)
         {
-            nodeToInstruction.Put(ctx, LookupInstruction(ctx.Expr()));
+            nodeToInstruction.Put(ctx, LookupInstruction(ctx.expr()));
         }
 
         //
@@ -415,7 +419,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprNumber(PuffinBasicParser.ExprNumberContext ctx)
         {
-            var instruction = nodeToInstruction[ctx.Number()];
+            var instruction = nodeToInstruction.Get(ctx.number());
             if (ctx.MINUS() != null)
             {
                 instruction = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.UNARY_MINUS, instruction.result, NULL_ID, ir.GetSymbolTable().AddTmpCompatibleWith(instruction.result));
@@ -441,7 +445,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprFunc(PuffinBasicParser.ExprFuncContext ctx)
         {
-            var instruction = nodeToInstruction[ctx.Func()];
+            var instruction = nodeToInstruction.Get(ctx.func());
             if (ctx.MINUS() != null)
             {
                 instruction = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.UNARY_MINUS, instruction.result, NULL_ID, ir.GetSymbolTable().AddTmpCompatibleWith(instruction.result));
@@ -467,8 +471,8 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprString(PuffinBasicParser.ExprStringContext ctx)
         {
-            var text = Unquote(ctx.String().STRING().GetText());
-            var id = ir.GetSymbolTable().AddTmp(STRING, (entry) => entry.GetValue().SetString(text));
+            var text = Unquote(ctx.@string().STRING().GetText());
+            var id = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (entry) => entry.GetValue().SetString(text));
             CopyAndRegisterExprResult(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.VALUE, id, NULL_ID, id), false);
         }
 
@@ -489,30 +493,30 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprExp(PuffinBasicParser.ExprExpContext ctx)
         {
-            var expr1 = ctx.Expr(0);
-            var expr2 = ctx.Expr(1);
+            var expr1 = ctx.expr(0);
+            var expr2 = ctx.expr(1);
             int instr1res = LookupInstruction(expr1).result;
             int instr2res = LookupInstruction(expr2).result;
             var dt1 = ir.GetSymbolTable()[instr1res].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[instr2res].GetType().GetAtomTypeId();
-            Types.AssertNumeric(dt1, dt2, () => GetCtxString(ctx));
-            var upcast = Types.Upcast(dt1, dt2, () => GetCtxString(ctx));
+            Types.AssertNumeric(dt1, dt2, GetCtxString(ctx));
+            var upcast = Types.Upcast(dt1, dt2, GetCtxString(ctx));
             var result = ir.GetSymbolTable().AddTmp(upcast, (e) =>
             {
             });
             OpCode opCode;
             switch (upcast)
             {
-                case INT32:
+                case PuffinBasicAtomTypeId.INT32:
                     opCode = OpCode.EXPI32;
                     break;
-                case INT64:
+                case PuffinBasicAtomTypeId.INT64:
                     opCode = OpCode.EXPI64;
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                     opCode = OpCode.EXPF32;
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                     opCode = OpCode.EXPF64;
                     break;
                 default:
@@ -539,14 +543,14 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprMulDiv(PuffinBasicParser.ExprMulDivContext ctx)
         {
-            var expr1 = ctx.Expr(0);
-            var expr2 = ctx.Expr(1);
+            var expr1 = ctx.expr(0);
+            var expr2 = ctx.expr(1);
             int instr1res = LookupInstruction(expr1).result;
             int instr2res = LookupInstruction(expr2).result;
             var dt1 = ir.GetSymbolTable()[instr1res].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[instr2res].GetType().GetAtomTypeId();
-            Types.AssertNumeric(dt1, dt2, () => GetCtxString(ctx));
-            var upcast = Types.Upcast(dt1, dt2, () => GetCtxString(ctx));
+            Types.AssertNumeric(dt1, dt2, GetCtxString(ctx));
+            var upcast = Types.Upcast(dt1, dt2, GetCtxString(ctx));
             int result;
             OpCode opCode;
             if (ctx.MUL() != null)
@@ -556,16 +560,16 @@ namespace Org.Puffinbasic.Parser
                 });
                 switch (upcast)
                 {
-                    case INT32:
+                    case PuffinBasicAtomTypeId.INT32:
                         opCode = OpCode.MULI32;
                         break;
-                    case INT64:
+                    case PuffinBasicAtomTypeId.INT64:
                         opCode = OpCode.MULI64;
                         break;
-                    case FLOAT:
+                    case PuffinBasicAtomTypeId.FLOAT:
                         opCode = OpCode.MULF32;
                         break;
-                    case DOUBLE:
+                    case PuffinBasicAtomTypeId.DOUBLE:
                         opCode = OpCode.MULF64;
                         break;
                     default:
@@ -581,7 +585,7 @@ namespace Org.Puffinbasic.Parser
             }
             else
             {
-                result = ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+                result = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
                 {
                 });
                 opCode = OpCode.FDIV;
@@ -607,7 +611,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprMod(PuffinBasicParser.ExprModContext ctx)
         {
-            AddArithmeticOpExpr(ctx, OpCode.MOD, ctx.Expr(0), ctx.Expr(1));
+            AddArithmeticOpExpr(ctx, OpCode.MOD, ctx.expr(0), ctx.expr(1));
         }
 
         //
@@ -627,18 +631,19 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprPlusMinus(PuffinBasicParser.ExprPlusMinusContext ctx)
         {
-            var expr1 = ctx.Expr(0);
-            var expr2 = ctx.Expr(1);
+            var expr1 = ctx.expr(0);
+            var expr2 = ctx.expr(1);
             int instr1res = LookupInstruction(expr1).result;
             int instr2res = LookupInstruction(expr2).result;
             var dt1 = ir.GetSymbolTable()[instr1res].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[instr2res].GetType().GetAtomTypeId();
             bool plus = ctx.PLUS() != null;
-            if (dt1 == STRING && dt2 == STRING)
+            if (dt1 == PuffinBasicAtomTypeId.STRING && dt2 == PuffinBasicAtomTypeId.STRING)
             {
                 if (plus)
                 {
-                    nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.CONCAT, instr1res, instr2res, ir.GetSymbolTable().AddTmp(STRING, (e) =>
+                    nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.CONCAT, instr1res, instr2res, 
+                        ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) =>
                     {
                     })));
                 }
@@ -649,24 +654,24 @@ namespace Org.Puffinbasic.Parser
             }
             else
             {
-                Types.AssertNumeric(dt1, dt2, () => GetCtxString(ctx));
-                var upcast = Types.Upcast(dt1, dt2, () => GetCtxString(ctx));
+                Types.AssertNumeric(dt1, dt2, GetCtxString(ctx));
+                var upcast = Types.Upcast(dt1, dt2, GetCtxString(ctx));
                 var result = ir.GetSymbolTable().AddTmp(upcast, (e) =>
                 {
                 });
                 OpCode opCode;
                 switch (upcast)
                 {
-                    case INT32:
+                    case PuffinBasicAtomTypeId.INT32:
                         opCode = plus ? OpCode.ADDI32 : OpCode.SUBI32;
                         break;
-                    case INT64:
+                    case PuffinBasicAtomTypeId.INT64:
                         opCode = plus ? OpCode.ADDI64 : OpCode.SUBI64;
                         break;
-                    case FLOAT:
+                    case PuffinBasicAtomTypeId.FLOAT:
                         opCode = plus ? OpCode.ADDF32 : OpCode.SUBF32;
                         break;
-                    case DOUBLE:
+                    case PuffinBasicAtomTypeId.DOUBLE:
                         opCode = plus ? OpCode.ADDF64 : OpCode.SUBF64;
                         break;
                     default:
@@ -699,11 +704,11 @@ namespace Org.Puffinbasic.Parser
             var exprR = LookupInstruction(exprRight);
             var dt1 = ir.GetSymbolTable()[exprL.result].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId();
-            Types.AssertNumeric(dt1, dt2, () => GetCtxString(parent));
-            var result = ir.GetSymbolTable().AddTmp(Types.Upcast(dt1, ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId(), () => GetCtxString(parent)), (e) =>
+            Types.AssertNumeric(dt1, dt2, GetCtxString(parent));
+            var result = ir.GetSymbolTable().AddTmp(Types.Upcast(dt1, ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId(), GetCtxString(parent)), (e) =>
             {
             });
-            nodeToInstruction.Put(parent, ir.AddInstruction(sourceFile, currentLineNumber, parent.start.GetStartIndex(), parent.stop.GetStopIndex(), opCode, exprL.result, exprR.result, result));
+            nodeToInstruction.Put(parent, ir.AddInstruction(sourceFile, currentLineNumber, parent.Start.StartIndex, parent.Stop.StopIndex, opCode, exprL.result, exprR.result, result));
         }
 
         //
@@ -723,27 +728,27 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprRelational(PuffinBasicParser.ExprRelationalContext ctx)
         {
-            var exprL = LookupInstruction(ctx.Expr(0));
-            var exprR = LookupInstruction(ctx.Expr(1));
+            var exprL = LookupInstruction(ctx.expr(0));
+            var exprR = LookupInstruction(ctx.expr(1));
             var dt1 = ir.GetSymbolTable()[exprL.result].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId();
-            CheckDataTypeMatch(dt1, dt2, () => GetCtxString(ctx));
-            OpCode opCode;
-            if (dt1 == STRING && dt2 == STRING)
+            CheckDataTypeMatch(dt1, dt2, GetCtxString(ctx));
+            OpCode? opCode;
+            if (dt1 == PuffinBasicAtomTypeId.STRING && dt2 == PuffinBasicAtomTypeId.STRING)
             {
                 opCode = ctx.RELEQ() != null ? OpCode.EQSTR : ctx.RELNEQ() != null ? OpCode.NESTR : ctx.RELLT() != null ? OpCode.LTSTR : ctx.RELGT() != null ? OpCode.GTSTR : ctx.RELLE() != null ? OpCode.LESTR : ctx.RELGE() != null ? OpCode.GESTR : null;
             }
             else
             {
-                if (dt1 == DOUBLE || dt2 == DOUBLE)
+                if (dt1 == PuffinBasicAtomTypeId.DOUBLE || dt2 == PuffinBasicAtomTypeId.DOUBLE)
                 {
                     opCode = ctx.RELEQ() != null ? OpCode.EQF64 : ctx.RELNEQ() != null ? OpCode.NEF64 : ctx.RELLT() != null ? OpCode.LTF64 : ctx.RELGT() != null ? OpCode.GTF64 : ctx.RELLE() != null ? OpCode.LEF64 : ctx.RELGE() != null ? OpCode.GEF64 : null;
                 }
-                else if (dt1 == INT64 || dt2 == INT64)
+                else if (dt1 == PuffinBasicAtomTypeId.INT64 || dt2 == PuffinBasicAtomTypeId.INT64)
                 {
                     opCode = ctx.RELEQ() != null ? OpCode.EQI64 : ctx.RELNEQ() != null ? OpCode.NEI64 : ctx.RELLT() != null ? OpCode.LTI64 : ctx.RELGT() != null ? OpCode.GTI64 : ctx.RELLE() != null ? OpCode.LEI64 : ctx.RELGE() != null ? OpCode.GEI64 : null;
                 }
-                else if (dt1 == FLOAT || dt2 == FLOAT)
+                else if (dt1 == PuffinBasicAtomTypeId.FLOAT || dt2 == PuffinBasicAtomTypeId.FLOAT)
                 {
                     opCode = ctx.RELEQ() != null ? OpCode.EQF32 : ctx.RELNEQ() != null ? OpCode.NEF32 : ctx.RELLT() != null ? OpCode.LTF32 : ctx.RELGT() != null ? OpCode.GTF32 : ctx.RELLE() != null ? OpCode.LEF32 : ctx.RELGE() != null ? OpCode.GEF32 : null;
                 }
@@ -761,7 +766,7 @@ namespace Org.Puffinbasic.Parser
             var result = ir.GetSymbolTable().AddTmp(INT64, (e) =>
             {
             });
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, opCode, exprL.result, exprR.result, result));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, opCode.Value, exprL.result, exprR.result, result));
         }
 
         //
@@ -781,8 +786,8 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprLogNot(PuffinBasicParser.ExprLogNotContext ctx)
         {
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             var result = ir.GetSymbolTable().AddTmp(INT64, (e) =>
             {
             });
@@ -806,13 +811,13 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprLogical(PuffinBasicParser.ExprLogicalContext ctx)
         {
-            OpCode opCode = ctx.LOGAND() != null ? OpCode.AND : ctx.LOGOR() != null ? OpCode.OR : ctx.LOGXOR() != null ? OpCode.XOR : ctx.LOGEQV() != null ? OpCode.EQV : ctx.LOGIMP() != null ? OpCode.IMP : null;
+            OpCode? opCode = ctx.LOGAND() != null ? OpCode.AND : ctx.LOGOR() != null ? OpCode.OR : ctx.LOGXOR() != null ? OpCode.XOR : ctx.LOGEQV() != null ? OpCode.EQV : ctx.LOGIMP() != null ? OpCode.IMP : null;
             if (opCode == null)
             {
                 throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, GetCtxString(ctx), "Unsupported operator!");
             }
 
-            AddLogicalOpExpr(ctx, opCode, ctx.Expr(0), ctx.Expr(1));
+            AddLogicalOpExpr(ctx, opCode.Value, ctx.expr(0), ctx.expr(1));
         }
 
         //
@@ -832,13 +837,13 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprBitwise(PuffinBasicParser.ExprBitwiseContext ctx)
         {
-            OpCode opCode = ctx.BWLSFT() != null ? OpCode.LEFTSHIFT : ctx.BWRSFT() != null ? OpCode.RIGHTSHIFT : null;
+            OpCode? opCode = ctx.BWLSFT() != null ? OpCode.LEFTSHIFT : ctx.BWRSFT() != null ? OpCode.RIGHTSHIFT : null;
             if (opCode == null)
             {
                 throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, GetCtxString(ctx), "Unsupported operator!");
             }
 
-            AddBitwiseOpExpr(ctx, opCode, ctx.Expr(0), ctx.Expr(1));
+            AddBitwiseOpExpr(ctx, opCode.Value, ctx.expr(0), ctx.expr(1));
         }
 
         //
@@ -860,11 +865,11 @@ namespace Org.Puffinbasic.Parser
         {
             var exprL = LookupInstruction(exprLeft);
             var exprR = LookupInstruction(exprRight);
-            Types.AssertNumeric(ir.GetSymbolTable()[exprL.result].GetType().GetAtomTypeId(), ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId(), () => GetCtxString(parent));
+            Types.AssertNumeric(ir.GetSymbolTable()[exprL.result].GetType().GetAtomTypeId(), ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId(), GetCtxString(parent));
             var result = ir.GetSymbolTable().AddTmp(INT64, (e) =>
             {
             });
-            nodeToInstruction.Put(parent, ir.AddInstruction(sourceFile, currentLineNumber, parent.start.GetStartIndex(), parent.stop.GetStopIndex(), opCode, exprL.result, exprR.result, result));
+            nodeToInstruction.Put(parent, ir.AddInstruction(sourceFile, currentLineNumber, parent.Start.StartIndex, parent.Stop.StopIndex, opCode, exprL.result, exprR.result, result));
         }
 
         //
@@ -886,11 +891,11 @@ namespace Org.Puffinbasic.Parser
         {
             var exprL = LookupInstruction(exprLeft);
             var exprR = LookupInstruction(exprRight);
-            Types.AssertNumeric(ir.GetSymbolTable()[exprL.result].GetType().GetAtomTypeId(), ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId(), () => GetCtxString(parent));
+            Types.AssertNumeric(ir.GetSymbolTable()[exprL.result].GetType().GetAtomTypeId(), ir.GetSymbolTable()[exprR.result].GetType().GetAtomTypeId(), GetCtxString(parent));
             var result = ir.GetSymbolTable().AddTmp(INT64, (e) =>
             {
             });
-            nodeToInstruction.Put(parent, ir.AddInstruction(sourceFile, currentLineNumber, parent.start.GetStartIndex(), parent.stop.GetStopIndex(), opCode, exprL.result, exprR.result, result));
+            nodeToInstruction.Put(parent, ir.AddInstruction(sourceFile, currentLineNumber, parent.Start.StartIndex, parent.Stop.StopIndex, opCode, exprL.result, exprR.result, result));
         }
 
         //
@@ -913,7 +918,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncAbs(PuffinBasicParser.FuncAbsContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ABS, ctx, ctx.Expr(), NumericOrString.NUMERIC));
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ABS, ctx, ctx.expr(), NumericOrString.NUMERIC));
         }
 
         //
@@ -936,7 +941,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncAsc(PuffinBasicParser.FuncAscContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ASC, ctx, ctx.Expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(INT32, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ASC, ctx, ctx.expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
             })));
         }
@@ -961,7 +966,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncSin(PuffinBasicParser.FuncSinContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SIN, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SIN, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -986,7 +991,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCos(PuffinBasicParser.FuncCosContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.COS, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.COS, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1011,7 +1016,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncTan(PuffinBasicParser.FuncTanContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TAN, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TAN, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1036,7 +1041,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncASin(PuffinBasicParser.FuncASinContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ASIN, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ASIN, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1061,7 +1066,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncACos(PuffinBasicParser.FuncACosContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ACOS, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ACOS, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1086,7 +1091,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncAtn(PuffinBasicParser.FuncAtnContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ATN, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ATN, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1111,7 +1116,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncSinh(PuffinBasicParser.FuncSinhContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SINH, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SINH, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1136,7 +1141,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCosh(PuffinBasicParser.FuncCoshContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.COSH, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.COSH, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1161,7 +1166,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncTanh(PuffinBasicParser.FuncTanhContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TANH, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TANH, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1186,7 +1191,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncExp(PuffinBasicParser.FuncExpContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.EEXP, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.EEXP, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1211,7 +1216,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncLog10(PuffinBasicParser.FuncLog10Context ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.LOG10, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.LOG10, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1236,7 +1241,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncLog2(PuffinBasicParser.FuncLog2Context ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.LOG2, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.LOG2, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1261,7 +1266,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncToRad(PuffinBasicParser.FuncToRadContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TORAD, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TORAD, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1286,7 +1291,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncToDeg(PuffinBasicParser.FuncToDegContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TODEG, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.TODEG, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1311,7 +1316,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncFloor(PuffinBasicParser.FuncFloorContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.FLOOR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.FLOOR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1336,7 +1341,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCeil(PuffinBasicParser.FuncCeilContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CEIL, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CEIL, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1361,7 +1366,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncRound(PuffinBasicParser.FuncRoundContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ROUND, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.ROUND, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1386,7 +1391,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncSqr(PuffinBasicParser.FuncSqrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SQR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SQR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1411,7 +1416,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCint(PuffinBasicParser.FuncCintContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CINT, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(INT32, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CINT, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
             })));
         }
@@ -1436,7 +1441,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncClng(PuffinBasicParser.FuncClngContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CLNG, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(INT64, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CLNG, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(INT64, (c) =>
             {
             })));
         }
@@ -1461,7 +1466,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCsng(PuffinBasicParser.FuncCsngContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CSNG, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(FLOAT, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CSNG, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.FLOAT, (c) =>
             {
             })));
         }
@@ -1486,7 +1491,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCdbl(PuffinBasicParser.FuncCdblContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CDBL, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CDBL, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1511,7 +1516,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCvi(PuffinBasicParser.FuncCviContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVI, ctx, ctx.Expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(INT32, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVI, ctx, ctx.expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
             })));
         }
@@ -1536,7 +1541,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCvl(PuffinBasicParser.FuncCvlContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVL, ctx, ctx.Expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(INT64, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVL, ctx, ctx.expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(INT64, (c) =>
             {
             })));
         }
@@ -1561,7 +1566,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCvs(PuffinBasicParser.FuncCvsContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVS, ctx, ctx.Expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(FLOAT, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVS, ctx, ctx.expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.FLOAT, (c) =>
             {
             })));
         }
@@ -1586,7 +1591,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncCvd(PuffinBasicParser.FuncCvdContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVD, ctx, ctx.Expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CVD, ctx, ctx.expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1611,7 +1616,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncMkiDlr(PuffinBasicParser.FuncMkiDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKIDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKIDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1636,7 +1641,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncMklDlr(PuffinBasicParser.FuncMklDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKLDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKLDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1661,7 +1666,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncMksDlr(PuffinBasicParser.FuncMksDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKSDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKSDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1686,7 +1691,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncMkdDlr(PuffinBasicParser.FuncMkdDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKDDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.MKDDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1711,7 +1716,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncSpaceDlr(PuffinBasicParser.FuncSpaceDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SPACEDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SPACEDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1736,7 +1741,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncStrDlr(PuffinBasicParser.FuncStrDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.STRDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.STRDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1761,7 +1766,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncVal(PuffinBasicParser.FuncValContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.VAL, ctx, ctx.Expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.VAL, ctx, ctx.expr(), NumericOrString.STRING, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1786,7 +1791,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncInt(PuffinBasicParser.FuncIntContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.INT, ctx, ctx.Expr(), NumericOrString.NUMERIC));
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.INT, ctx, ctx.expr(), NumericOrString.NUMERIC));
         }
 
         //
@@ -1809,7 +1814,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncFix(PuffinBasicParser.FuncFixContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.FIX, ctx, ctx.Expr(), NumericOrString.NUMERIC));
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.FIX, ctx, ctx.expr(), NumericOrString.NUMERIC));
         }
 
         //
@@ -1832,7 +1837,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncLog(PuffinBasicParser.FuncLogContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.LOG, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.LOG, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -1857,7 +1862,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncLen(PuffinBasicParser.FuncLenContext ctx)
         {
-            var exprInstruction = LookupInstruction(ctx.Expr(0));
+            var exprInstruction = LookupInstruction(ctx.expr(0));
             var axisId = ctx.axis != null ? LookupInstruction(ctx.axis).result : NULL_ID;
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LEN, exprInstruction.result, axisId, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
@@ -1884,7 +1889,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncChrDlr(PuffinBasicParser.FuncChrDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CHRDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.CHRDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1909,7 +1914,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncHexDlr(PuffinBasicParser.FuncHexDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.HEXDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.HEXDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1934,7 +1939,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncOctDlr(PuffinBasicParser.FuncOctDlrContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.OCTDLR, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.OCTDLR, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1959,11 +1964,11 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncLeftDlr(PuffinBasicParser.FuncLeftDlrContext ctx)
         {
-            var xdlr = LookupInstruction(ctx.Expr(0));
-            var n = LookupInstruction(ctx.Expr(1));
-            Types.AssertString(ir.GetSymbolTable()[xdlr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[n.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LEFTDLR, xdlr.result, n.result, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            var xdlr = LookupInstruction(ctx.expr(0));
+            var n = LookupInstruction(ctx.expr(1));
+            Types.AssertString(ir.GetSymbolTable()[xdlr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[n.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LEFTDLR, xdlr.result, n.result, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -1988,11 +1993,11 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitFuncRightDlr(PuffinBasicParser.FuncRightDlrContext ctx)
         {
-            var xdlr = LookupInstruction(ctx.Expr(0));
-            var n = LookupInstruction(ctx.Expr(1));
-            Types.AssertString(ir.GetSymbolTable()[xdlr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[n.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RIGHTDLR, xdlr.result, n.result, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            var xdlr = LookupInstruction(ctx.expr(0));
+            var n = LookupInstruction(ctx.expr(1));
+            Types.AssertString(ir.GetSymbolTable()[xdlr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[n.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RIGHTDLR, xdlr.result, n.result, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -2018,26 +2023,26 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFuncInstr(PuffinBasicParser.FuncInstrContext ctx)
         {
             int xdlr, ydlr, n;
-            if (ctx.Expr().Count == 3)
+            if (ctx.expr().Count()== 3)
             {
 
                 // n, x$, y$
-                n = LookupInstruction(ctx.Expr(0)).result;
-                xdlr = LookupInstruction(ctx.Expr(1)).result;
-                ydlr = LookupInstruction(ctx.Expr(2)).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[n].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                n = LookupInstruction(ctx.expr(0)).result;
+                xdlr = LookupInstruction(ctx.expr(1)).result;
+                ydlr = LookupInstruction(ctx.expr(2)).result;
+                Types.AssertNumeric(ir.GetSymbolTable()[n].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
             else
             {
 
                 // x$, y$
                 n = ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(1));
-                xdlr = LookupInstruction(ctx.Expr(0)).result;
-                ydlr = LookupInstruction(ctx.Expr(1)).result;
+                xdlr = LookupInstruction(ctx.expr(0)).result;
+                ydlr = LookupInstruction(ctx.expr(1)).result;
             }
 
-            Types.AssertString(ir.GetSymbolTable()[xdlr].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[ydlr].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[xdlr].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[ydlr].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, xdlr, ydlr, NULL_ID);
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INSTR, n, NULL_ID, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
@@ -2067,28 +2072,28 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFuncMidDlr(PuffinBasicParser.FuncMidDlrContext ctx)
         {
             int xdlr, n, m;
-            if (ctx.Expr().Count == 3)
+            if (ctx.expr().Count()== 3)
             {
 
                 // x$, n, m
-                xdlr = LookupInstruction(ctx.Expr(0)).result;
-                n = LookupInstruction(ctx.Expr(1)).result;
-                m = LookupInstruction(ctx.Expr(2)).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[m].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                xdlr = LookupInstruction(ctx.expr(0)).result;
+                n = LookupInstruction(ctx.expr(1)).result;
+                m = LookupInstruction(ctx.expr(2)).result;
+                Types.AssertNumeric(ir.GetSymbolTable()[m].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
             else
             {
 
                 // x$, n
-                xdlr = LookupInstruction(ctx.Expr(0)).result;
-                n = LookupInstruction(ctx.Expr(1)).result;
-                m = ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(Integer.MAX_VALUE));
+                xdlr = LookupInstruction(ctx.expr(0)).result;
+                n = LookupInstruction(ctx.expr(1)).result;
+                m = ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(int.MaxValue));
             }
 
-            Types.AssertString(ir.GetSymbolTable()[xdlr].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[n].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[xdlr].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[n].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, xdlr, n, NULL_ID);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MIDDLR, m, NULL_ID, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MIDDLR, m, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -2117,7 +2122,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncRnd(PuffinBasicParser.FuncRndContext ctx)
         {
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RND, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RND, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -2146,7 +2151,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncSgn(PuffinBasicParser.FuncSgnContext ctx)
         {
-            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SGN, ctx, ctx.Expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(INT32, (c) =>
+            nodeToInstruction.Put(ctx, AddFuncWithExprInstruction(OpCode.SGN, ctx, ctx.expr(), NumericOrString.NUMERIC, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
             })));
         }
@@ -2175,7 +2180,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncTimer(PuffinBasicParser.FuncTimerContext ctx)
         {
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.TIMER, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.TIMER, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -2233,10 +2238,10 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncStringDlr(PuffinBasicParser.FuncStringDlrContext ctx)
         {
-            int n = LookupInstruction(ctx.Expr(0)).result;
-            int jOrxdlr = LookupInstruction(ctx.Expr(1)).result;
-            Types.AssertNumeric(ir.GetSymbolTable()[n].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.STRINGDLR, n, jOrxdlr, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            int n = LookupInstruction(ctx.expr(0)).result;
+            int jOrxdlr = LookupInstruction(ctx.expr(1)).result;
+            Types.AssertNumeric(ir.GetSymbolTable()[n].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.STRINGDLR, n, jOrxdlr, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -2265,8 +2270,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncLoc(PuffinBasicParser.FuncLocContext ctx)
         {
-            var fileNumber = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var fileNumber = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LOC, fileNumber.result, NULL_ID, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
             })));
@@ -2296,8 +2301,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncLof(PuffinBasicParser.FuncLofContext ctx)
         {
-            var fileNumber = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var fileNumber = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LOF, fileNumber.result, NULL_ID, ir.GetSymbolTable().AddTmp(INT64, (c) =>
             {
             })));
@@ -2327,8 +2332,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncEof(PuffinBasicParser.FuncEofContext ctx)
         {
-            var fileNumber = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var fileNumber = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.EOF, fileNumber.result, NULL_ID, ir.GetSymbolTable().AddTmp(INT32, (c) =>
             {
             })));
@@ -2358,9 +2363,9 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncEnvironDlr(PuffinBasicParser.FuncEnvironDlrContext ctx)
         {
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertString(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ENVIRONDLR, expr.result, NULL_ID, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertString(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ENVIRONDLR, expr.result, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -2389,13 +2394,13 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncInputDlr(PuffinBasicParser.FuncInputDlrContext ctx)
         {
-            var x = LookupInstruction(ctx.Expr(0));
-            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var x = LookupInstruction(ctx.expr(0));
+            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             int fileNumberId;
-            if (ctx.Expr().Count == 2)
+            if (ctx.expr().Count()== 2)
             {
-                var fileNumber = LookupInstruction(ctx.Expr(1));
-                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                var fileNumber = LookupInstruction(ctx.expr(1));
+                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 fileNumberId = fileNumber.result;
             }
             else
@@ -2403,7 +2408,7 @@ namespace Org.Puffinbasic.Parser
                 fileNumberId = ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(-1));
             }
 
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INPUTDLR, x.result, fileNumberId, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INPUTDLR, x.result, fileNumberId, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -2433,7 +2438,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFuncInkeyDlr(PuffinBasicParser.FuncInkeyDlrContext ctx)
         {
             AssertGraphics();
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INKEYDLR, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(STRING, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INKEYDLR, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (c) =>
             {
             })));
         }
@@ -2462,7 +2467,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncE(PuffinBasicParser.FuncEContext ctx)
         {
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.E, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.E, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -2491,7 +2496,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncPI(PuffinBasicParser.FuncPIContext ctx)
         {
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PI, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (c) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PI, NULL_ID, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (c) =>
             {
             })));
         }
@@ -2520,13 +2525,13 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncMin(PuffinBasicParser.FuncMinContext ctx)
         {
-            var expr1 = LookupInstruction(ctx.Expr(0));
-            var expr2 = LookupInstruction(ctx.Expr(1));
+            var expr1 = LookupInstruction(ctx.expr(0));
+            var expr2 = LookupInstruction(ctx.expr(1));
             var dt1 = ir.GetSymbolTable()[expr1.result].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[expr2.result].GetType().GetAtomTypeId();
-            Types.AssertNumeric(dt1, () => GetCtxString(ctx));
-            Types.AssertNumeric(dt2, () => GetCtxString(ctx));
-            var resdt = Types.Upcast(dt1, dt2, () => GetCtxString(ctx));
+            Types.AssertNumeric(dt1, GetCtxString(ctx));
+            Types.AssertNumeric(dt2, GetCtxString(ctx));
+            var resdt = Types.Upcast(dt1, dt2, GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MIN, expr1.result, expr2.result, ir.GetSymbolTable().AddTmp(resdt, (e) =>
             {
             })));
@@ -2556,13 +2561,13 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncMax(PuffinBasicParser.FuncMaxContext ctx)
         {
-            var expr1 = LookupInstruction(ctx.Expr(0));
-            var expr2 = LookupInstruction(ctx.Expr(1));
+            var expr1 = LookupInstruction(ctx.expr(0));
+            var expr2 = LookupInstruction(ctx.expr(1));
             var dt1 = ir.GetSymbolTable()[expr1.result].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[expr2.result].GetType().GetAtomTypeId();
-            Types.AssertNumeric(dt1, () => GetCtxString(ctx));
-            Types.AssertNumeric(dt2, () => GetCtxString(ctx));
-            var resdt = Types.Upcast(dt1, dt2, () => GetCtxString(ctx));
+            Types.AssertNumeric(dt1, GetCtxString(ctx));
+            Types.AssertNumeric(dt2, GetCtxString(ctx));
+            var resdt = Types.Upcast(dt1, dt2, GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MAX, expr1.result, expr2.result, ir.GetSymbolTable().AddTmp(resdt, (e) =>
             {
             })));
@@ -2593,12 +2598,12 @@ namespace Org.Puffinbasic.Parser
         private Instruction GetArray1dVariableInstruction(ParserRuleContext ctx, VariableContext varCtx, bool numeric)
         {
             var varInstr = LookupInstruction(varCtx);
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             var varEntry = (STVariable)ir.GetSymbolTable()[varInstr.result];
-            Assert1DArray(varEntry, () => GetCtxString(ctx));
+            Assert1DArray(varEntry, GetCtxString(ctx));
             if (numeric)
             {
-                AssertNumeric(varEntry.GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                AssertNumeric(varEntry.GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             return varInstr;
@@ -2629,9 +2634,9 @@ namespace Org.Puffinbasic.Parser
         private Instruction GetArray2dVariableInstruction(ParserRuleContext ctx, VariableContext varCtx)
         {
             var varInstr = LookupInstruction(varCtx);
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             var varEntry = (STVariable)ir.GetSymbolTable()[varInstr.result];
-            Assert2DArray(varEntry, () => GetCtxString(ctx));
+            Assert2DArray(varEntry, GetCtxString(ctx));
             return varInstr;
         }
 
@@ -2660,9 +2665,9 @@ namespace Org.Puffinbasic.Parser
         private Instruction GetArrayNdVariableInstruction(ParserRuleContext ctx, VariableContext varCtx)
         {
             var varInstr = LookupInstruction(varCtx);
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             var varEntry = (STVariable)ir.GetSymbolTable()[varInstr.result];
-            AssertNDArray(varEntry, () => GetCtxString(ctx));
+            AssertNDArray(varEntry, GetCtxString(ctx));
             return varInstr;
         }
 
@@ -2690,7 +2695,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DMin(PuffinBasicParser.FuncArray1DMinContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DMIN, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmpCompatibleWith(var1Instr.result)));
         }
 
@@ -2718,7 +2723,7 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DMax(PuffinBasicParser.FuncArray1DMaxContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DMAX, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmpCompatibleWith(var1Instr.result)));
         }
 
@@ -2746,8 +2751,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DMean(PuffinBasicParser.FuncArray1DMeanContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DMEAN, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DMEAN, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -2776,8 +2781,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DSum(PuffinBasicParser.FuncArray1DSumContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DSUM, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DSUM, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -2806,8 +2811,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DStd(PuffinBasicParser.FuncArray1DStdContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DSTD, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DSTD, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -2836,8 +2841,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DMedian(PuffinBasicParser.FuncArray1DMedianContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DMEDIAN, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DMEDIAN, var1Instr.result, NULL_ID, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -2866,9 +2871,9 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DBinSearch(PuffinBasicParser.FuncArray1DBinSearchContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), false);
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), false);
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DBINSEARCH, var1Instr.result, expr.result, ir.GetSymbolTable().AddTmp(INT32, (e) =>
             {
             })));
@@ -2898,10 +2903,10 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray1DPct(PuffinBasicParser.FuncArray1DPctContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), true);
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DPCT, var1Instr.result, expr.result, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), true);
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DPCT, var1Instr.result, expr.result, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -2930,20 +2935,20 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray2DFindRow(PuffinBasicParser.FuncArray2DFindRowContext ctx)
         {
-            var varInstr = GetArray2dVariableInstruction(ctx, ctx.Variable());
+            var varInstr = GetArray2dVariableInstruction(ctx, ctx.variable());
             var x1 = LookupInstruction(ctx.x1);
             var y1 = LookupInstruction(ctx.y1);
             var x2 = LookupInstruction(ctx.x2);
             var y2 = LookupInstruction(ctx.y2);
             var search = LookupInstruction(ctx.search);
-            Types.AssertIntType(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[search.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[search.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x1.result, y1.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x2.result, y2.result, NULL_ID);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY2DFINDROW, varInstr.result, search.result, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY2DFINDROW, varInstr.result, search.result, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -2972,20 +2977,20 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncArray2DFindColumn(PuffinBasicParser.FuncArray2DFindColumnContext ctx)
         {
-            var varInstr = GetArray2dVariableInstruction(ctx, ctx.Variable());
+            var varInstr = GetArray2dVariableInstruction(ctx, ctx.variable());
             var x1 = LookupInstruction(ctx.x1);
             var y1 = LookupInstruction(ctx.y1);
             var x2 = LookupInstruction(ctx.x2);
             var y2 = LookupInstruction(ctx.y2);
             var search = LookupInstruction(ctx.search);
-            Types.AssertIntType(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertIntType(ir.GetSymbolTable()[search.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertIntType(ir.GetSymbolTable()[search.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x1.result, y1.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x2.result, y2.result, NULL_ID);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY2DFINDCOLUMN, varInstr.result, search.result, ir.GetSymbolTable().AddTmp(DOUBLE, (e) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY2DFINDCOLUMN, varInstr.result, search.result, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.DOUBLE, (e) =>
             {
             })));
         }
@@ -3014,12 +3019,12 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncHsb2Rgb(PuffinBasicParser.FuncHsb2RgbContext ctx)
         {
-            var h = LookupInstruction(ctx.Expr(0));
-            var s = LookupInstruction(ctx.Expr(1));
-            var b = LookupInstruction(ctx.Expr(2));
-            Types.AssertNumeric(ir.GetSymbolTable()[h.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[s.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[b.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var h = LookupInstruction(ctx.expr(0));
+            var s = LookupInstruction(ctx.expr(1));
+            var b = LookupInstruction(ctx.expr(2));
+            Types.AssertNumeric(ir.GetSymbolTable()[h.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[s.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[b.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, h.result, s.result, NULL_ID);
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.HSB2RGB, b.result, NULL_ID, ir.GetSymbolTable().AddTmp(INT32, (e) =>
             {
@@ -3261,8 +3266,8 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFuncIsKeyPressed(PuffinBasicParser.FuncIsKeyPressedContext ctx)
         {
             AssertGraphics();
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertString(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertString(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ISKEYPRESSED, expr.result, NULL_ID, ir.GetSymbolTable().AddTmp(INT32, (e) =>
             {
             })));
@@ -3292,12 +3297,12 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncMemberMethodCall(PuffinBasicParser.FuncMemberMethodCallContext ctx)
         {
-            var varInstruction = LookupInstruction(ctx.Variable());
+            var varInstruction = LookupInstruction(ctx.variable());
             var objectType = ir.GetSymbolTable()[varInstruction.result].GetType();
-            var funcName = ctx.Funcname().GetText();
+            var funcName = ctx.funcname().GetText();
             var returnType = objectType.GetFuncCallReturnType(funcName);
-            IList<IPuffinBasicType> paramTypes = new List(ctx.Expr().Count);
-            foreach (var exprCtx in ctx.Expr())
+            IList<PuffinBasicType> paramTypes = new List<PuffinBasicType>(ctx.expr().Count());
+            foreach (var exprCtx in ctx.expr())
             {
                 var exprInstruction = LookupInstruction(exprCtx);
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, exprInstruction.result, NULL_ID, NULL_ID);
@@ -3305,7 +3310,7 @@ namespace Org.Puffinbasic.Parser
             }
 
             objectType.CheckFuncCallArguments(funcName, paramTypes);
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MEMBER_FUNC_CALL, varInstruction.result, ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(funcName)), ir.GetSymbolTable().AddTmp(returnType, (e) =>
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MEMBER_FUNC_CALL, varInstruction.result, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(funcName)), ir.GetSymbolTable().AddTmp(returnType, (e) =>
             {
             })));
         }
@@ -3334,11 +3339,11 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncSplitDlr(PuffinBasicParser.FuncSplitDlrContext ctx)
         {
-            var str = LookupInstruction(ctx.Expr(0));
-            var regex = LookupInstruction(ctx.Expr(1));
-            Types.AssertString(ir.GetSymbolTable()[str.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[regex.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.SPLITDLR, str.result, regex.result, ir.GetSymbolTable().AddTmp(new ArrayType(STRING), (c) =>
+            var str = LookupInstruction(ctx.expr(0));
+            var regex = LookupInstruction(ctx.expr(1));
+            Types.AssertString(ir.GetSymbolTable()[str.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[regex.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.SPLITDLR, str.result, regex.result, ir.GetSymbolTable().AddTmp(new ArrayType(PuffinBasicAtomTypeId.STRING), (c) =>
             {
             })));
         }
@@ -3367,8 +3372,8 @@ namespace Org.Puffinbasic.Parser
         // x$, n
         public override void ExitFuncAllocArray(PuffinBasicParser.FuncAllocArrayContext ctx)
         {
-            var elementType = PuffinBasicAtomTypeIdExtensions.Lookup(ctx.Varsuffix().GetText());
-            foreach (var exprCtx in ctx.Expr())
+            var elementType = PuffinBasicAtomTypeIdExtensions.Lookup(ctx.varsuffix().GetText());
+            foreach (var exprCtx in ctx.expr())
             {
                 var exprInstr = LookupInstruction(exprCtx);
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, exprInstr.result, NULL_ID, NULL_ID);
@@ -3405,7 +3410,7 @@ namespace Org.Puffinbasic.Parser
         {
             var exprInstruction = LookupInstruction(expr);
             AssertNumericOrString(exprInstruction.result, parent, numericOrString);
-            return ir.AddInstruction(sourceFile, currentLineNumber, parent.start.GetStartIndex(), parent.stop.GetStopIndex(), opCode, exprInstruction.result, NULL_ID, ir.GetSymbolTable().AddTmpCompatibleWith(exprInstruction.result));
+            return ir.AddInstruction(sourceFile, currentLineNumber, parent.Start.StartIndex, parent.Stop.StopIndex, opCode, exprInstruction.result, NULL_ID, ir.GetSymbolTable().AddTmpCompatibleWith(exprInstruction.result));
         }
 
         //
@@ -3434,7 +3439,7 @@ namespace Org.Puffinbasic.Parser
         {
             var exprInstruction = LookupInstruction(expr);
             AssertNumericOrString(exprInstruction.result, parent, numericOrString);
-            return ir.AddInstruction(sourceFile, currentLineNumber, parent.start.GetStartIndex(), parent.stop.GetStopIndex(), opCode, exprInstruction.result, NULL_ID, result);
+            return ir.AddInstruction(sourceFile, currentLineNumber, parent.Start.StartIndex, parent.Stop.StopIndex, opCode, exprInstruction.result, NULL_ID, result);
         }
 
         //
@@ -3464,11 +3469,11 @@ namespace Org.Puffinbasic.Parser
             var dt = ir.GetSymbolTable()[id].GetType().GetAtomTypeId();
             if (numericOrString == NumericOrString.NUMERIC)
             {
-                Types.AssertNumeric(dt, () => GetCtxString(parent));
+                Types.AssertNumeric(dt, GetCtxString(parent));
             }
             else
             {
-                Types.AssertString(dt, () => GetCtxString(parent));
+                Types.AssertString(dt, GetCtxString(parent));
             }
         }
 
@@ -3499,7 +3504,7 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitListstmt(PuffinBasicParser.ListstmtContext ctx)
         {
-            IPuffinBasicType itemType;
+            PuffinBasicType itemType;
             if (ctx.typename != null)
             {
 
@@ -3560,7 +3565,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitSetstmt(PuffinBasicParser.SetstmtContext ctx)
         {
             var atomType = PuffinBasicAtomTypeIdExtensions.Lookup(ctx.typesuffix.GetText());
-            IPuffinBasicType itemType = new ScalarType(atomType);
+            PuffinBasicType itemType = new ScalarType(atomType);
             var instanceName = ctx.setname.VARNAME().GetText();
             var variableName = new VariableName(instanceName, null, COMPOSITE);
             var setType = new SetType(itemType);
@@ -3599,8 +3604,8 @@ namespace Org.Puffinbasic.Parser
         public override void ExitDictstmt(PuffinBasicParser.DictstmtContext ctx)
         {
             var keyAtomType = PuffinBasicAtomTypeIdExtensions.Lookup(ctx.dictk1.GetText());
-            IPuffinBasicType keyType = new ScalarType(keyAtomType);
-            IPuffinBasicType valueType;
+            PuffinBasicType keyType = new ScalarType(keyAtomType);
+            PuffinBasicType valueType;
             if (ctx.dictv1 != null)
             {
 
@@ -3655,8 +3660,8 @@ namespace Org.Puffinbasic.Parser
         // scalar data type
         public override void ExitStructinstancestmt(PuffinBasicParser.StructinstancestmtContext ctx)
         {
-            var typeName = ctx.Varname(0).VARNAME().GetText();
-            var instanceName = ctx.Varname(1).VARNAME().GetText();
+            var typeName = ctx.varname(0).VARNAME().GetText();
+            var instanceName = ctx.varname(1).VARNAME().GetText();
             var variableName = new VariableName(instanceName, null, COMPOSITE);
             var type = ir.GetSymbolTable().GetStructType(typeName);
             var id = ir.GetSymbolTable().AddCompositeVariable(variableName, new STVariable(null, new Variable(variableName, type)));
@@ -3716,10 +3721,10 @@ namespace Org.Puffinbasic.Parser
                     // array
                     var arrayName = compCtx.elem.VARNAME().GetText();
                     var arrayAtomType = ir.GetSymbolTable().GetDataTypeFor(arrayName, compCtx.elemsuffix != null ? compCtx.elemsuffix.GetText() : null);
-                    List<int> dims = new List<int>(compCtx.DECIMAL().Count);
+                    List<int> dims = new List<int>(compCtx.DECIMAL().Count());
                     foreach (var dimStrNode in compCtx.DECIMAL())
                     {
-                        dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), () => GetCtxString(ctx)));
+                        dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), GetCtxString(ctx)));
                     }
 
                     @struct.DeclareField(new VariableName(arrayName, arrayAtomType.GetRepr(), arrayAtomType), new ArrayType(arrayAtomType, dims, true));
@@ -3758,7 +3763,7 @@ namespace Org.Puffinbasic.Parser
                     // dict
                     var name = new VariableName(compCtx.elem.VARNAME().GetText(), null, COMPOSITE);
                     var keyType = new ScalarType(PuffinBasicAtomTypeIdExtensions.Lookup(compCtx.dictk1.GetText()));
-                    IPuffinBasicType valueType;
+                    PuffinBasicType valueType;
                     if (compCtx.dictv1 != null)
                     {
 
@@ -3884,8 +3889,8 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitLetstmt(PuffinBasicParser.LetstmtContext ctx)
         {
-            var varInstruction = LookupInstruction(ctx.Variable());
-            var exprInstruction = LookupInstruction(ctx.Expr());
+            var varInstruction = LookupInstruction(ctx.variable());
+            var exprInstruction = LookupInstruction(ctx.expr());
             var varType = ir.GetSymbolTable()[varInstruction.result].GetType();
             if (varType.GetTypeId() == UDF)
             {
@@ -3946,7 +3951,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitAutoletstmt(PuffinBasicParser.AutoletstmtContext ctx)
         {
             var varname = ctx.varname().GetText();
-            var exprInstruction = LookupInstruction(ctx.Expr());
+            var exprInstruction = LookupInstruction(ctx.expr());
             var resultType = ir.GetSymbolTable()[exprInstruction.result].GetType();
             int varId = ir.GetSymbolTable().AddVariableOrUDF(new VariableName(varname, null, resultType.GetAtomTypeId()), (variableName1) => new Variable(variableName1, resultType), (id, entry, v1) =>
             {
@@ -3998,7 +4003,7 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitPrintstmt(PuffinBasicParser.PrintstmtContext ctx)
         {
-            HandlePrintstmt(ctx, ctx.Printlist().children, null);
+            HandlePrintstmt(ctx, ctx.printlist().children, null);
         }
 
         //
@@ -4046,7 +4051,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitPrinthashstmt(PuffinBasicParser.PrinthashstmtContext ctx)
         {
             var fileNumber = LookupInstruction(ctx.filenum);
-            HandlePrintstmt(ctx, ctx.Printlist().children, fileNumber);
+            HandlePrintstmt(ctx, ctx.printlist().children, fileNumber);
         }
 
         //
@@ -4094,7 +4099,7 @@ namespace Org.Puffinbasic.Parser
         private void HandlePrintstmt(ParserRuleContext ctx, IList<IParseTree> children, Instruction fileNumber)
         {
             bool endsWithNewline = true;
-            foreach (ParseTree child in children)
+            foreach (IParseTree child in children)
             {
                 if (child is PuffinBasicParser.ExprContext)
                 {
@@ -4110,14 +4115,14 @@ namespace Org.Puffinbasic.Parser
 
             if (endsWithNewline || fileNumber != null)
             {
-                var newlineId = ir.GetSymbolTable().AddTmp(STRING, (entry) => entry.GetValue().SetString(Environment.NewLine()));
+                var newlineId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (entry) => entry.GetValue().SetString(Environment.NewLine));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PRINT, newlineId, NULL_ID, NULL_ID);
             }
 
             int fileNumberId;
             if (fileNumber != null)
             {
-                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 fileNumberId = fileNumber.result;
             }
             else
@@ -4172,7 +4177,7 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitPrintusingstmt(PuffinBasicParser.PrintusingstmtContext ctx)
         {
-            HandlePrintusing(ctx, ctx.format, ctx.Printlist().children, null);
+            HandlePrintusing(ctx, ctx.format, ctx.printlist().children, null);
         }
 
         //
@@ -4220,7 +4225,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitPrinthashusingstmt(PuffinBasicParser.PrinthashusingstmtContext ctx)
         {
             var fileNumber = LookupInstruction(ctx.filenum);
-            HandlePrintusing(ctx, ctx.format, ctx.Printlist().children, fileNumber);
+            HandlePrintusing(ctx, ctx.format, ctx.printlist().children, fileNumber);
         }
 
         //
@@ -4269,7 +4274,7 @@ namespace Org.Puffinbasic.Parser
         {
             var format = LookupInstruction(formatCtx);
             bool endsWithNewline = true;
-            foreach (ParseTree child in children)
+            foreach (IParseTree child in children)
             {
                 if (child is PuffinBasicParser.ExprContext)
                 {
@@ -4285,14 +4290,14 @@ namespace Org.Puffinbasic.Parser
 
             if (endsWithNewline || fileNumber != null)
             {
-                var newlineId = ir.GetSymbolTable().AddTmp(STRING, (entry) => entry.GetValue().SetString(Environment.NewLine()));
+                var newlineId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (entry) => entry.GetValue().SetString(Environment.NewLine));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PRINT, newlineId, NULL_ID, NULL_ID);
             }
 
             int fileNumberId;
             if (fileNumber != null)
             {
-                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 fileNumberId = fileNumber.result;
             }
             else
@@ -4347,18 +4352,18 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitDimstmt(PuffinBasicParser.DimstmtContext ctx)
         {
-            List<int> dims = new List<int>(ctx.Expr().Count);
-            for (int i = 0; i < ctx.Expr().Count; i++)
+            List<int> dims = new List<int>(ctx.expr().Count());
+            for (int i = 0; i < ctx.expr().Count(); i++)
             {
                 dims.Add(0);
             }
 
-            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.Varsuffix());
+            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
             var varId = ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => new Variable(variableName1, new ArrayType(variableName1.GetDataType(), dims, true)), (id, entry, v1) => entry.GetValue().SetArrayDimensions(dims));
-            foreach (var expr in ctx.Expr())
+            foreach (var expr in ctx.expr())
             {
                 var dimi = LookupInstruction(expr);
-                Types.AssertNumeric(ir.GetSymbolTable()[dimi.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[dimi.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, dimi.result, NULL_ID, NULL_ID);
             }
 
@@ -4409,18 +4414,18 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitReallocstmt(PuffinBasicParser.ReallocstmtContext ctx)
         {
-            List<int> dims = new List<int>(ctx.Expr().Count);
-            for (int i = 0; i < ctx.Expr().Count; i++)
+            List<int> dims = new List<int>(ctx.expr().Count());
+            for (int i = 0; i < ctx.expr().Count(); i++)
             {
                 dims.Add(0);
             }
 
-            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.Varsuffix());
+            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
             var varId = ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => new Variable(variableName1, new ArrayType(variableName1.GetDataType(), dims, true)), (id, entry, v1) => entry.GetValue().SetArrayDimensions(dims));
-            foreach (var expr in ctx.Expr())
+            foreach (var expr in ctx.expr())
             {
                 var dimi = LookupInstruction(expr);
-                Types.AssertNumeric(ir.GetSymbolTable()[dimi.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[dimi.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, dimi.result, NULL_ID, NULL_ID);
             }
 
@@ -4471,17 +4476,22 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void EnterDeffnstmt(PuffinBasicParser.DeffnstmtContext ctx)
         {
-            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.Varsuffix());
-            ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, () => GetCtxString(ctx)), (varId, varEntry, variable) =>
+            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
+
+            ir.GetSymbolTable().AddVariableOrUDF(variableName, 
+                (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), 
+                (varId, varEntry, variable) =>
             {
                 var udfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap.Put(variable, udfState);
+                udfStateMap[variable.ToString()] =  udfState;
 
                 // GOTO postFuncDecl
-                udfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
+                udfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, 
+                    ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
 
                 // LABEL FuncStart
-                udfState.labelFuncStart = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
+                udfState.labelFuncStart = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, 
+                    ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
 
                 // Push child scope
                 ir.GetSymbolTable().PushDeclarationScope(varId, false);
@@ -4535,19 +4545,24 @@ namespace Org.Puffinbasic.Parser
         // Push child scope
         public override void ExitDeffnstmt(PuffinBasicParser.DeffnstmtContext ctx)
         {
-            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.Varsuffix());
-            ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, () => GetCtxString(ctx)), (varId, varEntry, variable) =>
+            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
+            var symbolTable = ir.GetSymbolTable();
+
+            ir.GetSymbolTable().AddVariableOrUDF(variableName, 
+                (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), 
+                (varId, varEntry, variable) =>
             {
                 var udfEntry = (STUDF)varEntry;
-                var udfState = udfStateMap[variable];
-                foreach (VariableContext fnParamCtx in ctx.Variable())
+                var udfState = udfStateMap[variable.ToString()];
+                foreach (VariableContext fnParamCtx in ctx.variable())
                 {
                     var fnParamInstr = LookupInstruction(fnParamCtx);
                     udfEntry.DeclareParam(fnParamInstr.result);
+                    //udfState.udfEntry.DeclareParam(fnParamInstr.result);
                 }
 
-                var exprInstr = LookupInstruction(ctx.Expr());
-                CheckDataTypeMatch(varId, exprInstr.result, () => GetCtxString(ctx));
+                var exprInstr = LookupInstruction(ctx.expr());
+                CheckDataTypeMatch(varId, exprInstr.result, GetCtxString(ctx));
 
                 // Copy expr to result
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.COPY, exprInstr.result, varId, varId);
@@ -4559,10 +4574,24 @@ namespace Org.Puffinbasic.Parser
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_CALLER, NULL_ID, NULL_ID, NULL_ID);
 
                 // LABEL postFuncDecl
-                var labelPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
+                var labelPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, 
+                    ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
 
                 // Patch GOTO postFuncDecl
                 udfState.gotoPostFuncDecl.PatchOp1(labelPostFuncDecl.op1);
+
+                //IScope searchScope = ir.GetSymbolTable().GetCurrentScope();
+
+                //do
+                //{
+                //    var varIdInScope = searchScope.GetIdForVariable(variable.GetVariableName());
+                //    string msg = "";
+                //    if (varIdInScope != -1)
+                //        msg = $"{variable.GetVariableName().ToString()} exists in scope ${searchScope.GetCallerInstrId()} as {varIdInScope}";
+
+                //    searchScope = searchScope.GetParent();
+                //}
+                //while (searchScope != null);
             });
         }
 
@@ -4676,8 +4705,8 @@ namespace Org.Puffinbasic.Parser
         // Patch GOTO postFuncDecl
         public override void EnterFunctionbeginstmt(PuffinBasicParser.FunctionbeginstmtContext ctx)
         {
-            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.Varsuffix());
-            var udfId = ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.UDF, () => GetCtxString(ctx)), (varId, varEntry, variable) =>
+            var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
+            var udfId = ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.UDF, GetCtxString(ctx)), (varId, varEntry, variable) =>
             {
                 if (currentUdfState != null)
                 {
@@ -4685,7 +4714,7 @@ namespace Org.Puffinbasic.Parser
                 }
 
                 currentUdfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap.Put(variable, currentUdfState);
+                udfStateMap[variable.ToString()] = currentUdfState;
 
                 // GOTO postFuncDecl
                 currentUdfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
@@ -4759,10 +4788,10 @@ namespace Org.Puffinbasic.Parser
                 throw new PuffinBasicInternalError("CurrentUDFState not set!");
             }
 
-            foreach (var compCtx in ctx.Compositetype())
+            foreach (var compCtx in ctx.compositetype())
             {
                 VariableName paramName;
-                IPuffinBasicType paramType;
+                PuffinBasicType paramType;
                 if (compCtx.var1 != null)
                 {
 
@@ -4779,7 +4808,7 @@ namespace Org.Puffinbasic.Parser
 
                     // list
                     paramName = new VariableName(compCtx.elem.VARNAME().GetText(), null, COMPOSITE);
-                    IPuffinBasicType itemType;
+                    PuffinBasicType itemType;
                     if (compCtx.list1 != null)
                     {
 
@@ -4815,7 +4844,7 @@ namespace Org.Puffinbasic.Parser
                     // dict
                     paramName = new VariableName(compCtx.elem.VARNAME().GetText(), null, COMPOSITE);
                     var keyType = new ScalarType(PuffinBasicAtomTypeIdExtensions.Lookup(compCtx.dictk1.GetText()));
-                    IPuffinBasicType valueType;
+                    PuffinBasicType valueType;
                     if (compCtx.dictv1 != null)
                     {
 
@@ -4845,10 +4874,10 @@ namespace Org.Puffinbasic.Parser
                     // array
                     var arrayName = compCtx.elem.VARNAME().GetText();
                     var arrayAtomType = ir.GetSymbolTable().GetDataTypeFor(arrayName, compCtx.elemsuffix != null ? compCtx.elemsuffix.GetText() : null);
-                    List<int> dims = new List<int>(compCtx.DECIMAL().Count);
+                    List<int> dims = new List<int>(compCtx.DECIMAL().Count());
                     foreach (var dimStrNode in compCtx.DECIMAL())
                     {
-                        dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), () => GetCtxString(ctx)));
+                        dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), GetCtxString(ctx)));
                     }
 
                     paramName = new VariableName(arrayName, arrayAtomType.GetRepr(), arrayAtomType);
@@ -4942,8 +4971,8 @@ namespace Org.Puffinbasic.Parser
             }
 
             var udfId = currentUdfState.udfId;
-            var returnInstr = LookupInstruction(ctx.Expr());
-            CheckDataTypeMatch(udfId, returnInstr.result, () => GetCtxString(ctx));
+            var returnInstr = LookupInstruction(ctx.expr());
+            CheckDataTypeMatch(udfId, returnInstr.result, GetCtxString(ctx));
 
             // Copy expr to result
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.COPY, returnInstr.result, udfId, udfId);
@@ -5291,7 +5320,7 @@ namespace Org.Puffinbasic.Parser
 
             // LABEL beforeWhile
             whileLoopState.labelBeforeWhile = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
-            whileLoopStateList.Add(whileLoopState);
+            whileLoopStateList.AddLast(whileLoopState);
         }
 
         //
@@ -5375,7 +5404,7 @@ namespace Org.Puffinbasic.Parser
             var whileLoopState = whileLoopStateList.Last();
 
             // expr()
-            var expr = LookupInstruction(ctx.Expr());
+            var expr = LookupInstruction(ctx.expr());
 
             // NOT expr()
             var notExpr = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.NOT, expr.result, NULL_ID, ir.GetSymbolTable().AddTmp(INT64, (e) =>
@@ -5571,13 +5600,13 @@ namespace Org.Puffinbasic.Parser
         private PuffinBasicIR.OpCode GetLTOpCode(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2)
         {
             OpCode opCode;
-            if (dt1 == STRING && dt2 == STRING)
+            if (dt1 == PuffinBasicAtomTypeId.STRING && dt2 == PuffinBasicAtomTypeId.STRING)
             {
                 opCode = OpCode.LTSTR;
             }
             else
             {
-                if (dt1 == DOUBLE || dt2 == DOUBLE)
+                if (dt1 == PuffinBasicAtomTypeId.DOUBLE || dt2 == PuffinBasicAtomTypeId.DOUBLE)
                 {
                     opCode = OpCode.LTF64;
                 }
@@ -5585,7 +5614,7 @@ namespace Org.Puffinbasic.Parser
                 {
                     opCode = OpCode.LTI64;
                 }
-                else if (dt1 == FLOAT || dt2 == FLOAT)
+                else if (dt1 == PuffinBasicAtomTypeId.FLOAT || dt2 == PuffinBasicAtomTypeId.FLOAT)
                 {
                     opCode = OpCode.LTF32;
                 }
@@ -5683,13 +5712,13 @@ namespace Org.Puffinbasic.Parser
         private PuffinBasicIR.OpCode GetGTOpCode(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2)
         {
             OpCode opCode;
-            if (dt1 == STRING && dt2 == STRING)
+            if (dt1 == PuffinBasicAtomTypeId.STRING && dt2 == PuffinBasicAtomTypeId.STRING)
             {
                 opCode = OpCode.GTSTR;
             }
             else
             {
-                if (dt1 == DOUBLE || dt2 == DOUBLE)
+                if (dt1 == PuffinBasicAtomTypeId.DOUBLE || dt2 == PuffinBasicAtomTypeId.DOUBLE)
                 {
                     opCode = OpCode.GTF64;
                 }
@@ -5697,7 +5726,7 @@ namespace Org.Puffinbasic.Parser
                 {
                     opCode = OpCode.GTI64;
                 }
-                else if (dt1 == FLOAT || dt2 == FLOAT)
+                else if (dt1 == PuffinBasicAtomTypeId.FLOAT || dt2 == PuffinBasicAtomTypeId.FLOAT)
                 {
                     opCode = OpCode.GTF32;
                 }
@@ -5795,13 +5824,13 @@ namespace Org.Puffinbasic.Parser
         private PuffinBasicIR.OpCode GetGEOpCode(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2)
         {
             OpCode opCode;
-            if (dt1 == STRING && dt2 == STRING)
+            if (dt1 == PuffinBasicAtomTypeId.STRING && dt2 == PuffinBasicAtomTypeId.STRING)
             {
                 opCode = OpCode.GESTR;
             }
             else
             {
-                if (dt1 == DOUBLE || dt2 == DOUBLE)
+                if (dt1 == PuffinBasicAtomTypeId.DOUBLE || dt2 == PuffinBasicAtomTypeId.DOUBLE)
                 {
                     opCode = OpCode.GEF64;
                 }
@@ -5809,7 +5838,7 @@ namespace Org.Puffinbasic.Parser
                 {
                     opCode = OpCode.GEI64;
                 }
-                else if (dt1 == FLOAT || dt2 == FLOAT)
+                else if (dt1 == PuffinBasicAtomTypeId.FLOAT || dt2 == PuffinBasicAtomTypeId.FLOAT)
                 {
                     opCode = OpCode.GEF32;
                 }
@@ -5906,21 +5935,21 @@ namespace Org.Puffinbasic.Parser
         // Patch GOTO afterWend
         public override void ExitForstmt(PuffinBasicParser.ForstmtContext ctx)
         {
-            var varInstr = LookupInstruction(ctx.Variable());
-            var init = LookupInstruction(ctx.Expr(0));
-            var end = LookupInstruction(ctx.Expr(1));
-            Types.AssertNumeric(ir.GetSymbolTable()[init.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[end.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            var init = LookupInstruction(ctx.expr(0));
+            var end = LookupInstruction(ctx.expr(1));
+            Types.AssertNumeric(ir.GetSymbolTable()[init.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[end.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             var forLoopState = new ForLoopState();
             var stVariable = (STVariable)ir.GetSymbolTable()[varInstr.result];
             forLoopState.variable = stVariable.GetVariable();
 
             // stepCopy = step or 1 (default)
             Instruction stepCopy;
-            if (ctx.Expr(2) != null)
+            if (ctx.expr(2) != null)
             {
-                var step = LookupInstruction(ctx.Expr(2));
-                Types.AssertNumeric(ir.GetSymbolTable()[step.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                var step = LookupInstruction(ctx.expr(2));
+                Types.AssertNumeric(ir.GetSymbolTable()[step.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 var tmpStep = ir.GetSymbolTable().AddTmpCompatibleWith(step.result);
                 stepCopy = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.COPY, step.result, tmpStep, tmpStep);
             }
@@ -5956,10 +5985,10 @@ namespace Org.Puffinbasic.Parser
                 case INT64:
                     addOpCode = OpCode.ADDI64;
                     break;
-                case FLOAT:
+                case PuffinBasicAtomTypeId.FLOAT:
                     addOpCode = OpCode.ADDF32;
                     break;
-                case DOUBLE:
+                case PuffinBasicAtomTypeId.DOUBLE:
                     addOpCode = OpCode.ADDF64;
                     break;
                 default:
@@ -6020,7 +6049,7 @@ namespace Org.Puffinbasic.Parser
             // if (true) GOTO after NEXT
             // set linenumber on exitNext().
             forLoopState.gotoAfterNext = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL_IF, t7, ir.GetSymbolTable().AddLabel(), NULL_ID);
-            forLoopStateList.Add(forLoopState);
+            forLoopStateList.AddLast(forLoopState);
         }
 
         //
@@ -6126,7 +6155,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitNextstmt(PuffinBasicParser.NextstmtContext ctx)
         {
             IList<ForLoopState> states = new List<ForLoopState>(1);
-            if (ctx.Variable().IsEmpty())
+            if (!ctx.variable().Any())
             {
                 if (forLoopStateList.Any())
                 { 
@@ -6140,18 +6169,18 @@ namespace Org.Puffinbasic.Parser
             }
             else
             {
-                foreach (var varCtx in ctx.Variable())
+                foreach (var varCtx in ctx.variable())
                 {
-                    if (varCtx.Leafvariable() == null)
+                    if (varCtx.leafvariable() == null)
                     {
                         throw new PuffinBasicSemanticError(BAD_ARGUMENT, GetCtxString(ctx), "Bad variable!");
                     }
 
-                    var varname = varCtx.Leafvariable().Varname().VARNAME().GetText();
-                    var varsuffix = varCtx.Leafvariable().Varsuffix() != null ? varCtx.Leafvariable().Varsuffix().GetText() : null;
+                    var varname = varCtx.leafvariable().varname().VARNAME().GetText();
+                    var varsuffix = varCtx.leafvariable().varsuffix() != null ? varCtx.leafvariable().varsuffix().GetText() : null;
                     var dataType = ir.GetSymbolTable().GetDataTypeFor(varname, varsuffix);
                     var variableName = new VariableName(varname, dataType.GetRepr(), dataType);
-                    int id = ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, () => GetCtxString(ctx)), (id1, e1, v1) =>
+                    int id = ir.GetSymbolTable().AddVariableOrUDF(variableName, (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), (id1, e1, v1) =>
                     {
                     });
                     var variable = ((STVariable)ir.GetSymbolTable()[id]).GetVariable();
@@ -6418,9 +6447,9 @@ namespace Org.Puffinbasic.Parser
          */
         public override void ExitIfThenElse(PuffinBasicParser.IfThenElseContext ctx)
         {
-            var ifState = nodeToIfState[ctx];
+            var ifState = nodeToIfState.Get(ctx);
             bool noElseStmt = ifState.labelBeforeElse == null;
-            var condition = LookupInstruction(ctx.Expr());
+            var condition = LookupInstruction(ctx.expr());
 
             // Patch IF true: condition
             ifState.gotoIfConditionTrue.PatchOp1(condition.result);
@@ -6554,7 +6583,7 @@ namespace Org.Puffinbasic.Parser
         // Patch THEN: GOTO labelAfterThen|labelAfterElse
         public override void EnterThen(PuffinBasicParser.ThenContext ctx)
         {
-            var ifState = nodeToIfState[ctx.GetParent()];
+            var ifState = nodeToIfState.Get(ctx.Parent);
 
             // IF condition is true, GOTO labelBeforeThen
             ifState.gotoIfConditionTrue = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL_IF, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
@@ -6688,13 +6717,13 @@ namespace Org.Puffinbasic.Parser
 
             // Add instruction for:
             // THEN GOTO linenum | THEN linenum
-            if (ctx.Linenum() != null)
+            if (ctx.linenum() != null)
             {
-                var gotoLinenum = ParseLinenum(ctx.Linenum().GetText());
+                var gotoLinenum = ParseLinenum(ctx.linenum().GetText());
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LINENUM, GetGotoLineNumberOp1(gotoLinenum), NULL_ID, NULL_ID);
             }
 
-            var ifState = nodeToIfState[ctx.GetParent()];
+            var ifState = nodeToIfState.Get(ctx.Parent);
 
             // GOTO labelAfterThen|labelAfterElse
             ifState.gotoFromThenAfterIf = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
@@ -6825,7 +6854,7 @@ namespace Org.Puffinbasic.Parser
         // GOTO labelAfterThen|labelAfterElse
         public override void EnterElsestmt(PuffinBasicParser.ElsestmtContext ctx)
         {
-            var ifState = nodeToIfState[ctx.GetParent()];
+            var ifState = nodeToIfState.Get(ctx.Parent);
             ifState.labelBeforeElse = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
         }
 
@@ -6956,13 +6985,13 @@ namespace Org.Puffinbasic.Parser
 
             // Add instruction for:
             // ELSE linenum
-            if (ctx.Linenum() != null)
+            if (ctx.linenum() != null)
             {
-                var gotoLinenum = ParseLinenum(ctx.Linenum().GetText());
+                var gotoLinenum = ParseLinenum(ctx.linenum().GetText());
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LINENUM, GetGotoLineNumberOp1(gotoLinenum), NULL_ID, NULL_ID);
             }
 
-            var ifState = nodeToIfState[ctx.GetParent()];
+            var ifState = nodeToIfState.Get(ctx.Parent);
             ifState.labelAfterElse = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
         }
 
@@ -7246,8 +7275,8 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitIfthenbeginstmt(PuffinBasicParser.IfthenbeginstmtContext ctx)
         {
-            var ifState = nodeToIfState[ctx];
-            var condition = LookupInstruction(ctx.Expr());
+            var ifState = nodeToIfState.Get(ctx);
+            var condition = LookupInstruction(ctx.expr());
 
             // IF condition is true, GOTO labelBeforeThen
             ifState.gotoIfConditionTrue = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL_IF, condition.result, ir.GetSymbolTable().AddLabel(), NULL_ID);
@@ -7750,7 +7779,7 @@ namespace Org.Puffinbasic.Parser
         // Patch THEN: GOTO labelAfterThen|labelAfterElse
         public override void ExitGosubstmt(PuffinBasicParser.GosubstmtContext ctx)
         {
-            var gotoLinenum = ParseLinenum(ctx.Linenum().GetText());
+            var gotoLinenum = ParseLinenum(ctx.linenum().GetText());
             var pushReturnLabel = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PUSH_RETLABEL, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LINENUM, GetGotoLineNumberOp1(gotoLinenum), NULL_ID, NULL_ID);
             var labelReturn = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
@@ -7909,7 +7938,7 @@ namespace Org.Puffinbasic.Parser
         // Patch THEN: GOTO labelAfterThen|labelAfterElse
         public override void ExitGosublabelstmt(PuffinBasicParser.GosublabelstmtContext ctx)
         {
-            var gotoLabel = ir.GetSymbolTable().AddLabel(ctx.String().STRING().GetText());
+            var gotoLabel = ir.GetSymbolTable().AddLabel(ctx.@string().STRING().GetText());
             var pushReturnLabel = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PUSH_RETLABEL, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, gotoLabel, NULL_ID, NULL_ID);
             var labelReturn = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(), NULL_ID, NULL_ID);
@@ -8223,7 +8252,7 @@ namespace Org.Puffinbasic.Parser
         // Patch THEN: GOTO labelAfterThen|labelAfterElse
         public override void ExitGotostmt(PuffinBasicParser.GotostmtContext ctx)
         {
-            var gotoLinenum = ParseLinenum(ctx.Linenum().GetText());
+            var gotoLinenum = ParseLinenum(ctx.linenum().GetText());
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LINENUM, GetGotoLineNumberOp1(gotoLinenum), NULL_ID, NULL_ID);
         }
 
@@ -8379,7 +8408,7 @@ namespace Org.Puffinbasic.Parser
         // Patch THEN: GOTO labelAfterThen|labelAfterElse
         public override void ExitGotolabelstmt(PuffinBasicParser.GotolabelstmtContext ctx)
         {
-            var gotoLabel = ir.GetSymbolTable().AddLabel(ctx.String().STRING().GetText());
+            var gotoLabel = ir.GetSymbolTable().AddLabel(ctx.@string().STRING().GetText());
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, gotoLabel, NULL_ID, NULL_ID);
         }
 
@@ -8535,8 +8564,8 @@ namespace Org.Puffinbasic.Parser
         // Patch THEN: GOTO labelAfterThen|labelAfterElse
         public override void ExitSwapstmt(PuffinBasicParser.SwapstmtContext ctx)
         {
-            var var1 = LookupInstruction(ctx.Variable(0));
-            var var2 = LookupInstruction(ctx.Variable(1));
+            var var1 = LookupInstruction(ctx.variable(0));
+            var var2 = LookupInstruction(ctx.variable(1));
             var dt1 = ir.GetSymbolTable()[var1.result].GetType().GetAtomTypeId();
             var dt2 = ir.GetSymbolTable()[var2.result].GetType().GetAtomTypeId();
             if (dt1 != dt2)
@@ -8700,22 +8729,22 @@ namespace Org.Puffinbasic.Parser
         public override void ExitOpen1stmt(PuffinBasicParser.Open1stmtContext ctx)
         {
             var filenameInstr = LookupInstruction(ctx.filename);
-            var fileOpenMode = GetFileOpenMode(ctx.Filemode1());
+            var fileOpenMode = GetFileOpenMode(ctx.filemode1());
             var accessMode = GetFileAccessMode(null);
             var lockMode = GetLockMode(null);
-            var fileNumber = Numbers.ParseInt32(ctx.filenum.GetText(), () => GetCtxString(ctx));
-            var recordLenInstrId = ctx.reclen != null ? LookupInstruction(ctx.reclen).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(DEFAULT_RECORD_LEN));
-            Types.AssertString(ir.GetSymbolTable()[filenameInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[recordLenInstrId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var fileNumber = Numbers.ParseInt32(ctx.filenum.Text, GetCtxString(ctx));
+            var recordLenInstrId = ctx.reclen != null ? LookupInstruction(ctx.reclen).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(File.PuffinBasicFile.DEFAULT_RECORD_LEN));
+            Types.AssertString(ir.GetSymbolTable()[filenameInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[recordLenInstrId].GetType().GetAtomTypeId(), GetCtxString(ctx));
 
             // fileName, fileNumber
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, filenameInstr.result, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(fileNumber)), NULL_ID);
 
             // openMode, accessMode
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(fileOpenMode.Name())), ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(accessMode.Name())), NULL_ID);
+            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(fileOpenMode.ToString())), ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(accessMode.ToString())), NULL_ID);
 
             // lockMode, recordLen
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.OPEN, ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(lockMode.Name())), recordLenInstrId, NULL_ID);
+            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.OPEN, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(lockMode.ToString())), recordLenInstrId, NULL_ID);
         }
 
         //
@@ -8874,22 +8903,22 @@ namespace Org.Puffinbasic.Parser
         public override void ExitOpen2stmt(PuffinBasicParser.Open2stmtContext ctx)
         {
             var filenameInstr = LookupInstruction(ctx.filename);
-            var fileOpenMode = GetFileOpenMode(ctx.Filemode2());
-            var accessMode = GetFileAccessMode(ctx.Access());
-            var lockMode = GetLockMode(ctx.Lock());
-            var fileNumber = Numbers.ParseInt32(ctx.filenum.GetText(), () => GetCtxString(ctx));
-            var recordLenInstrId = ctx.reclen != null ? LookupInstruction(ctx.reclen).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(DEFAULT_RECORD_LEN));
-            Types.AssertString(ir.GetSymbolTable()[filenameInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[recordLenInstrId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var fileOpenMode = GetFileOpenMode(ctx.filemode2());
+            var accessMode = GetFileAccessMode(ctx.access());
+            var lockMode = GetLockMode(ctx.@lock());
+            var fileNumber = Numbers.ParseInt32(ctx.filenum.Text, GetCtxString(ctx));
+            var recordLenInstrId = ctx.reclen != null ? LookupInstruction(ctx.reclen).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(File.PuffinBasicFile.DEFAULT_RECORD_LEN));
+            Types.AssertString(ir.GetSymbolTable()[filenameInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[recordLenInstrId].GetType().GetAtomTypeId(), GetCtxString(ctx));
 
             // fileName, fileNumber
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, filenameInstr.result, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(fileNumber)), NULL_ID);
 
             // openMode, accessMode
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(fileOpenMode.Name())), ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(accessMode.Name())), NULL_ID);
+            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(fileOpenMode.ToString())), ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(accessMode.ToString())), NULL_ID);
 
             // lockMode, recordLen
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.OPEN, ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(lockMode.Name())), recordLenInstrId, NULL_ID);
+            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.OPEN, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(lockMode.ToString())), recordLenInstrId, NULL_ID);
         }
 
         //
@@ -9050,14 +9079,27 @@ namespace Org.Puffinbasic.Parser
         // lockMode, recordLen
         public override void ExitClosestmt(PuffinBasicParser.ClosestmtContext ctx)
         {
-            var fileNumbers = ctx.DECIMAL().Stream().Map((fileNumberCtx) => Numbers.ParseInt32(fileNumberCtx.GetText(), () => GetCtxString(ctx))).Collect(Collectors.ToList());
-            if (fileNumbers.IsEmpty())
+            //var fileNumbers = ctx.DECIMAL().Stream().Map((fileNumberCtx) => Numbers.ParseInt32(fileNumberCtx.GetText(), GetCtxString(ctx))).Collect(Collectors.ToList());
+            var fileNumbers = ctx.DECIMAL().Select((fileNumberCtx) => Numbers.ParseInt32(fileNumberCtx.GetText(), GetCtxString(ctx)));
+            if (fileNumbers.Any())
             {
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.CLOSE_ALL, NULL_ID, NULL_ID, NULL_ID);
             }
             else
             {
-                fileNumbers.ForEach((fileNumber) => ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.CLOSE, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(fileNumber)), NULL_ID, NULL_ID));
+                //fileNumbers.ForEach((fileNumber) => ir.AddInstruction(sourceFile, 
+                //    currentLineNumber, 
+                //    ctx.Start.StartIndex, 
+                //    ctx.Stop.StopIndex, 
+                //    OpCode.CLOSE, 
+                //    ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(fileNumber)), NULL_ID, NULL_ID));
+
+                foreach (var fileNumber in fileNumbers)
+                {
+                    ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.CLOSE,
+                        ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.INT32, (e) => e.GetValue().SetInt32(fileNumber)),
+                        NULL_ID, NULL_ID);
+                }
             }
         }
 
@@ -9220,13 +9262,13 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFieldstmt(PuffinBasicParser.FieldstmtContext ctx)
         {
             var fileNumberInstr = LookupInstruction(ctx.filenum);
-            Types.AssertNumeric(ir.GetSymbolTable()[fileNumberInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            var numEntries = ctx.Variable().Count;
+            Types.AssertNumeric(ir.GetSymbolTable()[fileNumberInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            var numEntries = ctx.variable().Count();
             for (int i = 0; i < numEntries; i++)
             {
-                var recordPartLen = Numbers.ParseInt32(ctx.DECIMAL(i).GetText(), () => GetCtxString(ctx));
-                var varInstr = LookupInstruction(ctx.Variable(i));
-                AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+                var recordPartLen = Numbers.ParseInt32(ctx.DECIMAL(i).GetText(), GetCtxString(ctx));
+                var varInstr = LookupInstruction(ctx.variable(i));
+                AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, varInstr.result, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(recordPartLen)), NULL_ID);
             }
 
@@ -10056,12 +10098,12 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitPutstmt(PuffinBasicParser.PutstmtContext ctx)
         {
-            var fileNumberInstr = Numbers.ParseInt32(ctx.filenum.GetText(), () => GetCtxString(ctx));
+            var fileNumberInstr = Numbers.ParseInt32(ctx.filenum.Text, GetCtxString(ctx));
             int exprId;
-            if (ctx.Expr() != null)
+            if (ctx.expr() != null)
             {
-                exprId = LookupInstruction(ctx.Expr()).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[exprId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                exprId = LookupInstruction(ctx.expr()).result;
+                Types.AssertNumeric(ir.GetSymbolTable()[exprId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
             else
             {
@@ -10230,15 +10272,15 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitMiddlrstmt(PuffinBasicParser.MiddlrstmtContext ctx)
         {
-            var varInstr = LookupInstruction(ctx.Variable());
-            var nInstr = LookupInstruction(ctx.Expr(0));
-            var mInstrId = ctx.Expr().Count == 3 ? LookupInstruction(ctx.Expr(1)).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(-1));
-            var replacement = ctx.Expr().Count == 3 ? LookupInstruction(ctx.Expr(2)) : LookupInstruction(ctx.Expr(1));
-            Types.AssertString(ir.GetSymbolTable()[varInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[replacement.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[nInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[mInstrId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            var nInstr = LookupInstruction(ctx.expr(0));
+            var mInstrId = ctx.expr().Count()== 3 ? LookupInstruction(ctx.expr(1)).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(-1));
+            var replacement = ctx.expr().Count()== 3 ? LookupInstruction(ctx.expr(2)) : LookupInstruction(ctx.expr(1));
+            Types.AssertString(ir.GetSymbolTable()[varInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[replacement.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[nInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[mInstrId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, varInstr.result, nInstr.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.MIDDLR_STMT, mInstrId, replacement.result, NULL_ID);
         }
@@ -10402,12 +10444,12 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitGetstmt(PuffinBasicParser.GetstmtContext ctx)
         {
-            var fileNumberInstr = Numbers.ParseInt32(ctx.filenum.GetText(), () => GetCtxString(ctx));
+            var fileNumberInstr = Numbers.ParseInt32(ctx.filenum.Text, GetCtxString(ctx));
             int exprId;
-            if (ctx.Expr() != null)
+            if (ctx.expr() != null)
             {
-                exprId = LookupInstruction(ctx.Expr()).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[exprId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                exprId = LookupInstruction(ctx.expr()).result;
+                Types.AssertNumeric(ir.GetSymbolTable()[exprId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
             else
             {
@@ -10576,8 +10618,8 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitRandomizestmt(PuffinBasicParser.RandomizestmtContext ctx)
         {
-            var exprId = LookupInstruction(ctx.Expr()).result;
-            Types.AssertNumeric(ir.GetSymbolTable()[exprId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var exprId = LookupInstruction(ctx.expr()).result;
+            Types.AssertNumeric(ir.GetSymbolTable()[exprId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RANDOMIZE, exprId, NULL_ID, NULL_ID);
         }
 
@@ -11226,7 +11268,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitDefsngstmt(PuffinBasicParser.DefsngstmtContext ctx)
         {
-            HandleDefTypeStmt(ctx.LETTERRANGE(), FLOAT);
+            HandleDefTypeStmt(ctx.LETTERRANGE(), PuffinBasicAtomTypeId.FLOAT);
         }
 
         //
@@ -11388,7 +11430,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitDefdblstmt(PuffinBasicParser.DefdblstmtContext ctx)
         {
-            HandleDefTypeStmt(ctx.LETTERRANGE(), DOUBLE);
+            HandleDefTypeStmt(ctx.LETTERRANGE(), PuffinBasicAtomTypeId.DOUBLE);
         }
 
         //
@@ -11550,7 +11592,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitDefstrstmt(PuffinBasicParser.DefstrstmtContext ctx)
         {
-            HandleDefTypeStmt(ctx.LETTERRANGE(), STRING);
+            HandleDefTypeStmt(ctx.LETTERRANGE(), PuffinBasicAtomTypeId.STRING);
         }
 
         //
@@ -11712,12 +11754,12 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitLsetstmt(PuffinBasicParser.LsetstmtContext ctx)
         {
-            var varInstr = LookupInstruction(ctx.Variable());
-            var exprInstr = LookupInstruction(ctx.Expr());
+            var varInstr = LookupInstruction(ctx.variable());
+            var exprInstr = LookupInstruction(ctx.expr());
             var varEntry = ir.GetSymbolTable()[varInstr.result];
-            AssertVariable(varEntry, () => GetCtxString(ctx));
-            Types.AssertString(varEntry.GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[exprInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            AssertVariable(varEntry, GetCtxString(ctx));
+            Types.AssertString(varEntry.GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[exprInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LSET, varInstr.result, exprInstr.result, NULL_ID);
         }
 
@@ -11880,12 +11922,12 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitRsetstmt(PuffinBasicParser.RsetstmtContext ctx)
         {
-            var varInstr = LookupInstruction(ctx.Variable());
-            var exprInstr = LookupInstruction(ctx.Expr());
+            var varInstr = LookupInstruction(ctx.variable());
+            var exprInstr = LookupInstruction(ctx.expr());
             var varEntry = ir.GetSymbolTable()[varInstr.result];
-            AssertVariable(varEntry, () => GetCtxString(ctx));
-            Types.AssertString(varEntry.GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[exprInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            AssertVariable(varEntry, GetCtxString(ctx));
+            Types.AssertString(varEntry.GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[exprInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.RSET, varInstr.result, exprInstr.result, NULL_ID);
         }
 
@@ -12048,22 +12090,22 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitInputstmt(PuffinBasicParser.InputstmtContext ctx)
         {
-            foreach (var varCtx in ctx.Variable())
+            foreach (var varCtx in ctx.variable())
             {
                 var varInstr = LookupInstruction(varCtx);
-                AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+                AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, varInstr.result, NULL_ID, NULL_ID);
             }
 
             int promptId;
-            if (ctx.Expr() != null)
+            if (ctx.expr() != null)
             {
-                promptId = LookupInstruction(ctx.Expr()).result;
-                Types.AssertString(ir.GetSymbolTable()[promptId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                promptId = LookupInstruction(ctx.expr()).result;
+                Types.AssertString(ir.GetSymbolTable()[promptId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
             else
             {
-                promptId = ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString("?"));
+                promptId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString("?"));
             }
 
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INPUT, promptId, NULL_ID, NULL_ID);
@@ -12228,15 +12270,15 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitInputhashstmt(PuffinBasicParser.InputhashstmtContext ctx)
         {
-            foreach (var varCtx in ctx.Variable())
+            foreach (var varCtx in ctx.variable())
             {
                 var varInstr = LookupInstruction(varCtx);
-                AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+                AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, varInstr.result, NULL_ID, NULL_ID);
             }
 
             var fileNumInstr = LookupInstruction(ctx.filenum);
-            Types.AssertNumeric(ir.GetSymbolTable()[fileNumInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[fileNumInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.INPUT, NULL_ID, fileNumInstr.result, NULL_ID);
         }
 
@@ -12399,18 +12441,18 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitLineinputstmt(PuffinBasicParser.LineinputstmtContext ctx)
         {
-            var varInstr = LookupInstruction(ctx.Variable());
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, varInstr.result, NULL_ID, NULL_ID);
             int promptId;
-            if (ctx.Expr() != null)
+            if (ctx.expr() != null)
             {
-                promptId = LookupInstruction(ctx.Expr()).result;
-                Types.AssertString(ir.GetSymbolTable()[promptId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                promptId = LookupInstruction(ctx.expr()).result;
+                Types.AssertString(ir.GetSymbolTable()[promptId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
             else
             {
-                promptId = ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(""));
+                promptId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(""));
             }
 
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LINE_INPUT, promptId, NULL_ID, NULL_ID);
@@ -12575,11 +12617,11 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitLineinputhashstmt(PuffinBasicParser.LineinputhashstmtContext ctx)
         {
-            var varInstr = LookupInstruction(ctx.Variable());
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, varInstr.result, NULL_ID, NULL_ID);
             var fileNumInstr = LookupInstruction(ctx.filenum);
-            Types.AssertNumeric(ir.GetSymbolTable()[fileNumInstr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[fileNumInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LINE_INPUT, NULL_ID, fileNumInstr.result, NULL_ID);
         }
 
@@ -12742,7 +12784,7 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         public override void ExitWritestmt(PuffinBasicParser.WritestmtContext ctx)
         {
-            HandleWritestmt(ctx, ctx.Expr(), null);
+            HandleWritestmt(ctx, ctx.expr(), null);
         }
 
         //
@@ -12905,7 +12947,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitWritehashstmt(PuffinBasicParser.WritehashstmtContext ctx)
         {
             var fileNumInstr = LookupInstruction(ctx.filenum);
-            HandleWritestmt(ctx, ctx.Expr(), fileNumInstr);
+            HandleWritestmt(ctx, ctx.expr(), fileNumInstr);
         }
 
         //
@@ -13065,7 +13107,7 @@ namespace Org.Puffinbasic.Parser
         // openMode, accessMode
         // lockMode, recordLen
         // FileNumber, #fields
-        public virtual void HandleWritestmt(ParserRuleContext ctx, List<PuffinBasicParser.ExprContext> exprs, Instruction fileNumber)
+        public virtual void HandleWritestmt(ParserRuleContext ctx, IList<PuffinBasicParser.ExprContext> exprs, Instruction fileNumber)
         {
 
             // if fileNumber != null, skip first instruction
@@ -13076,17 +13118,17 @@ namespace Org.Puffinbasic.Parser
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.WRITE, exprInstr.result, NULL_ID, NULL_ID);
                 if (i + 1 < exprs.Count)
                 {
-                    var commaId = ir.GetSymbolTable().AddTmp(STRING, (entry) => entry.GetValue().SetString(","));
+                    var commaId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (entry) => entry.GetValue().SetString(","));
                     ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PRINT, commaId, NULL_ID, NULL_ID);
                 }
             }
 
-            var newlineId = ir.GetSymbolTable().AddTmp(STRING, (entry) => entry.GetValue().SetString(Environment.NewLine()));
+            var newlineId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (entry) => entry.GetValue().SetString(Environment.NewLine));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PRINT, newlineId, NULL_ID, NULL_ID);
             int fileNumberId;
             if (fileNumber != null)
             {
-                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
                 fileNumberId = fileNumber.result;
             }
             else
@@ -13257,10 +13299,10 @@ namespace Org.Puffinbasic.Parser
         // if fileNumber != null, skip first instruction
         public override void ExitReadstmt(PuffinBasicParser.ReadstmtContext ctx)
         {
-            foreach (var varCtx in ctx.Variable())
+            foreach (var varCtx in ctx.variable())
             {
                 var varInstr = LookupInstruction(varCtx);
-                AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+                AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.READ, varInstr.result, NULL_ID, NULL_ID);
             }
         }
@@ -13600,7 +13642,7 @@ namespace Org.Puffinbasic.Parser
                 else
                 {
                     var text = Unquote(child.GetText());
-                    valueId = ir.GetSymbolTable().AddTmp(STRING, (e) => e.GetValue().SetString(text));
+                    valueId = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(text));
                 }
 
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.DATA, valueId, NULL_ID, NULL_ID);
@@ -13767,7 +13809,7 @@ namespace Org.Puffinbasic.Parser
         // if fileNumber != null, skip first instruction
         public override void ExitLabelstmt(PuffinBasicParser.LabelstmtContext ctx)
         {
-            var label = ctx.String().STRING().GetText();
+            var label = ctx.@string().STRING().GetText();
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LABEL, ir.GetSymbolTable().AddLabel(label), NULL_ID, NULL_ID);
         }
 
@@ -13933,18 +13975,18 @@ namespace Org.Puffinbasic.Parser
         public override void ExitScreenstmt(PuffinBasicParser.ScreenstmtContext ctx)
         {
             AssertGraphics();
-            var title = LookupInstruction(ctx.Expr(0));
-            var w = LookupInstruction(ctx.Expr(1));
-            var h = LookupInstruction(ctx.Expr(2));
-            var iw = ctx.Expr().Count == 5 ? LookupInstruction(ctx.Expr(3)) : w;
-            var ih = ctx.Expr().Count == 5 ? LookupInstruction(ctx.Expr(4)) : h;
+            var title = LookupInstruction(ctx.expr(0));
+            var w = LookupInstruction(ctx.expr(1));
+            var h = LookupInstruction(ctx.expr(2));
+            var iw = ctx.expr().Count()== 5 ? LookupInstruction(ctx.expr(3)) : w;
+            var ih = ctx.expr().Count()== 5 ? LookupInstruction(ctx.expr(4)) : h;
             var manualRepaintFlag = ctx.mr != null;
             var doubleBufferFlag = ctx.db != null;
-            Types.AssertString(ir.GetSymbolTable()[title.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[w.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[h.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[iw.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[ih.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[title.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[w.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[h.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[iw.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[ih.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, w.result, h.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, iw.result, ih.result, NULL_ID);
             var repaint = ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(manualRepaintFlag ? 0 : -1));
@@ -14287,23 +14329,23 @@ namespace Org.Puffinbasic.Parser
             var s = ctx.s != null ? LookupInstruction(ctx.s) : null;
             var e = ctx.e != null ? LookupInstruction(ctx.e) : null;
             var fill = ctx.fill != null ? LookupInstruction(ctx.fill) : null;
-            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[r1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[r2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[r1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[r2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             if (s != null)
             {
-                Types.AssertNumeric(ir.GetSymbolTable()[s.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[s.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             if (e != null)
             {
-                Types.AssertNumeric(ir.GetSymbolTable()[e.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[e.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             if (fill != null)
             {
-                Types.AssertString(ir.GetSymbolTable()[fill.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertString(ir.GetSymbolTable()[fill.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x.result, y.result, NULL_ID);
@@ -14478,15 +14520,15 @@ namespace Org.Puffinbasic.Parser
             var y1 = LookupInstruction(ctx.y1);
             var x2 = LookupInstruction(ctx.x2);
             var y2 = LookupInstruction(ctx.y2);
-            Types.AssertNumeric(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             Instruction bf = null;
             if (ctx.bf != null)
             {
                 bf = LookupInstruction(ctx.bf);
-                Types.AssertString(ir.GetSymbolTable()[bf.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertString(ir.GetSymbolTable()[bf.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x1.result, y1.result, NULL_ID);
@@ -14658,9 +14700,9 @@ namespace Org.Puffinbasic.Parser
             var r = LookupInstruction(ctx.r);
             var g = LookupInstruction(ctx.g);
             var b = LookupInstruction(ctx.b);
-            Types.AssertNumeric(ir.GetSymbolTable()[r.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[g.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[b.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[r.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[g.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[b.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, r.result, g.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.COLOR, b.result, NULL_ID, NULL_ID);
         }
@@ -14832,11 +14874,11 @@ namespace Org.Puffinbasic.Parser
             var r = LookupInstruction(ctx.r);
             var g = LookupInstruction(ctx.g);
             var b = LookupInstruction(ctx.b);
-            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[r.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[g.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[b.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[r.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[g.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[b.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, r.result, g.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, b.result, NULL_ID, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PAINT, x.result, y.result, NULL_ID);
@@ -15010,23 +15052,23 @@ namespace Org.Puffinbasic.Parser
             if (ctx.r != null)
             {
                 rId = LookupInstruction(ctx.r).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[rId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[rId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             if (ctx.g != null)
             {
                 gId = LookupInstruction(ctx.g).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[gId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[gId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             if (ctx.b != null)
             {
                 bId = LookupInstruction(ctx.b).result;
-                Types.AssertNumeric(ir.GetSymbolTable()[bId].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertNumeric(ir.GetSymbolTable()[bId].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
-            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, rId, gId, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM1, bId, NULL_ID, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PSET, x.result, y.result, NULL_ID);
@@ -15198,13 +15240,13 @@ namespace Org.Puffinbasic.Parser
             var y1 = LookupInstruction(ctx.y1);
             var x2 = LookupInstruction(ctx.x2);
             var y2 = LookupInstruction(ctx.y2);
-            var varInstr = LookupInstruction(ctx.Variable());
+            var varInstr = LookupInstruction(ctx.variable());
             int bufferNumber = ctx.BACK1() != null ? GraphicsUtil.BUFFER_NUM_BACK1 : GraphicsUtil.BUFFER_NUM_FRONT;
-            Types.AssertNumeric(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x1.result, y1.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x2.result, y2.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GGET, varInstr.result, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(bufferNumber)), NULL_ID);
@@ -15374,15 +15416,15 @@ namespace Org.Puffinbasic.Parser
             AssertGraphics();
             var x = LookupInstruction(ctx.x);
             var y = LookupInstruction(ctx.y);
-            var varInstr = LookupInstruction(ctx.Variable());
+            var varInstr = LookupInstruction(ctx.variable());
             var action = ctx.action != null ? LookupInstruction(ctx.action) : null;
             int bufferNumber = ctx.FRONT() == null ? GraphicsUtil.BUFFER_NUM_BACK1 : GraphicsUtil.BUFFER_NUM_FRONT;
-            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             if (action != null)
             {
-                Types.AssertString(ir.GetSymbolTable()[action.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+                Types.AssertString(ir.GetSymbolTable()[action.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             }
 
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x.result, y.result, NULL_ID);
@@ -15555,9 +15597,9 @@ namespace Org.Puffinbasic.Parser
             var srcx = LookupInstruction(ctx.srcx);
             var dstx = LookupInstruction(ctx.dstx);
             var w = LookupInstruction(ctx.w);
-            Types.AssertNumeric(ir.GetSymbolTable()[srcx.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[dstx.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[w.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[srcx.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[dstx.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[w.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, srcx.result, dstx.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.BUFFERCOPYHOR, w.result, NULL_ID, NULL_ID);
         }
@@ -15724,8 +15766,8 @@ namespace Org.Puffinbasic.Parser
         public override void ExitDrawstmt(PuffinBasicParser.DrawstmtContext ctx)
         {
             AssertGraphics();
-            var str = LookupInstruction(ctx.Expr());
-            Types.AssertString(ir.GetSymbolTable()[str.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var str = LookupInstruction(ctx.expr());
+            Types.AssertString(ir.GetSymbolTable()[str.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.DRAW, str.result, NULL_ID, NULL_ID);
         }
 
@@ -15894,9 +15936,9 @@ namespace Org.Puffinbasic.Parser
             var name = LookupInstruction(ctx.name);
             var style = LookupInstruction(ctx.style);
             var size = LookupInstruction(ctx.size);
-            Types.AssertString(ir.GetSymbolTable()[style.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[size.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[name.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[style.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[size.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[name.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, style.result, size.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.FONT, name.result, NULL_ID, NULL_ID);
         }
@@ -16065,9 +16107,9 @@ namespace Org.Puffinbasic.Parser
             var str = LookupInstruction(ctx.str);
             var x = LookupInstruction(ctx.x);
             var y = LookupInstruction(ctx.y);
-            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            Types.AssertString(ir.GetSymbolTable()[str.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            Types.AssertString(ir.GetSymbolTable()[str.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, x.result, y.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.DRAWSTR, str.result, NULL_ID, NULL_ID);
         }
@@ -16235,9 +16277,9 @@ namespace Org.Puffinbasic.Parser
         {
             AssertGraphics();
             var path = LookupInstruction(ctx.path);
-            var varInstr = LookupInstruction(ctx.Variable());
-            Types.AssertString(ir.GetSymbolTable()[path.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            Types.AssertString(ir.GetSymbolTable()[path.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LOADIMG, path.result, varInstr.result, NULL_ID);
         }
 
@@ -16404,9 +16446,9 @@ namespace Org.Puffinbasic.Parser
         {
             AssertGraphics();
             var path = LookupInstruction(ctx.path);
-            var varInstr = LookupInstruction(ctx.Variable());
-            Types.AssertString(ir.GetSymbolTable()[path.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            Types.AssertString(ir.GetSymbolTable()[path.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.SAVEIMG, path.result, varInstr.result, NULL_ID);
         }
 
@@ -16738,9 +16780,9 @@ namespace Org.Puffinbasic.Parser
         {
             AssertGraphics();
             var path = LookupInstruction(ctx.path);
-            var varInstr = LookupInstruction(ctx.Variable());
-            Types.AssertString(ir.GetSymbolTable()[path.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            Types.AssertString(ir.GetSymbolTable()[path.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LOADWAV, path.result, varInstr.result, NULL_ID);
         }
 
@@ -16906,8 +16948,8 @@ namespace Org.Puffinbasic.Parser
         public override void ExitPlaywavstmt(PuffinBasicParser.PlaywavstmtContext ctx)
         {
             AssertGraphics();
-            var varInstr = LookupInstruction(ctx.Variable());
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PLAYWAV, varInstr.result, NULL_ID, NULL_ID);
         }
 
@@ -17073,8 +17115,8 @@ namespace Org.Puffinbasic.Parser
         public override void ExitStopwavstmt(PuffinBasicParser.StopwavstmtContext ctx)
         {
             AssertGraphics();
-            var varInstr = LookupInstruction(ctx.Variable());
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.STOPWAV, varInstr.result, NULL_ID, NULL_ID);
         }
 
@@ -17240,8 +17282,8 @@ namespace Org.Puffinbasic.Parser
         public override void ExitLoopwavstmt(PuffinBasicParser.LoopwavstmtContext ctx)
         {
             AssertGraphics();
-            var varInstr = LookupInstruction(ctx.Variable());
-            AssertVariable(ir.GetSymbolTable()[varInstr.result], () => GetCtxString(ctx));
+            var varInstr = LookupInstruction(ctx.variable());
+            AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.LOOPWAV, varInstr.result, NULL_ID, NULL_ID);
         }
 
@@ -17406,8 +17448,8 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitSleepstmt(PuffinBasicParser.SleepstmtContext ctx)
         {
-            var millis = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[millis.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var millis = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[millis.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.SLEEP, millis.result, NULL_ID, NULL_ID);
         }
 
@@ -17737,7 +17779,7 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitArray1dsortstmt(PuffinBasicParser.Array1dsortstmtContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(), false);
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(), false);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DSORT, var1Instr.result, NULL_ID, NULL_ID);
         }
 
@@ -17902,8 +17944,8 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitArraycopystmt(PuffinBasicParser.ArraycopystmtContext ctx)
         {
-            var var1Instr = GetArrayNdVariableInstruction(ctx, ctx.Variable(0));
-            var var2Instr = GetArrayNdVariableInstruction(ctx, ctx.Variable(1));
+            var var1Instr = GetArrayNdVariableInstruction(ctx, ctx.variable(0));
+            var var2Instr = GetArrayNdVariableInstruction(ctx, ctx.variable(1));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAYCOPY, var1Instr.result, var2Instr.result, NULL_ID);
         }
 
@@ -18068,14 +18110,14 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitArray1dcopystmt(PuffinBasicParser.Array1dcopystmtContext ctx)
         {
-            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(0), false);
-            var var2Instr = GetArray1dVariableInstruction(ctx, ctx.Variable(1), false);
+            var var1Instr = GetArray1dVariableInstruction(ctx, ctx.variable(0), false);
+            var var2Instr = GetArray1dVariableInstruction(ctx, ctx.variable(1), false);
             var src0 = LookupInstruction(ctx.src0);
-            Types.AssertNumeric(ir.GetSymbolTable()[src0.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[src0.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             var dst0 = LookupInstruction(ctx.dst0);
-            Types.AssertNumeric(ir.GetSymbolTable()[dst0.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[dst0.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             var len = LookupInstruction(ctx.len);
-            Types.AssertNumeric(ir.GetSymbolTable()[len.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            Types.AssertNumeric(ir.GetSymbolTable()[len.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, var1Instr.result, src0.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, var2Instr.result, dst0.result, NULL_ID);
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY1DCOPY, len.result, NULL_ID, NULL_ID);
@@ -18242,9 +18284,9 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitArray2dshifthorstmt(PuffinBasicParser.Array2dshifthorstmtContext ctx)
         {
-            var varInstr = GetArray2dVariableInstruction(ctx, ctx.Variable());
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var varInstr = GetArray2dVariableInstruction(ctx, ctx.variable());
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY2DSHIFTHOR, varInstr.result, expr.result, NULL_ID);
         }
 
@@ -18409,9 +18451,9 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitArray2dshiftverstmt(PuffinBasicParser.Array2dshiftverstmtContext ctx)
         {
-            var varInstr = GetArray2dVariableInstruction(ctx, ctx.Variable());
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var varInstr = GetArray2dVariableInstruction(ctx, ctx.variable());
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAY2DSHIFTVER, varInstr.result, expr.result, NULL_ID);
         }
 
@@ -18576,9 +18618,9 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         public override void ExitArrayfillstmt(PuffinBasicParser.ArrayfillstmtContext ctx)
         {
-            var varInstr = GetArrayNdVariableInstruction(ctx, ctx.Variable());
-            var expr = LookupInstruction(ctx.Expr());
-            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), () => GetCtxString(ctx));
+            var varInstr = GetArrayNdVariableInstruction(ctx, ctx.variable());
+            var expr = LookupInstruction(ctx.expr());
+            Types.AssertNumeric(ir.GetSymbolTable()[expr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.ARRAYFILL, varInstr.result, expr.result, NULL_ID);
         }
 
@@ -18910,14 +18952,11 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         private void HandleDefTypeStmt(IList<ITerminalNode> letterRanges, PuffinBasicAtomTypeId dataType)
         {
-            IList<Character> defs = new List<Character>();
-            letterRanges.Stream().Map(ParseTree.GetText()).ForEach((lr) =>
-            {
-                for (char i = lr.charAt(0); i <= lr.CharAt(2); i++)
-                {
+            IList<char> defs = new List<char>();
+            foreach (var lr  in letterRanges.Select(x => x.GetText())) {
+                for (char i = lr[0]; i < lr[2]; i++)
                     defs.Add(i);
-                }
-            });
+            }
 
             foreach (var def in defs)
                 ir.GetSymbolTable().SetDefaultDataType(def, dataType);
@@ -20127,13 +20166,13 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         // if fileNumber != null, skip first instruction
         // GraphicsRuntime
-        private void CheckDataTypeMatch(ISTEntry entry1, int id2, string lineSupplier)
+        private void CheckDataTypeMatch(ISTEntry entry1, int id2, string line)
         {
             var entry2 = ir.GetSymbolTable()[id2];
             if ((entry1.GetType().GetAtomTypeId() == PuffinBasicAtomTypeId.STRING && entry2.GetType().GetAtomTypeId() != PuffinBasicAtomTypeId.STRING) 
                 || (entry1.GetType().GetAtomTypeId() != PuffinBasicAtomTypeId.STRING && entry2.GetType().GetAtomTypeId() == PuffinBasicAtomTypeId.STRING))
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, lineSupplier.Get(), "Data type " + entry1.GetType().GetAtomTypeId() + " mismatches with " + entry2.GetType().GetAtomTypeId());
+                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line, "Data type " + entry1.GetType().GetAtomTypeId() + " mismatches with " + entry2.GetType().GetAtomTypeId());
             }
         }
 
@@ -20296,11 +20335,11 @@ namespace Org.Puffinbasic.Parser
         // FileNumber, #fields
         // if fileNumber != null, skip first instruction
         // GraphicsRuntime
-        private void CheckDataTypeMatch(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, string lineSupplier)
+        private void CheckDataTypeMatch(PuffinBasicAtomTypeId dt1, PuffinBasicAtomTypeId dt2, string line)
         {
             if ((dt1 == PuffinBasicAtomTypeId.STRING && dt2 != PuffinBasicAtomTypeId.STRING) || (dt1 != PuffinBasicAtomTypeId.STRING && dt2 == PuffinBasicAtomTypeId.STRING))
             {
-                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, lineSupplier.Get(), "Data type " + dt1 + " mismatches with " + dt2);
+                throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, line, "Data type " + dt1 + " mismatches with " + dt2);
             }
         }
 
@@ -20465,8 +20504,8 @@ namespace Org.Puffinbasic.Parser
         // GraphicsRuntime
         internal sealed class UDFState
         {
-            private readonly VariableName variableName;
-            private readonly STUDF udfEntry;
+            internal readonly VariableName variableName;
+            internal readonly STUDF udfEntry;
             public Instruction gotoPostFuncDecl;
             public Instruction labelFuncStart;
             public int udfId;

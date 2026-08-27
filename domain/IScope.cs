@@ -5,7 +5,6 @@ using Org.Puffinbasic.Domain.Scope;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 

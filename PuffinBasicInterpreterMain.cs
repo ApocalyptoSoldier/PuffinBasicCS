@@ -189,14 +189,13 @@ namespace Org.Puffinbasic
         private static PuffinBasicSourceFile SyntaxCheckAndSortByLineNumber(PuffinBasicImportPath importPath, string sourceFile, string input, ThrowOnDuplicate throwOnDuplicate, SourceFileMode sourceFileMode)
         {
             var @in = CharStreams.fromString(input);
-            var syntaxErrorListener = new ThrowingErrorListener(input);
             var lexer = new PuffinBasicLexer(@in);
             lexer.RemoveErrorListeners();
-            lexer.AddErrorListener(syntaxErrorListener);
+            lexer.AddErrorListener(new LexerErrorListener(input));
             var tokens = new CommonTokenStream(lexer);
             var parser = new PuffinBasicParser(tokens);
             parser.RemoveErrorListeners();
-            parser.AddErrorListener(syntaxErrorListener);
+            parser.AddErrorListener(new ThrowingErrorListener(input));
             var tree = parser.prog();
             var walker = new ParseTreeWalker();
             var linenumListener = new LinenumberListener(@in, throwOnDuplicate);
@@ -237,11 +236,15 @@ namespace Org.Puffinbasic
                 this.input = input;
             }
 
-            public /*override*/ void SyntaxError(Recognizer<Symbol, Antlr4.Runtime.Atn.ATNSimulator> recognizer, object offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+            public override void SyntaxError(
+                TextWriter output, IRecognizer recognizer,
+                IToken offendingSymbol, int line,
+                int charPositionInLine, string msg,
+                RecognitionException e)
             {
                 var lineIndex = line - 1;
-
                 var lines = input.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.None);
+
                 string inputLine;
                 if (lineIndex >= 0 && lineIndex < lines.Length)
                 {
@@ -258,6 +261,28 @@ namespace Org.Puffinbasic
 
                 throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine + inputLine);
             }
+
+            //public /*override*/ void SyntaxError(Recognizer<Symbol, Antlr4.Runtime.Atn.ATNSimulator> recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+            //{
+            //    var lineIndex = line - 1;
+
+            //    var lines = input.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.None);
+            //    string inputLine;
+            //    if (lineIndex >= 0 && lineIndex < lines.Length)
+            //    {
+            //        inputLine = lines[lineIndex];
+            //        if (charPositionInLine >= 0 && charPositionInLine <= inputLine.Length)
+            //        {
+            //            inputLine += Environment.NewLine + "^".PadLeft(Math.Max(0, charPositionInLine));
+            //        }
+            //    }
+            //    else
+            //    {
+            //        inputLine = "<LINE OUT OF RANGE>";
+            //    }
+
+            //    throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine + inputLine);
+            //}
         }
 
         public sealed class UserOptions

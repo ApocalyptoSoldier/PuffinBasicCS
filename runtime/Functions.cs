@@ -217,7 +217,6 @@ namespace Org.Puffinbasic.Runtime
 
             symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
 
-            //throw new NotImplementedException();
 
             //int value = symbolTable[instruction.op1].GetValue().GetInt32();
             //string str = new string (ByteBuffer.Allocate(4).PutInt(value).Array(), StandardCharsets.ISO_8859_1);
@@ -232,7 +231,6 @@ namespace Org.Puffinbasic.Runtime
 
             symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
 
-            //throw new NotImplementedException();
             //long value = symbolTable[instruction.op1].GetValue().GetInt64();
             //string str = new string (ByteBuffer.Allocate(8).PutLong(value).Array(), StandardCharsets.ISO_8859_1);
             //symbolTable[instruction.result].GetValue().SetString(str);
@@ -246,7 +244,6 @@ namespace Org.Puffinbasic.Runtime
 
             symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
 
-            //throw new NotImplementedException();
             //float value = symbolTable[instruction.op1].GetValue().GetFloat32();
             //string str = new string (ByteBuffer.Allocate(4).PutFloat(value).Array(), StandardCharsets.ISO_8859_1);
             //symbolTable[instruction.result].GetValue().SetString(str);
@@ -260,7 +257,6 @@ namespace Org.Puffinbasic.Runtime
 
             symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
 
-            //throw new NotImplementedException();
             //double value = symbolTable[instruction.op1].GetValue().GetFloat64();
             //string str = new string (ByteBuffer.Allocate(8).PutDouble(value).Array(), StandardCharsets.ISO_8859_1);
             //symbolTable[instruction.result].GetValue().SetString(str);
@@ -297,7 +293,6 @@ namespace Org.Puffinbasic.Runtime
 
         public static void Cvs(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            //throw new NotImplementedException();
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 4)
             {
@@ -312,7 +307,6 @@ namespace Org.Puffinbasic.Runtime
 
         public static void Cvd(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            //throw new NotImplementedException();
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 8)
             {
@@ -430,7 +424,6 @@ namespace Org.Puffinbasic.Runtime
 
         public static void Strdlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            //throw new NotImplementedException();
             var numericEntry = symbolTable[instruction.op1];
             var numeric = numericEntry.GetValue();
             var dt = numericEntry.GetType().GetAtomTypeId();

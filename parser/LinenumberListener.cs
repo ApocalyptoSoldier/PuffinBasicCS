@@ -15,6 +15,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using Org.Puffinbasic.Antlr;
+using System.Threading;
+using Antlr4.Runtime.Misc;
 
 namespace Org.Puffinbasic.Parser
 {
@@ -26,11 +28,11 @@ namespace Org.Puffinbasic.Parser
             LOG
         }
 
-        private readonly AtomicInteger linenumGenerator;
         private readonly Antlr4.Runtime.ICharStream input;
         private readonly ThrowOnDuplicate throwOnDuplicate;
         private readonly SortedDictionary<int, string> sortedLines;
         private readonly HashSet<string> importFiles;
+        int linenum;
         private int numLinenum;
         private int numNoLinenum;
         private int numStmtWithLinenum;
@@ -39,7 +41,6 @@ namespace Org.Puffinbasic.Parser
         {
             if (input == null) throw new ArgumentNullException("input");
             if (throwOnDuplicate == null) throw new ArgumentNullException("throwOnDuplicate");
-            this.linenumGenerator = new AtomicInteger();
             this.input = input;
             this.throwOnDuplicate = throwOnDuplicate;
             this.sortedLines = new SortedDictionary<int, string>();
@@ -85,23 +86,22 @@ namespace Org.Puffinbasic.Parser
 
         public override void ExitLine(PuffinBasicParser.LineContext ctx)
         {
-            string line = input.GetText(new Interval(ctx.start.GetStartIndex(), ctx.stop.GetStopIndex()));
-            int linenum;
-            if (ctx.Linenum() != null)
+            string line = input.GetText(new Interval(ctx.Start.StartIndex, ctx.Stop.StopIndex));
+
+            if (ctx.linenum() != null)
             {
-                linenum = ParseLinenum(ctx.Linenum().DECIMAL().GetText());
+                linenum = ParseLinenum(ctx.linenum().DECIMAL().GetText());
                 numLinenum++;
             }
             else
             {
-                linenum = linenumGenerator.IncrementAndGet();
+                linenum = Interlocked.Increment(ref linenum); // TODO: check if this is even neccessary
                 numNoLinenum++;
             }
 
-            var oldLine = sortedLines.Add(linenum, line);
-            if (oldLine != null)
+            if (sortedLines.ContainsKey(linenum))
             {
-                var message = "Duplicate line number!" + Environment.NewLine + "OLD:" + Environment.NewLine + oldLine + "NEW:" + Environment.NewLine + line;
+                var message = "Duplicate line number!" + Environment.NewLine + "OLD:" + Environment.NewLine + line + "NEW:" + Environment.NewLine + line;
                 if (throwOnDuplicate == ThrowOnDuplicate.THROW)
                 {
                     throw new PuffinBasicSyntaxError(message);
@@ -111,6 +111,8 @@ namespace Org.Puffinbasic.Parser
                     Console.Error.WriteLine(message);
                 }
             }
+            else
+                sortedLines.Add(linenum, line);
         }
 
         public override void ExitGosubstmt(PuffinBasicParser.GosubstmtContext ctx)
@@ -125,7 +127,7 @@ namespace Org.Puffinbasic.Parser
 
         public override void ExitThen(PuffinBasicParser.ThenContext ctx)
         {
-            if (ctx.Linenum() != null)
+            if (ctx.linenum() != null)
             {
                 numStmtWithLinenum++;
             }
@@ -133,7 +135,7 @@ namespace Org.Puffinbasic.Parser
 
         public override void ExitElsestmt(PuffinBasicParser.ElsestmtContext ctx)
         {
-            if (ctx.Linenum() != null)
+            if (ctx.linenum() != null)
             {
                 numStmtWithLinenum++;
             }

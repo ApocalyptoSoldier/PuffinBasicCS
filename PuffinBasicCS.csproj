@@ -131,6 +131,7 @@
     <Compile Include="file\PuffinBasicSequentialAccessInputFile.cs" />
     <Compile Include="file\PuffinBasicSequentialAccessOutputFile.cs" />
     <Compile Include="file\SystemInputOutputFile.cs" />
+    <Compile Include="parser\LexerErrorListener.cs" />
     <Compile Include="parser\LinenumberListener.cs" />
     <Compile Include="parser\PuffinBasicImportPath.cs" />
     <Compile Include="parser\PuffinBasicIR.cs" />
