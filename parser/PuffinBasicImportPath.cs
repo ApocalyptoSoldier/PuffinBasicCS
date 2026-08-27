@@ -29,7 +29,7 @@ namespace Org.Puffinbasic.Parser
             var paths = Environment.GetEnvironmentVariable(PUFFIN_BASIC_PATH_ENVVAR);
             if (paths != null)
             {
-                searchPaths.AddRange(Arrays.Stream(paths.Split(File.pathSeparator)).Collect(Collectors.ToList()));
+                //searchPaths.AddRange(Arrays.Stream(paths.Split(File.pathSeparator)).Collect(Collectors.ToList()));
             }
 
             searchPaths.Add(mainModulePath);
@@ -38,14 +38,15 @@ namespace Org.Puffinbasic.Parser
 
         public virtual string Find(string relativePath)
         {
-            foreach (string searchPath in searchPaths)
-            {
-                var file = Paths.Get(searchPath, relativePath).ToFile();
-                if (file.Exists())
-                {
-                    return file.GetPath();
-                }
-            }
+            throw new NotImplementedException();
+            //foreach (string searchPath in searchPaths)
+            //{
+            //    var file = Paths.Get(searchPath, relativePath).ToFile();
+            //    if (file.Exists())
+            //    {
+            //        return file.GetPath();
+            //    }
+            //}
 
             throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.IMPORT_ERROR, "Search failed for relative path: " + relativePath);
         }

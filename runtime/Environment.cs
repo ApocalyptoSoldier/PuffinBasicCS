@@ -8,6 +8,9 @@ namespace Org.Puffinbasic.Runtime
     {
         string Get(string key);
         void Set(string key, string value);
+
+        public string this[string key] { get; }
+
         class SystemEnv : IEnvironment
         {
             private readonly Dictionary<string, string> overrides;
@@ -18,6 +21,8 @@ namespace Org.Puffinbasic.Runtime
                 string result = overrides[key];
                 return result != null ? result : Environment.GetEnvironmentVariable(key);
             }
+
+            public string this[string key] => Get(key);
 
             public virtual void Set(string key, string value) => overrides.Add(key, value);
         }

@@ -19,11 +19,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.IO;
 
 namespace Org.Puffinbasic.Runtime
 {
     public class Functions
     {
+        private static readonly Encoding ISOCharset = Encoding.GetEncoding("ISO-8859-1");
+
         public static void Abs(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var op1Entry = symbolTable[instruction.op1];
@@ -52,54 +56,52 @@ namespace Org.Puffinbasic.Runtime
         public static void Asc(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var value = symbolTable[instruction.op1].GetValue().GetString();
-            if (value == null || value.IsEmpty())
+            if (String.IsNullOrEmpty(value))
             {
                 throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "IllegalFunctionCall: null/empty string: '" + value + "'");
             }
 
-            var ascii = (int)value.CharAt(0);
+            var ascii = (int)value[0];
             symbolTable[instruction.result].GetValue().SetInt32(ascii);
         }
 
-        public static void Sin(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Sin());
+        public static void Sin(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Sin(d));
 
-        public static void Cos(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Cos());
+        public static void Cos(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Cos(d));
 
-        public static void Tan(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Tan());
+        public static void Tan(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Tan(d));
 
-        public static void Asin(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Asin());
+        public static void Asin(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Asin(d));
 
-        public static void Acos(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Acos());
+        public static void Acos(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Acos(d));
 
-        public static void Atn(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Atan());
+        public static void Atn(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Atan(d));
 
-        public static void Sinh(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Sinh());
+        public static void Sinh(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Sinh(d));
 
-        public static void Cosh(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Cosh());
+        public static void Cosh(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Cosh(d));
 
-        public static void Tanh(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Tanh());
+        public static void Tanh(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Tanh(d));
 
-        public static void Sqr(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Sqrt());
+        public static void Sqr(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Sqrt(d));
 
-        public static void Log(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Log());
+        public static void Log(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Log(d));
 
-        public static void Log10(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Log10());
+        public static void Log10(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Log10(d));
 
-        public static void Log2(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Functions.MathLog2());
+        public static void Log2(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Log(d) / Math.Log(2));
 
-        private static double MathLog2(double x) => Math.Log(x) / Math.Log(2);
+        public static void Exp(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Exp(d));
 
-        public static void Exp(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Exp());
+        public static void ToRad(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => d * (Math.PI / 180.0));
 
-        public static void ToRad(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.ToRadians());
+        public static void ToDeg(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => d * (180.0 / Math.PI));
 
-        public static void ToDeg(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.ToDegrees());
+        public static void Floor(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Floor(d));
 
-        public static void Floor(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Floor());
+        public static void Ceil(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Ceiling(d));
 
-        public static void Ceil(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Ceiling());
-
-        public static void Round(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, Math.Round());
+        public static void Round(PuffinBasicSymbolTable symbolTable, Instruction instruction) => ApplyDoubleFunction(symbolTable, instruction, d => Math.Round(d));
 
         public static void E(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
@@ -209,77 +211,116 @@ namespace Org.Puffinbasic.Runtime
 
         public static void Mkidlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            int value = symbolTable[instruction.op1].GetValue().GetInt32();
-            string str = new string (ByteBuffer.Allocate(4).PutInt(value).Array(), StandardCharsets.ISO_8859_1);
-            symbolTable[instruction.result].GetValue().SetString(str);
+            var value = symbolTable[instruction.op1].GetValue().GetInt32();
+            byte[] b = new byte[4];
+            BitConverter.GetBytes(value).CopyTo(b, 0);
+
+            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+
+            //throw new NotImplementedException();
+
+            //int value = symbolTable[instruction.op1].GetValue().GetInt32();
+            //string str = new string (ByteBuffer.Allocate(4).PutInt(value).Array(), StandardCharsets.ISO_8859_1);
+            //symbolTable[instruction.result].GetValue().SetString(str);
         }
 
         public static void Mkldlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            long value = symbolTable[instruction.op1].GetValue().GetInt64();
-            string str = new string (ByteBuffer.Allocate(8).PutLong(value).Array(), StandardCharsets.ISO_8859_1);
-            symbolTable[instruction.result].GetValue().SetString(str);
+            var value = symbolTable[instruction.op1].GetValue().GetInt64();
+            byte[] b = new byte[8];
+            BitConverter.GetBytes(value).CopyTo(b, 0);
+
+            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+
+            //throw new NotImplementedException();
+            //long value = symbolTable[instruction.op1].GetValue().GetInt64();
+            //string str = new string (ByteBuffer.Allocate(8).PutLong(value).Array(), StandardCharsets.ISO_8859_1);
+            //symbolTable[instruction.result].GetValue().SetString(str);
         }
 
         public static void Mksdlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            float value = symbolTable[instruction.op1].GetValue().GetFloat32();
-            string str = new string (ByteBuffer.Allocate(4).PutFloat(value).Array(), StandardCharsets.ISO_8859_1);
-            symbolTable[instruction.result].GetValue().SetString(str);
+            var value = symbolTable[instruction.op1].GetValue().GetFloat32();
+            byte[] b = new byte[4];
+            BitConverter.GetBytes(value).CopyTo(b, 0);
+
+            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+
+            //throw new NotImplementedException();
+            //float value = symbolTable[instruction.op1].GetValue().GetFloat32();
+            //string str = new string (ByteBuffer.Allocate(4).PutFloat(value).Array(), StandardCharsets.ISO_8859_1);
+            //symbolTable[instruction.result].GetValue().SetString(str);
         }
 
         public static void Mkddlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            double value = symbolTable[instruction.op1].GetValue().GetFloat64();
-            string str = new string (ByteBuffer.Allocate(8).PutDouble(value).Array(), StandardCharsets.ISO_8859_1);
-            symbolTable[instruction.result].GetValue().SetString(str);
+            var value = symbolTable[instruction.op1].GetValue().GetFloat64();
+            byte[] b = new byte[8];
+            BitConverter.GetBytes(value).CopyTo(b, 0);
+
+            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+
+            //throw new NotImplementedException();
+            //double value = symbolTable[instruction.op1].GetValue().GetFloat64();
+            //string str = new string (ByteBuffer.Allocate(8).PutDouble(value).Array(), StandardCharsets.ISO_8859_1);
+            //symbolTable[instruction.result].GetValue().SetString(str);
         }
 
         public static void Cvi(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             string value = symbolTable[instruction.op1].GetValue().GetString();
-            if (value.Length() != 4)
+            if (value.Length != 4)
             {
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVI$: value: " + value + " length must be 4, found: " + value.Length);
             }
 
-            int intValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 4).GetInt();
+            int intValue = BitConverter.ToInt32(ISOCharset.GetBytes(value), 0);
             symbolTable[instruction.result].GetValue().SetInt32(intValue);
+
+            //int intValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 4).GetInt();
+            //symbolTable[instruction.result].GetValue().SetInt32(intValue);
         }
 
         public static void Cvl(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             string value = symbolTable[instruction.op1].GetValue().GetString();
-            if (value.Length() != 8)
+            if (value.Length != 8)
             {
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVL$: value: " + value + " length must be 8, found: " + value.Length);
             }
 
-            long longValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 8).GetLong();
+            long longValue = BitConverter.ToInt64(ISOCharset.GetBytes(value), 0);
+
+            //long longValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 8).GetLong();
             symbolTable[instruction.result].GetValue().SetInt64(longValue);
         }
 
         public static void Cvs(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
+            //throw new NotImplementedException();
             string value = symbolTable[instruction.op1].GetValue().GetString();
-            if (value.Length() != 4)
+            if (value.Length != 4)
             {
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVS$: value: " + value + " length must be 4, found: " + value.Length);
             }
 
-            float floatValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 4).GetFloat();
+            float floatValue = BitConverter.ToSingle(ISOCharset.GetBytes(value), 0);
+
+            //float floatValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 4).GetFloat();
             symbolTable[instruction.result].GetValue().SetFloat32(floatValue);
         }
 
         public static void Cvd(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
+            //throw new NotImplementedException();
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 8)
             {
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVD$: value: " + value + " length must be 8, found: " + value.Length);
             }
 
-            double doubleValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 8).GetDouble();
+            double doubleValue = BitConverter.ToDouble(ISOCharset.GetBytes(value), 0);
+            //double doubleValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 8).GetDouble();
             symbolTable[instruction.result].GetValue().SetFloat64(doubleValue);
         }
 
@@ -292,7 +333,7 @@ namespace Org.Puffinbasic.Runtime
                 bytes[i] = (byte)' ';
             }
 
-            string str = new string (bytes);
+            string str = new string(bytes.Select(b => (char)b).ToArray());
             symbolTable[instruction.result].GetValue().SetString(str);
         }
 
@@ -373,7 +414,7 @@ namespace Org.Puffinbasic.Runtime
                     throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "Bad axis=" + axis + ", #dims=" + value.GetNumArrayDimensions());
                 }
 
-                len = value.GetArrayDimensions().GetInt(axis);
+                len = value.GetArrayDimensions()[axis];
             }
             else if (stEntry.GetValue().HasLen())
             {
@@ -389,26 +430,36 @@ namespace Org.Puffinbasic.Runtime
 
         public static void Strdlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
+            //throw new NotImplementedException();
             var numericEntry = symbolTable[instruction.op1];
             var numeric = numericEntry.GetValue();
             var dt = numericEntry.GetType().GetAtomTypeId();
             string str;
             if (dt == INT32)
-            {
-                str = int.ToString(numeric.GetInt32());
-            }
+                str = numeric.GetInt32().ToString();
             else if (dt == INT64)
-            {
-                str = long.ToString(numeric.GetInt64());
-            }
+                str = numeric.GetInt64().ToString();
             else if (dt == FLOAT)
-            {
-                str = float.ToString(numeric.GetFloat32());
-            }
+                str = numeric.GetFloat32().ToString();
             else
-            {
-                str = Double.ToString(numeric.GetFloat64());
-            }
+                str = numeric.GetFloat64().ToString();
+
+            //if (dt == INT32)
+            //{
+            //    str = int.ToString(numeric.GetInt32());
+            //}
+            //else if (dt == INT64)
+            //{
+            //    str = long.ToString(numeric.GetInt64());
+            //}
+            //else if (dt == FLOAT)
+            //{
+            //    str = float.ToString(numeric.GetFloat32());
+            //}
+            //else
+            //{
+            //    str = Double.ToString(numeric.GetFloat64());
+            //}
 
             symbolTable[instruction.result].GetValue().SetString(str);
         }
@@ -470,7 +521,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 result = "";
             }
-            else if (n >= x.Length())
+            else if (n >= x.Length)
             {
                 result = x;
             }
@@ -486,7 +537,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var x = symbolTable[instruction.op1].GetValue().GetString();
             var n = symbolTable[instruction.op2].GetValue().GetInt32();
-            var xlen = x.Length();
+            var xlen = x.Length;
             string result;
             if (n < 0)
             {
@@ -502,7 +553,7 @@ namespace Org.Puffinbasic.Runtime
             }
             else
             {
-                result = x.Substring(xlen - n, xlen);
+                result = x.Substring(xlen - n, n);
             }
 
             symbolTable[instruction.result].GetValue().SetString(result);
@@ -513,8 +564,8 @@ namespace Org.Puffinbasic.Runtime
             var x = symbolTable[instr0.op1].GetValue().GetString();
             var y = symbolTable[instr0.op2].GetValue().GetString();
             var n = symbolTable[instr.op1].GetValue().GetInt32();
-            var xlen = x.Length();
-            var ylen = y.Length();
+            var xlen = x.Length;
+            var ylen = y.Length;
             int result;
             if (n <= 0)
             {
@@ -541,7 +592,7 @@ namespace Org.Puffinbasic.Runtime
             var x = symbolTable[instr0.op1].GetValue().GetString();
             var n = symbolTable[instr0.op2].GetValue().GetInt32();
             var m = symbolTable[instr.op1].GetValue().GetInt32();
-            var xlen = x.Length();
+            var xlen = x.Length;
             string result;
             if (n <= 0)
             {
@@ -593,7 +644,7 @@ namespace Org.Puffinbasic.Runtime
             //var duration = Duration.Between(midnight, DateTime.Now());
             //var millis = TimeUnit.SECONDS.ToMillis(duration.GetSeconds()) + TimeUnit.NANOSECONDS.ToMillis(duration.GetNano());
 
-            symbolTable[instruction.result].GetValue().SetInt64((DateTime.Now - DateTime.Now.Date).TotalMilliseconds);
+            symbolTable[instruction.result].GetValue().SetInt64((long)(DateTime.Now - DateTime.Now.Date).TotalMilliseconds);
 
         public static void Stringdlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
@@ -603,7 +654,7 @@ namespace Org.Puffinbasic.Runtime
             string c;
             if (jOrxdlrEntry.GetType().GetAtomTypeId() == STRING)
             {
-                if (jOrxdlr.GetString().IsEmpty())
+                if (String.IsNullOrEmpty(jOrxdlr.GetString()))
                 {
                     throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "STRING$: expected len(x%) > 0, actual=0");
                 }
@@ -692,7 +743,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var str = symbolTable[instruction.op1].GetValue().GetString();
             var regex = symbolTable[instruction.op2].GetValue().GetString();
-            String[] tokens = str.Split(regex);
+            String[] tokens = (new Regex(regex)).Split(str);
             STRING.CopyArray(tokens, symbolTable[instruction.result].GetValue());
         }
 

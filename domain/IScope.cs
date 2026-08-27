@@ -5,6 +5,7 @@ using Org.Puffinbasic.Domain.Scope;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 
@@ -143,9 +144,8 @@ namespace Org.Puffinbasic.Domain.Scope
 
         public override IScope CreateChild(int funcId, bool localScope)
         {
-            var child = funcIdToScope[funcId];
-            if (child == null)
-            {
+            if (!funcIdToScope.TryGetValue(funcId, out IScope child))
+            { 
                 child = localScope ? new LocalScope(this) : new ChildScope(this);
                 funcIdToScope.Add(funcId, child);
             }

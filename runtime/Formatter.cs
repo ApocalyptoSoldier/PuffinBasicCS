@@ -19,16 +19,16 @@ namespace Org.Puffinbasic.Runtime
     {
         public sealed class FormatterCache
         {
-            private readonly Dictionary<string, IFormatter> cache;
+            private readonly Dictionary<string, IIFormatter> cache;
             public FormatterCache()
             {
-                cache = new Dictionary<string, IFormatter>();
+                cache = new Dictionary<string, IIFormatter>();
             }
 
-            public IFormatter Get(string format)
+            public IIFormatter Get(string format)
             {
-                if (!cache.TryGetValue(format, out IFormatter formatter))
-                    cache[format] = Formatter.GetFormatter();
+                if (!cache.TryGetValue(format, out IIFormatter formatter))
+                    cache[format] = Formatter.GetFormatter(format);
                 return formatter;
     
                 //return cache.ComputeIfAbsent(format, Formatter.GetFormatter());
@@ -37,9 +37,9 @@ namespace Org.Puffinbasic.Runtime
 
         public interface IIFormatter
         {
-            string Format(object o);
-            bool SupportsNumeric();
-            bool SupportsString();
+            public string Format(object o);
+            public bool SupportsNumeric();
+            public bool SupportsString();
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace Org.Puffinbasic.Runtime
         /// </summary>
         public sealed class NumberFormatter : IIFormatter
         {
-            private readonly DecimalFormat decimalFormat;
+            private readonly string decimalFormat;
             private readonly bool scientific;
             private readonly bool signPrefix;
             private readonly bool signSuffix;
@@ -168,12 +168,13 @@ namespace Org.Puffinbasic.Runtime
                 this.shouldFill = numToFill > 0;
                 if (numToFill > 0)
                 {
-                    var b = new byte[numToFill];
-                    Arrays.Fill(b, 0, numToFill, (byte)'0');
-                    format = new string (b) + format;
+                    //var b = new byte[numToFill];
+                    //Arrays.Fill(b, 0, numToFill, (byte)'0');
+                    //format = new string (b) + format;
+                    format = new string('0', numToFill) + format;
                 }
 
-                this.decimalFormat = new DecimalFormat(format);
+                this.decimalFormat = format;
             }
 
             // Handle prefix '+' or '-'
@@ -230,7 +231,7 @@ namespace Org.Puffinbasic.Runtime
                     value = -value;
                 }
 
-                return Format(decimalFormat.Format(value), isNegative);
+                return Format(value.ToString(decimalFormat), isNegative);
             }
 
             // Handle prefix '+' or '-'
@@ -246,7 +247,7 @@ namespace Org.Puffinbasic.Runtime
                     value = -value;
                 }
 
-                return Format(decimalFormat.Format(value), isNegative);
+                return Format(value.ToString(decimalFormat), isNegative);
             }
 
             // Handle prefix '+' or '-'
@@ -404,9 +405,9 @@ namespace Org.Puffinbasic.Runtime
                     else
                     {
                         byte[] bytes = new byte[this.length];
-                        Array.Copy(str.GetBytes(), 0, bytes, 0, str.Length);
-                        Arrays.Fill(bytes, str.Length, length, (byte)' ');
-                        return new string (bytes);
+                        Array.Copy(str.ToArray(), 0, bytes, 0, str.Length);
+                        Arrays.Fill(bytes, (byte)' ', str.Length, length);
+                        return new string (bytes.Select(b => (char)b).ToArray());
                     }
                 }
                 else

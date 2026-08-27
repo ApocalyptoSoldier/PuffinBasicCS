@@ -55,11 +55,11 @@ namespace Org.Puffinbasic.Runtime
             var result = symbolTable[instruction.result].GetValue();
             if (v1Entry.GetType().GetAtomTypeId() == INT32 && v2Entry.GetType().GetAtomTypeId() == INT32)
             {
-                result.SetInt32(v1.GetRoundedInt32() << v2.GetRoundedInt32());
+                result.SetInt32(v1.GetRoundedInt32() << (int)v2.GetRoundedInt32());
             }
             else
             {
-                result.SetInt64(v1.GetRoundedInt64() << v2.GetRoundedInt64());
+                result.SetInt64(v1.GetRoundedInt64() << (int)v2.GetRoundedInt64());
             }
         }
 
@@ -72,11 +72,11 @@ namespace Org.Puffinbasic.Runtime
             var result = symbolTable[instruction.result].GetValue();
             if (v1Entry.GetType().GetAtomTypeId() == INT32 && v2Entry.GetType().GetAtomTypeId() == INT32)
             {
-                result.SetInt32(v1.GetRoundedInt32() >> v2.GetRoundedInt32());
+                result.SetInt32(v1.GetRoundedInt32() >> (int)v2.GetRoundedInt32());
             }
             else
             {
-                result.SetInt64(v1.GetRoundedInt64() >> v2.GetRoundedInt64());
+                result.SetInt64(v1.GetRoundedInt64() >> (int)v2.GetRoundedInt64());
             }
         }
 

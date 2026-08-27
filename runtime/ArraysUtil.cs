@@ -75,6 +75,7 @@ namespace Org.Puffinbasic.Runtime
             arrayType.SetArrayDimensions(dims);
 
             // Create new value
+            // TODO: check if we actually need to cast this to AbstractSTEntity
             ((AbstractSTEntry)arrayEntry).CreateAndSetInstance(symbolTable);
         }
 
@@ -185,8 +186,8 @@ namespace Org.Puffinbasic.Runtime
             var dims = array.GetArrayDimensions();
 
             // Arrays are row-major.
-            var dim1 = dims.GetInt(0);
-            var dim2 = dims.GetInt(1);
+            var dim1 = dims[0];
+            var dim2 = dims[1];
             var n = array.GetTotalLength();
             var delta = (Math.Abs(shift) % dim1) * dim2;
             int src0, dst0, len = n - delta, fillSrc0;
@@ -241,7 +242,7 @@ namespace Org.Puffinbasic.Runtime
                 {
                     String[] value = ((STStringArrayValue)array).GetValue();
                     Array.Copy(value, src0, value, dst0, len);
-                    Arrays.Fill(value, fillSrc0, fillSrc0 + delta, "");
+                    Arrays.Fill(value, "", fillSrc0, fillSrc0 + delta);
                 }
 
                     break;
@@ -259,8 +260,8 @@ namespace Org.Puffinbasic.Runtime
             var dims = array.GetArrayDimensions();
 
             // Arrays are row-major.
-            var dim1 = dims.GetInt(0);
-            var dim2 = dims.GetInt(1);
+            var dim1 = dims[0];
+            var dim2 = dims[1];
             var n = array.GetTotalLength();
             var delta = Math.Abs(shift) % dim2;
             int src0, dst0, len = dim2 - delta, fillSrc0;
@@ -794,7 +795,7 @@ namespace Org.Puffinbasic.Runtime
 
         private static ArrayStatistics Array1dStats(ISTEntry array)
         {
-            var stats;
+            var stats = new ArrayStatistics();
             switch (array.GetType().GetAtomTypeId())
             {
                 case PuffinBasicAtomTypeId.INT32:
@@ -856,8 +857,8 @@ namespace Org.Puffinbasic.Runtime
             var dims = array.GetArrayDimensions();
 
             // Arrays are row-major.
-            var numRows = dims.GetInt(0);
-            var numCols = dims.GetInt(1);
+            var numRows = dims[0];
+            var numCols = dims[1];
             var n = array.GetTotalLength();
             var x1 = Math.Min(Math.Max(0, symbolTable[i1.op1].GetValue().GetInt32()), numCols - 1);
             var y1 = Math.Min(Math.Max(0, symbolTable[i1.op2].GetValue().GetInt32()), numRows - 1);
@@ -901,8 +902,8 @@ namespace Org.Puffinbasic.Runtime
             var dims = array.GetArrayDimensions();
 
             // Arrays are row-major.
-            var numRows = dims.GetInt(0);
-            var numCols = dims.GetInt(1);
+            var numRows = dims[0];
+            var numCols = dims[1];
             var n = array.GetTotalLength();
             var x1 = Math.Min(Math.Max(0, symbolTable[i1.op1].GetValue().GetInt32()), numCols - 1);
             var y1 = Math.Min(Math.Max(0, symbolTable[i1.op2].GetValue().GetInt32()), numRows - 1);

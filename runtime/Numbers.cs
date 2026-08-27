@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Globalization;
 
 namespace Org.Puffinbasic.Runtime
 {
@@ -63,7 +64,7 @@ namespace Org.Puffinbasic.Runtime
         {
             try
             {
-                return float.Parse(value);
+                return float.Parse(value, CultureInfo.InvariantCulture);
             }
             catch (FormatException e)
             {

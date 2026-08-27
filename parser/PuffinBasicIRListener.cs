@@ -65,7 +65,7 @@ namespace Org.Puffinbasic.Parser
             this.linenumGenerator = new AtomicInteger();
             this.graphics = graphics;
             this.nodeToInstruction = new ParseTreeProperty<Instruction>();
-            this.udfStateMap = new Dictionary<Variable, UDFState>();
+            //this.udfStateMap = new Dictionary<Variable, UDFState>();
             this.whileLoopStateList = new LinkedList<WhileLoopState>();
             this.forLoopStateList = new LinkedList<ForLoopState>();
             this.ifStateList = new LinkedList<IfState>();

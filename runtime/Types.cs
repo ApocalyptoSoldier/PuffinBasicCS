@@ -67,7 +67,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 if (txt.Length > 1 && txt[0] == '"' && txt[txt.Length - 1] == '"')
                 {
-                    return txt.Substring(1, txt.Length - 1);
+                    return txt.Substring(1, txt.Length - 2);
                 }
                 else
                 {

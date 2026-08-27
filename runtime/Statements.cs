@@ -33,7 +33,7 @@ namespace Org.Puffinbasic.Runtime
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "Sleep time millis cannot be less than 0.");
             }
 
-            LockSupport.ParkNanos(TimeUnit.MILLISECONDS.ToNanos(millis));
+            //LockSupport.ParkNanos(TimeUnit.MILLISECONDS.ToNanos(millis));
         }
 
         public sealed class ReadData
@@ -76,7 +76,7 @@ namespace Org.Puffinbasic.Runtime
         public static void Printusing(FormatterCache cache, PrintBuffer printBuffer, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var format = symbolTable[instruction.op1].GetValue().GetString();
-            var formatter = cache[format];
+            var formatter = cache.Get(format);
             var entry = symbolTable[instruction.op2];
             var value = entry.GetValue();
             string result;
@@ -176,11 +176,11 @@ namespace Org.Puffinbasic.Runtime
         {
             var destEntry = symbolTable[instruction.op1].GetValue();
             var value = symbolTable[instruction.op2].GetValue().GetString();
-            var valLen = value.Length();
+            var valLen = value.Length;
             var destLen = destEntry.GetFieldLength();
             if (destLen == 0)
             {
-                destLen = destEntry.GetString().Length();
+                destLen = destEntry.GetString().Length;
                 destEntry.SetFieldLength(destLen);
             }
 
@@ -196,9 +196,10 @@ namespace Org.Puffinbasic.Runtime
             else
             {
                 byte[] bytes = new byte[destLen];
-                Array.Copy(value.GetBytes(), 0, bytes, 0, valLen);
-                java.util.Arrays.Fill(bytes, valLen, destLen, (byte)' ');
-                result = new string (bytes);
+                Array.Copy(value.ToCharArray(), 0, bytes, 0, valLen);
+                //java.util.Arrays.Fill(bytes, valLen, destLen, (byte)' ');
+                Arrays.Fill(bytes, (byte)' ', valLen, destLen);
+                result = new string(bytes.Select(b => (char)b).ToArray());
             }
 
             destEntry.SetString(result);
@@ -208,7 +209,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var destEntry = symbolTable[instruction.op1].GetValue();
             var value = symbolTable[instruction.op2].GetValue().GetString();
-            var valLen = value.Length();
+            var valLen = value.Length;
             var destLen = destEntry.GetFieldLength();
             if (destLen == 0)
             {
@@ -229,9 +230,9 @@ namespace Org.Puffinbasic.Runtime
             {
                 byte[] bytes = new byte[destLen];
                 int offset = destLen - valLen;
-                Arrays.Fill(bytes, 0, offset, (byte)' ');
-                Array.Copy(value.GetBytes(), 0, bytes, offset, valLen);
-                result = new string (bytes);
+                Arrays.Fill(bytes, (byte)' ', 0, offset);
+                Array.Copy(value.ToCharArray(), 0, bytes, offset, valLen);
+                result = new string (bytes.Select(b => (char)b).ToArray());
             }
 
             destEntry.SetString(result);
@@ -241,9 +242,9 @@ namespace Org.Puffinbasic.Runtime
         {
             var fileName = symbolTable[instr_fn_fn_0.op1].GetValue().GetString();
             var fileNumber = symbolTable[instr_fn_fn_0.op2].GetValue().GetInt32();
-            var fileOpenMode = FileOpenMode.ValueOf(symbolTable[instr_om_am_1.op1].GetValue().GetString());
-            var fileAccessMode = FileAccessMode.ValueOf(symbolTable[instr_om_am_1.op2].GetValue().GetString());
-            var fileLockMode = LockMode.ValueOf(symbolTable[instr_lm_rl_2.op1].GetValue().GetString());
+            var fileOpenMode = FileEnumExtensions.FileOpenModeValueOf(symbolTable[instr_om_am_1.op1].GetValue().GetString());
+            var fileAccessMode = FileEnumExtensions.FileAccessModeValueOf(symbolTable[instr_om_am_1.op2].GetValue().GetString());
+            var fileLockMode = FileEnumExtensions.LockModeValueOf(symbolTable[instr_lm_rl_2.op1].GetValue().GetString());
             var recordLen = symbolTable[instr_lm_rl_2.op2].GetValue().GetInt32();
             files.Open(fileNumber, fileName, fileOpenMode, fileAccessMode, recordLen);
         }
@@ -276,27 +277,29 @@ namespace Org.Puffinbasic.Runtime
         public static void Putf(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var fileNumber = symbolTable[instruction.op1].GetValue().GetInt32();
-            int recordNumber = instruction.op2 == NULL_ID ? null : symbolTable[instruction.op2].GetValue().GetInt32();
+            int recordNumber = instruction.op2 == NULL_ID ? 0 : symbolTable[instruction.op2].GetValue().GetInt32();
             files[fileNumber].Put(recordNumber, symbolTable);
         }
 
         public static void Getf(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var fileNumber = symbolTable[instruction.op1].GetValue().GetInt32();
-            int recordNumber = instruction.op2 == NULL_ID ? null : symbolTable[instruction.op2].GetValue().GetInt32();
+            int recordNumber = instruction.op2 == NULL_ID ? 0 : symbolTable[instruction.op2].GetValue().GetInt32();
             files[fileNumber].Get(recordNumber, symbolTable);
         }
 
         public static void Randomize(Random random, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            var seed = symbolTable[instruction.op1].GetValue().GetInt64();
-            random.SetSeed(seed);
+            throw new NotImplementedException();
+            //var seed = symbolTable[instruction.op1].GetValue().GetInt64();
+            //random.SetSeed(seed);
         }
 
         public static void RandomizeTimer(Random random)
         {
-            var seed = DateTime.Now().GetEpochSecond();
-            random.SetSeed(seed);
+            throw new NotImplementedException();
+            //var seed = DateTime.Now().GetEpochSecond();
+            //random.SetSeed(seed);
         }
 
         public static void Input(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, IList<Instruction> instructions, Instruction instruction)
@@ -320,62 +323,64 @@ namespace Org.Puffinbasic.Runtime
                 file = files.sys;
             }
 
-            CSVRecord record = null;
-            bool retry = false;
-            do
-            {
-                if (retry)
-                {
-                    if (printPrompt)
-                    {
-                        Console.Error.WriteLine("?Redo from start");
-                    }
-                    else
-                    {
-                        throw new PuffinBasicRuntimeError(IO_ERROR, "Record mismatch: expected=" + instructions.Count + ", found in file=" + record.Count + ", record: " + record);
-                    }
-                }
+            throw new NotImplementedException();
 
-                CSVParser parser;
-                try
-                {
-                    parser = CSVParser.Parse(file.ReadLine(), CSVFormat.DEFAULT);
-                }
-                catch (System.IO.IOException e)
-                {
-                    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read inputs, error: " + e.Message);
-                }
+            //CSVRecord record = null;
+            //bool retry = false;
+            //do
+            //{
+            //    if (retry)
+            //    {
+            //        if (printPrompt)
+            //        {
+            //            Console.Error.WriteLine("?Redo from start");
+            //        }
+            //        else
+            //        {
+            //            throw new PuffinBasicRuntimeError(IO_ERROR, "Record mismatch: expected=" + instructions.Count + ", found in file=" + record.Count + ", record: " + record);
+            //        }
+            //    }
 
-                record = parser.Iterator().Next();
-                retry = true;
-            }
-            while (record.Count != instructions.Count);
-            int i = 0;
-            foreach (var instr0 in instructions)
-            {
-                var entry = symbolTable[instr0.op1];
-                var value = entry.GetValue();
-                switch (entry.GetType().GetAtomTypeId())
-                {
-                    case INT32:
-                        value.SetInt32(int.Parse(record[i].Trim()));
-                        break;
-                    case INT64:
-                        value.SetInt64(long.Parse(record[i].Trim()));
-                        break;
-                    case FLOAT:
-                        value.SetFloat32(float.Parse(record[i].Trim()));
-                        break;
-                    case DOUBLE:
-                        value.SetFloat64(Double.Parse(record[i].Trim()));
-                        break;
-                    case STRING:
-                        value.SetString(record[i].Trim());
-                        break;
-                }
+            //    CSVParser parser;
+            //    try
+            //    {
+            //        parser = CSVParser.Parse(file.ReadLine(), CSVFormat.DEFAULT);
+            //    }
+            //    catch (System.IO.IOException e)
+            //    {
+            //        throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read inputs, error: " + e.Message);
+            //    }
 
-                ++i;
-            }
+            //    record = parser.Iterator().Next();
+            //    retry = true;
+            //}
+            //while (record.Count != instructions.Count);
+            //int i = 0;
+            //foreach (var instr0 in instructions)
+            //{
+            //    var entry = symbolTable[instr0.op1];
+            //    var value = entry.GetValue();
+            //    switch (entry.GetType().GetAtomTypeId())
+            //    {
+            //        case INT32:
+            //            value.SetInt32(int.Parse(record[i].Trim()));
+            //            break;
+            //        case INT64:
+            //            value.SetInt64(long.Parse(record[i].Trim()));
+            //            break;
+            //        case FLOAT:
+            //            value.SetFloat32(float.Parse(record[i].Trim()));
+            //            break;
+            //        case DOUBLE:
+            //            value.SetFloat64(Double.Parse(record[i].Trim()));
+            //            break;
+            //        case STRING:
+            //            value.SetString(record[i].Trim());
+            //            break;
+            //    }
+
+            //    ++i;
+            //}
         }
 
         public static void Lineinput(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
@@ -383,7 +388,7 @@ namespace Org.Puffinbasic.Runtime
             if (instruction.op1 != NULL_ID)
             {
                 var prompt = symbolTable[instruction.op1].GetValue().GetString();
-                if (!prompt.IsEmpty())
+                if (String.IsNullOrEmpty(prompt))
                 {
                     files.sys.Print(prompt);
                 }
@@ -422,9 +427,9 @@ namespace Org.Puffinbasic.Runtime
             }
             else
             {
-                if (m == -1 || m > replacement.Length())
+                if (m == -1 || m > replacement.Length)
                 {
-                    m = replacement.Length();
+                    m = replacement.Length;
                 }
 
                 result = varValue.Substring(0, n - 1) + replacement.Substring(0, Math.Min(m, varlen - n + 1)) + varValue.Substring(Math.Min(n + m - 1, varlen - 1));
@@ -437,7 +442,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var variable = symbolTable.GetVariable(instruction.op1);
             var data = readData.Next();
-            Types.AssertBothStringOrNumeric(variable.GetType().GetAtomTypeId(), data.GetType().GetAtomTypeId(), () => "Read Data mismatch for variable: " + variable + " and data: " + data.GetValue().PrintFormat());
+            Types.AssertBothStringOrNumeric(variable.GetType().GetAtomTypeId(), data.GetType().GetAtomTypeId(), "Read Data mismatch for variable: " + variable + " and data: " + data.GetValue().PrintFormat());
             variable.GetValue().Assign(data.GetValue());
         }
 

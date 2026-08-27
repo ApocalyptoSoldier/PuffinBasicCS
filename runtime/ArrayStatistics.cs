@@ -22,15 +22,13 @@ namespace Org.Puffinbasic.Runtime
 
         // https://stackoverflow.com/a/57862581
         public double GetVariance() { 
-            double variance = 0.0;
-
             double mean = GetMean();
 
             double variance = 0.0;
             foreach (int value in values)
                 variance += Math.Pow(value - mean, 2.0);
             
-            return variance / values.Length;
+            return variance / values.Count;
         }
 
         // https://stackoverflow.com/a/8137455
