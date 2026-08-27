@@ -36,14 +36,14 @@ namespace Org.Puffinbasic.Domain
 
             public new string ToString() => varname + ":" + suffix + ":" + dataType;
 
-            public bool Equals(object o)
+            public new bool Equals(object o)
             {
                 if (this == o)
                     return true;
-                if (o == null || GetType() != o.GetType())
+                if (o == null || !(o is VariableName)) 
                     return false;
-                VariableName variable = (VariableName)o;
-                return varname.Equals(variable.varname) && suffix == variable.suffix;
+                VariableName other = (VariableName)o;
+                return this.varname == other.varname && this.suffix == other.suffix;
             }
 
             public int GetHashCode()
@@ -111,15 +111,40 @@ namespace Org.Puffinbasic.Domain
 
         public virtual string ToString() => variableName + ":" + type.GetTypeId();
 
-        public virtual bool Equals(Variable o)
+        public new bool Equals(object o)
         {
             if (this == o)
                 return true;
-            if (o == null || GetType() != o.GetType())
+            if (o == null || !(o is Variable))
                 return false;
-            Variable variable = (Variable)o;
-            return variableName.Equals(variable.variableName) && type.Equals(variable.type);
+
+            Variable other = (Variable)o;
+
+            return this.variableName.Equals(other.variableName) 
+                && this.type.GetTypeId() == other.type.GetTypeId()
+                && this.type.GetAtomTypeId() == other.type.GetAtomTypeId();
+
         }
+
+        //public virtual bool Equals(Variable o)
+        //{
+        //    if (this == o)
+        //        return true;
+        //    //if (o == null || GetType() != o.GetType())
+        //    if (o == null)
+        //        return false;
+        //    Variable variable = (Variable)o;
+
+        //    bool varsEqual = this.variableName.varname == variable.variableName.varname
+        //        && this.variableName.dataType == variable.variableName.dataType
+        //        && this.variableName.suffix == variable.variableName.suffix;
+        //    bool typesEqual = this.type.GetTypeId() == variable.type.GetTypeId()
+        //        && this.type.GetAtomTypeId() == variable.type.GetAtomTypeId();
+
+        //    return typesEqual && varsEqual;
+
+        //    return variableName.Equals(variable.variableName) && type.Equals(variable.type);
+        //}
 
         public virtual int GetHashCode()
         {

@@ -16,10 +16,10 @@ using System.IO;
 
 namespace Org.Puffinbasic.File
 {
-    public class PuffinBasicSequentialAccessInputFile : IPuffinBasicFile
+    public class PuffinBasicSequentialAccessInputFile : PuffinBasicFile
     {
         private readonly string filename;
-        private readonly BufferedReader @in;
+        private readonly FileStream @in;
         private long bytesAccessed;
         private FileState fileState;
         private string lastLine;
@@ -31,7 +31,7 @@ namespace Org.Puffinbasic.File
             this.bytesAccessed = 0;
             try
             {
-                this.@in = new BufferedReader(new FileReader(filename));
+                this.@in = System.IO.File.OpenRead(filename);
             }
             catch (System.IO.FileNotFoundException e)
             {
@@ -41,37 +41,77 @@ namespace Org.Puffinbasic.File
             this.fileState = FileState.OPEN;
         }
 
-        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
+        public override void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
             ThrowIllegalAccess();
         }
 
-        public virtual int GetCurrentRecordNumber()
+        public override int GetCurrentRecordNumber()
         {
             AssertOpen();
             return (int)(bytesAccessed / PuffinBasicFile.DEFAULT_RECORD_LEN);
         }
 
-        public virtual long GetFileSizeInBytes()
+        public override long GetFileSizeInBytes()
         {
             AssertOpen();
             return new FileInfo(filename).Length;
         }
 
-        public virtual string ReadLine()
+        public override string ReadLine()
+        {
+            throw new NotImplementedException();
+            //AssertOpen();
+            //try
+            //{
+            //    if (lastLine == null)
+            //    {
+            //        lastLine = @in.ReadLine();
+            //    }
+
+            //    bytesAccessed += lastLine.Length;
+            //    var result = lastLine.TrimEnd();
+            //    lastLine = null;
+            //    return result;
+            //}
+            //catch (System.IO.IOException e)
+            //{
+            //    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
+            //}
+        }
+
+        public override byte[] ReadBytes(int n)
+        {
+            throw new NotImplementedException();
+            //byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
+            //if (n >= line.Length)
+            //{
+            //    return line;
+            //}
+            //else
+            //{
+            //    byte[] copy = new byte[Math.Min(n, line.Length)];
+            //    Array.Copy(line, 0, copy, 0, n);
+            //    return copy;
+            //}
+        }
+
+        public override void Print(string s)
+        {
+            ThrowIllegalAccess();
+        }
+
+        public override void WriteByte(byte b)
+        {
+            ThrowIllegalAccess();
+        }
+
+        public override bool Eof()
         {
             AssertOpen();
             try
             {
-                if (lastLine == null)
-                {
-                    lastLine = @in.ReadLine();
-                }
-
-                bytesAccessed += lastLine.Length;
-                var result = lastLine.TrimEnd();
-                lastLine = null;
-                return result;
+                return @in.ReadByte() == -1;
             }
             catch (System.IO.IOException e)
             {
@@ -79,52 +119,12 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public virtual byte[] ReadBytes(int n)
-        {
-            byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
-            if (n >= line.Length)
-            {
-                return line;
-            }
-            else
-            {
-                byte[] copy = new byte[Math.Min(n, line.Length)];
-                Array.Copy(line, 0, copy, 0, n);
-                return copy;
-            }
-        }
-
-        public virtual void Print(string s)
+        public override void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             ThrowIllegalAccess();
         }
 
-        public virtual void WriteByte(byte b)
-        {
-            ThrowIllegalAccess();
-        }
-
-        public virtual bool Eof()
-        {
-            AssertOpen();
-            try
-            {
-                this.lastLine = @in.ReadLine();
-            }
-            catch (System.IO.IOException e)
-            {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
-            }
-
-            return lastLine == null;
-        }
-
-        public virtual void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
-        {
-            ThrowIllegalAccess();
-        }
-
-        public virtual void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             ThrowIllegalAccess();
         }
@@ -134,12 +134,12 @@ namespace Org.Puffinbasic.File
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for SequentialAccessInputFile!");
         }
 
-        public virtual bool IsOpen()
+        public override bool IsOpen()
         {
             return fileState == FileState.OPEN;
         }
 
-        public virtual void Dispose()
+        public override void Dispose()
         {
             AssertOpen();
             try

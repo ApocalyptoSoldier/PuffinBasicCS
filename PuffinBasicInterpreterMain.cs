@@ -32,6 +32,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Runtime.Remoting.Messaging;
 using Antlr4.Runtime.Atn;
+using Org.Puffinbasic.Antlr;
 
 namespace Org.Puffinbasic
 {
@@ -65,7 +66,7 @@ namespace Org.Puffinbasic
             Option<bool> timing = new Option<bool>("-t", "--timing") { Description = "Print timing"};
             Option<bool> graphics = new Option<bool>("-g", "--graphics") { Description = "Enable graphics" };
 
-            Option<FileInfo> file = new Option<FileInfo>("file");
+            Option<string> file = new Option<string>("file");
 
             command.Options.Add(logDuplicate);
             command.Options.Add(list);
@@ -80,7 +81,7 @@ namespace Org.Puffinbasic
             if (res.Errors.Count > 0)
                 Environment.Exit(1);
 
-            return new UserOptions(res.GetValue(logDuplicate), res.GetValue(list), res.GetValue(ir), res.GetValue(timing), res.GetValue(graphics), res.GetValue(file).FullName);
+            return new UserOptions(res.GetValue(logDuplicate), res.GetValue(list), res.GetValue(ir), res.GetValue(timing), res.GetValue(graphics), System.IO.Path.GetFullPath(res.GetValue(file)));
             //return new UserOptions(res.GetBoolean("logduplicate"), res.GetBoolean("list"), res.GetBoolean("ir"), res.GetBoolean("timing"), res.GetBoolean("graphics"), (string)res.GetList("file")[0]);
         }
 
@@ -89,7 +90,9 @@ namespace Org.Puffinbasic
             var sb = new StringBuilder();
             try
             {
-                foreach (string line in System.IO.File.ReadLines(Paths[filename], Encoding.ASCII))
+                //foreach (string line in System.IO.File.ReadLines(Paths[filename], Encoding.ASCII))
+                //    sb.AppendLine(line);
+                foreach (string line in System.IO.File.ReadLines(filename))
                     sb.AppendLine(line);
             }
             catch (System.IO.IOException e)

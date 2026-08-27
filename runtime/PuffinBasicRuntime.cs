@@ -147,7 +147,13 @@ namespace Org.Puffinbasic.Runtime
 
         private ReadData ProcessDataInstructions(IList<Instruction> instructions)
         {
-            return new ReadData(instructions.Stream().Filter((i) => i.opCode == DATA).Map((instruction) => ir.GetSymbolTable()[instruction.op1]).Collect(Collectors.ToList()));
+            List<Domain.STObjects.ISTEntry> entries = new List<Domain.STObjects.ISTEntry>();
+            
+            foreach (Instruction i  in instructions)
+                if (i.opCode == OpCode.DATA)
+                    entries.Add((Domain.STObjects.ISTEntry)ir.GetSymbolTable()[i.op1]);
+
+            return new ReadData(entries);
         }
 
         private bool RunInstruction(Instruction instruction)

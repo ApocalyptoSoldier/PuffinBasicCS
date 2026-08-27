@@ -14,14 +14,17 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using static Org.Puffinbasic.File.IPuffinBasicFile;
+using System.IO;
+using System.ComponentModel;
 
 namespace Org.Puffinbasic.File
 {
-    public class PuffinBasicRandomAccessFile : IPuffinBasicFile
+    public class PuffinBasicRandomAccessFile : PuffinBasicFile
     {
         private readonly string filename;
         private readonly FileAccessMode accessMode;
-        private readonly System.IO.FileInfo file; // System.IO.RandomAccess?
+        //private readonly System.IO.FileInfo file; // System.IO.RandomAccess?
+        private readonly FileStream file;
         private readonly int recordLength;
         private readonly byte[] recordBuffer;
         private List<int> recordParts;
@@ -43,7 +46,8 @@ namespace Org.Puffinbasic.File
             this.currentFilePosBytes = 0;
             try
             {
-                this.file = new RandomAccessFile(filename, accessMode.mode);
+                //this.file = new RandomAccessFile(filename, accessMode.mode);
+                this.file = System.IO.File.Open(filename, FileMode.OpenOrCreate); // TODO: Add conversion for FileAccessMode
             }
             catch (System.IO.FileNotFoundException e)
             {
@@ -53,7 +57,7 @@ namespace Org.Puffinbasic.File
             this.fileState = FileState.OPEN;
         }
 
-        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
+        public override void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
             if (symbolTable == null) throw new ArgumentNullException(nameof(symbolTable));
             if (recordParts == null) throw new ArgumentNullException(nameof(recordParts));
@@ -80,18 +84,18 @@ namespace Org.Puffinbasic.File
             this.recordParts = recordParts;
         }
 
-        public virtual int GetCurrentRecordNumber()
+        public override int GetCurrentRecordNumber()
         {
             AssertOpen();
             return (int)(currentFilePosBytes / recordLength);
         }
 
-        public virtual long GetFileSizeInBytes()
+        public override long GetFileSizeInBytes()
         {
             AssertOpen();
             try
             {
-                return file.Length();
+                return file.Length;
             }
             catch (System.IO.IOException e)
             {
@@ -99,12 +103,12 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public virtual bool Eof()
+        public override bool Eof()
         {
             return currentFilePosBytes >= GetFileSizeInBytes();
         }
 
-        public virtual void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             AssertOpen();
             if (accessMode == FileAccessMode.READ_ONLY)
@@ -120,35 +124,35 @@ namespace Org.Puffinbasic.File
             SeekToRecord(recordNumber);
             this.lastPutRecordNumber = recordNumber;
 
-            // Create a new buffer and fill with spaces.
-            var bb = ClearAndGetRecordBuffer();
-            for (int i = 0; i < recordParts.Count; i++)
-            {
-                var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
-                var value = entry.GetString();
-                var valueLength = value.Length();
-                var fieldLength = entry.GetFieldLength();
 
-                // Put first fieldLength bytes only
-                if (fieldLength < valueLength)
-                {
-                    value = value.Substring(0, fieldLength);
-                }
+            //// Create a new buffer and fill with spaces.
+            //using (var bb = ClearAndGetRecordBuffer())
+            //{
+            //    for (int i = 0; i < recordParts.Count; i++)
+            //    {
+            //        var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
+            //        var value = entry.GetString();
+            //        var valueLength = value.Length();
+            //        var fieldLength = entry.GetFieldLength();
 
-                bb.Put(value.GetBytes());
+            //        // Put first fieldLength bytes only
+            //        if (fieldLength < valueLength)
+            //            value = value.Substring(0, fieldLength);
 
-                // If fieldLength > valueLength, skip fieldLength - valueLength
-                if (fieldLength > valueLength)
-                {
-                    bb.Position(bb.Position() + fieldLength - valueLength);
-                }
-            }
+            //        bb.Write(value);
+            //        //bb.Put(value.GetBytes());
+
+            //        // If fieldLength > valueLength, skip fieldLength - valueLength
+            //        if (fieldLength > valueLength)
+            //            bb.BaseStream.Position += fieldLength - valueLength;
+            //    }
+            //}
 
 
             // Write the record buffer to file
             try
             {
-                file.Write(recordBuffer);
+                var entry = symbolTable[recordParts[recordNumber]].GetValue();
             }
             catch (System.IO.IOException e)
             {
@@ -162,8 +166,9 @@ namespace Org.Puffinbasic.File
         // Put first fieldLength bytes only
         // If fieldLength > valueLength, skip fieldLength - valueLength
         // Write the record buffer to file
-        public virtual void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
         {
+            throw new NotImplementedException();
             AssertOpen();
             if (accessMode == FileAccessMode.WRITE_ONLY)
             {
@@ -177,26 +182,29 @@ namespace Org.Puffinbasic.File
 
             SeekToRecord(recordNumber);
             this.lastGetRecordNumber = recordNumber;
+            var entry = symbolTable[recordParts[recordNumber]].GetValue();
+            byte[] strBytes = new byte[entry.GetFieldLength()];
+            file.Read(strBytes, (int)file.Position, strBytes.Length);
+            //entry.SetString(new string(strBytes));
 
             // Seek to record number and read the record into record buffer
-            try
-            {
-                file.ReadFully(recordBuffer);
-            }
-            catch (System.IO.IOException e)
-            {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + ", recordNumber: " + recordNumber + "', error: " + e.Message);
-            }
+            // I don't think we're doing this because we're already working with a filestream
+            //try
+            //{
+            //    file.ReadFully(recordBuffer);
+            //}
+            //catch (System.IO.IOException e)
+            //{
+            //    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + ", recordNumber: " + recordNumber + "', error: " + e.Message);
+            //}
 
-            var bb = ByteBuffer.Wrap(recordBuffer);
-            for (int i = 0; i < recordParts.Count; i++)
-            {
-                var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
-                var fieldLength = entry.GetFieldLength();
-                var strBytes = new byte[fieldLength];
-                bb[strBytes];
-                entry.SetString(new string (strBytes));
-            }
+            //for (int i =  0; i < recordParts.Count; i++)
+            //{
+            //    var entry = symbolTable[recordParts[i]].GetValue();
+            //    byte[] strBytes = new byte[entry.GetFieldLength()];
+            //    file.Read(strBytes, 0, strBytes.
+            //    entry.SetString(new string(strBytes));
+            //}
 
             UpdateCurrentBytePos();
         }
@@ -206,10 +214,15 @@ namespace Org.Puffinbasic.File
         // If fieldLength > valueLength, skip fieldLength - valueLength
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
-        private ByteBuffer ClearAndGetRecordBuffer()
+        private BinaryWriter ClearAndGetRecordBuffer()
         {
-            Arrays.Fill(recordBuffer, 0, recordBuffer.Length, (byte)' ');
-            return ByteBuffer.Wrap(recordBuffer);
+            //Runtime.Arrays.Fill(recordBuffer, 0, recordBuffer.Length, (byte)' ');
+            Runtime.Arrays.Fill(recordBuffer, (byte)' ', 0, recordBuffer.Length);
+            
+            using (var ms = new MemoryStream(recordBuffer))
+            {
+                return new BinaryWriter(ms);
+            }
         }
 
         // Create a new buffer and fill with spaces.
@@ -246,8 +259,7 @@ namespace Org.Puffinbasic.File
                 long destPosBytes = GetRecordBytePos(recordNumber);
                 if (destPosBytes != currentFilePosBytes)
                 {
-                    file.Seek(destPosBytes);
-                    currentFilePosBytes = destPosBytes;
+                    currentFilePosBytes = file.Seek(destPosBytes, SeekOrigin.Begin);
                 }
             }
             catch (System.IO.IOException e)
@@ -276,7 +288,7 @@ namespace Org.Puffinbasic.File
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
         // Seek only when record number is not sequential
-        public virtual bool IsOpen()
+        public override bool IsOpen()
         {
             return fileState == FileState.OPEN;
         }
@@ -287,7 +299,7 @@ namespace Org.Puffinbasic.File
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
         // Seek only when record number is not sequential
-        public virtual void Dispose()
+        public override void Dispose()
         {
             AssertOpen();
             try
@@ -308,7 +320,7 @@ namespace Org.Puffinbasic.File
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
         // Seek only when record number is not sequential
-        public virtual byte[] ReadBytes(int n)
+        public override byte[] ReadBytes(int n)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Can't read single bytes from RandomAccessFile!");
         }
@@ -319,7 +331,7 @@ namespace Org.Puffinbasic.File
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
         // Seek only when record number is not sequential
-        public virtual void Print(string s)
+        public override void Print(string s)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for RandomAccessFile!");
         }
@@ -330,7 +342,7 @@ namespace Org.Puffinbasic.File
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
         // Seek only when record number is not sequential
-        public virtual string ReadLine()
+        public override string ReadLine()
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for RandomAccessFile!");
         }
@@ -341,7 +353,7 @@ namespace Org.Puffinbasic.File
         // Write the record buffer to file
         // Seek to record number and read the record into record buffer
         // Seek only when record number is not sequential
-        public virtual void WriteByte(byte b)
+        public override void WriteByte(byte b)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for RandomAccessFile!");
         }

@@ -71,6 +71,7 @@ namespace Org.Puffinbasic.File
             return file;
         }
 
+        public IPuffinBasicFile this[int fileNumber] => Get(fileNumber);
         public virtual void CloseAll()
         {
             foreach (var file in files.Values)

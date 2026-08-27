@@ -34,12 +34,13 @@ namespace Org.Puffinbasic.Domain.Scope
     {
         internal readonly IScope parent;
         internal readonly Dictionary<int, IScope> funcIdToScope;
-        internal readonly Dictionary<VariableName, int> variableNameToEntry;
+        //internal readonly Dictionary<VariableName, int> variableNameToEntry;
+        internal readonly Dictionary<string, int> variableNameToEntry;
         internal readonly int callerInstrId;
         internal ISTEntry[] entryMap;
 
 
-        public Scope(int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<VariableName, int> variableNameToEntry, ISTEntry[] entryMap)
+        public Scope(int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<string, int> variableNameToEntry, ISTEntry[] entryMap)
         {
             this.callerInstrId = callerInstrId;
             this.funcIdToScope = funcIdToScope;
@@ -47,7 +48,7 @@ namespace Org.Puffinbasic.Domain.Scope
             this.variableNameToEntry = variableNameToEntry;
         }
 
-        public Scope(IScope parent, int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<VariableName, int> variableNameToEntry, ISTEntry[] entryMap)
+        public Scope(IScope parent, int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<string, int> variableNameToEntry, ISTEntry[] entryMap)
         {
             this.parent = parent;
             this.funcIdToScope = funcIdToScope ?? throw new ArgumentNullException(nameof(funcIdToScope));
@@ -58,12 +59,13 @@ namespace Org.Puffinbasic.Domain.Scope
 
         public int GetIdForVariable(VariableName variableName)
         {
-            variableNameToEntry.TryGetValue(variableName, out var id);
-            return id;
+            if (ContainsVariable(variableName))
+                return variableNameToEntry[variableName.ToString()];
+            return -1;
         }
-        public bool ContainsVariable(VariableName variableName) => variableNameToEntry.ContainsKey(variableName);
+        public bool ContainsVariable(VariableName variableName) => variableNameToEntry.ContainsKey(variableName.ToString());
 
-        public void PutVariable(VariableName variableName, int id) => variableNameToEntry.Add(variableName, id);
+        public void PutVariable(VariableName variableName, int id) => variableNameToEntry.Add(variableName.ToString(), id);
 
         public int GetCallerInstrId() => callerInstrId;
 
@@ -91,8 +93,6 @@ namespace Org.Puffinbasic.Domain.Scope
             entryMap = newEntryMap;
         }
 
-        // This is an optimization to make entry access fast at runtime.
-        //private final ObjectList<STEntry> entryMap;
         public void PutEntry(int id, ISTEntry entry)
         {
             int sz = entryMap.Length;
@@ -104,15 +104,11 @@ namespace Org.Puffinbasic.Domain.Scope
             entryMap[id] = entry;
         }
 
-        // This is an optimization to make entry access fast at runtime.
-        //private final ObjectList<STEntry> entryMap;
         public ISTEntry GetEntry(int id)
         {
             return entryMap[id];
         }
 
-        // This is an optimization to make entry access fast at runtime.
-        //private final ObjectList<STEntry> entryMap;
         public ISTEntry? GetNullableEntry(int id)
         {
             if (id >= 0 && id < entryMap.Length)
@@ -124,20 +120,19 @@ namespace Org.Puffinbasic.Domain.Scope
         }
     }
 
-    /*sealed*/
     public class GlobalScope : Scope
     {
         private static readonly int INITIAL_ENTRY_TABLE_SIZE = 1024;
 
-        public GlobalScope() : base(NULL_ID, new Dictionary<int, IScope>(), new Dictionary<VariableName, int>(), new ISTEntry[INITIAL_ENTRY_TABLE_SIZE])
+        public GlobalScope() : base(NULL_ID, new Dictionary<int, IScope>(), new Dictionary<string, int>(), new ISTEntry[INITIAL_ENTRY_TABLE_SIZE])
         {
         }
 
-        public GlobalScope(int callerInstrId) : base(callerInstrId, new Dictionary<int, IScope>(), new Dictionary<VariableName, int>(), new ISTEntry[INITIAL_ENTRY_TABLE_SIZE])
+        public GlobalScope(int callerInstrId) : base(callerInstrId, new Dictionary<int, IScope>(), new Dictionary<string, int>(), new ISTEntry[INITIAL_ENTRY_TABLE_SIZE])
         {
         }
 
-        public GlobalScope(int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<VariableName, int> variableNameToEntry, ISTEntry[] entryMap) : base(callerInstrId, funcIdToScope, variableNameToEntry, entryMap)
+        public GlobalScope(int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<string, int> variableNameToEntry, ISTEntry[] entryMap) : base(callerInstrId, funcIdToScope, variableNameToEntry, entryMap)
         {
         }
 
@@ -167,25 +162,23 @@ namespace Org.Puffinbasic.Domain.Scope
     /*sealed*/
     public class ChildScope : Scope
     {
-        private readonly IScope parent;
-
-        public ChildScope(IScope parent) : base(parent, NULL_ID, new Dictionary<int, IScope>(), new Dictionary<VariableName, int>(), new ISTEntry[100])
+        public ChildScope(IScope parent) : base(parent, NULL_ID, new Dictionary<int, IScope>(), new Dictionary<string, int>(), new ISTEntry[100])
         {
         }
 
-        public ChildScope(IScope parent, int callerInstrId) : base(parent, callerInstrId, new Dictionary<int, IScope>(), new Dictionary<VariableName, int>(), new ISTEntry[100])
+        public ChildScope(IScope parent, int callerInstrId) : base(parent, callerInstrId, new Dictionary<int, IScope>(), new Dictionary<string, int>(), new ISTEntry[100])
         {
 
         }
 
-        public ChildScope(IScope parent, int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<VariableName, int> variableNameToEntry, ISTEntry[] entryMap) 
-            : base(callerInstrId, funcIdToScope, variableNameToEntry, entryMap)
+        public ChildScope(IScope parent, int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<string, int> variableNameToEntry, ISTEntry[] entryMap) 
+            : base(parent, callerInstrId, funcIdToScope, variableNameToEntry, entryMap)
         {
         }
 
         public override IScope CreateRuntimeScope(int callerInstrId)
         {
-            return new ChildScope(parent, callerInstrId, new Dictionary<int, IScope>(funcIdToScope), new Dictionary<VariableName, int>(variableNameToEntry), entryMap.Clone() as ISTEntry[]);
+            return new ChildScope(parent, callerInstrId, new Dictionary<int, IScope>(funcIdToScope), new Dictionary<string, int>(variableNameToEntry), entryMap.Clone() as ISTEntry[]);
         }
 
         public override IScope CreateChild(int funcId, bool localScope)
@@ -209,18 +202,18 @@ namespace Org.Puffinbasic.Domain.Scope
     /*sealed*/
     public class LocalScope : Scope
     {
-        public LocalScope(IScope parent) : base(parent, NULL_ID, new Dictionary<int, IScope>(), new Dictionary<VariableName, int>(), new ISTEntry[100])
+        public LocalScope(IScope parent) : base(parent, NULL_ID, new Dictionary<int, IScope>(), new Dictionary<string, int>(), new ISTEntry[100])
         {
 
         }
-        public LocalScope(IScope parent, int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<VariableName, int> variableNameToEntry, ISTEntry[] entryMap) 
+        public LocalScope(IScope parent, int callerInstrId, Dictionary<int, IScope> funcIdToScope, Dictionary<string, int> variableNameToEntry, ISTEntry[] entryMap) 
             : base(parent, callerInstrId, funcIdToScope, variableNameToEntry, entryMap)
         {
         }
 
         public override IScope CreateRuntimeScope(int callerInstrId)
         {
-            return new LocalScope(parent, callerInstrId, new Dictionary<int, IScope>(funcIdToScope), new Dictionary<VariableName, int>(variableNameToEntry), entryMap.Clone() as ISTEntry[]);
+            return new LocalScope(parent, callerInstrId, new Dictionary<int, IScope>(funcIdToScope), new Dictionary<string, int>(variableNameToEntry), entryMap.Clone() as ISTEntry[]);
         }
 
         public override IScope CreateChild(int funcId, bool localScope)

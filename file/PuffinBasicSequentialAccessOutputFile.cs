@@ -27,14 +27,14 @@ namespace Org.Puffinbasic.File
 
             this.filename = filename;
             this.bytesAccessed = 0;
-            try
-            {
-                this.@out = new PrintStream(new BufferedOutputStream(new FileOutputStream(filename, append)));
-            }
-            catch (FileNotFoundException e)
-            {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.Message);
-            }
+            //try
+            //{
+            //    this.@out = new PrintStream(new BufferedOutputStream(new FileOutputStream(filename, append)));
+            //}
+            //catch (FileNotFoundException e)
+            //{
+            //    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.Message);
+            //}
 
             this.fileState = IPuffinBasicFile.FileState.OPEN;
         }
@@ -46,7 +46,7 @@ namespace Org.Puffinbasic.File
 
         public virtual int GetCurrentRecordNumber()
         {
-            return (int)(bytesAccessed / IPuffinBasicFile.DEFAULT_RECORD_LEN);
+            return (int)(bytesAccessed / PuffinBasicFile.DEFAULT_RECORD_LEN);
         }
 
         public virtual long GetFileSizeInBytes()

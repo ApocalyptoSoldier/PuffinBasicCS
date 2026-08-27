@@ -11,7 +11,6 @@ namespace Org.Puffinbasic.File
 {
     public interface IPuffinBasicFile
     {
-        int DEFAULT_RECORD_LEN = 128;
         void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts);
         int GetCurrentRecordNumber();
         long GetFileSizeInBytes();
@@ -68,7 +67,7 @@ namespace Org.Puffinbasic.File
 
     public static class FileEnumExtensions
     {
-        public static IPuffinBasicFile.FileAccessMode ValueOf(this IPuffinBasicFile.FileAccessMode _, string name)
+        public static IPuffinBasicFile.FileAccessMode FileAccessModeValueOf(string name)
         {
             switch (name) {
                 case "r":
@@ -82,7 +81,7 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public static IPuffinBasicFile.FileOpenMode ValueOf(this IPuffinBasicFile.FileOpenMode _, string name)
+        public static IPuffinBasicFile.FileOpenMode FileOpenModeValueOf(string name)
         {
            switch (name) {
                 case "INPUT":
@@ -98,7 +97,7 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public static IPuffinBasicFile.LockMode ValueOf(this IPuffinBasicFile.LockMode _, string name)
+        public static IPuffinBasicFile.LockMode LockModeValueOf(string name)
         {
             switch (name)
             {
@@ -125,6 +124,23 @@ namespace Org.Puffinbasic.File
 
             throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public abstract class PuffinBasicFile : IPuffinBasicFile
+    {
+        internal static readonly int DEFAULT_RECORD_LEN = 128;
+        public abstract void Dispose();
+        public abstract bool Eof();
+        public abstract void Get(int recordNumber, PuffinBasicSymbolTable symbolTable);
+        public abstract int GetCurrentRecordNumber();
+        public abstract long GetFileSizeInBytes();
+        public abstract bool IsOpen();
+        public abstract void Print(string s);
+        public abstract void Put(int recordNumber, PuffinBasicSymbolTable symbolTable);
+        public abstract byte[] ReadBytes(int n);
+        public abstract string ReadLine();
+        public abstract void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts);
+        public abstract void WriteByte(byte b);
     }
 }
 

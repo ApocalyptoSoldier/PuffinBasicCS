@@ -14,7 +14,7 @@ using System.IO;
 
 namespace Org.Puffinbasic.File
 {
-    public class SystemInputOutputFile : IPuffinBasicFile
+    public class SystemInputOutputFile : PuffinBasicFile
     {
         private readonly TextReader @in;
         private readonly TextWriter @out;
@@ -24,37 +24,38 @@ namespace Org.Puffinbasic.File
             this.@out = @out;
         }
 
-        public virtual void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
+        public override void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }
 
-        public virtual int GetCurrentRecordNumber()
+        public override int GetCurrentRecordNumber()
         {
             return 0;
         }
 
-        public virtual long GetFileSizeInBytes()
+        public override long GetFileSizeInBytes()
         {
             return 0;
         }
 
-        public virtual byte[] ReadBytes(int n)
+        public override byte[] ReadBytes(int n)
         {
-            byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
-            if (n >= line.Length)
-            {
-                return line;
-            }
-            else
-            {
-                byte[] copy = new byte[Math.Min(n, line.Length)];
-                Array.Copy(line, 0, copy, 0, n);
-                return copy;
-            }
+            throw new NotImplementedException();
+            //byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
+            //if (n >= line.Length)
+            //{
+            //    return line;
+            //}
+            //else
+            //{
+            //    byte[] copy = new byte[Math.Min(n, line.Length)];
+            //    Array.Copy(line, 0, copy, 0, n);
+            //    return copy;
+            //}
         }
 
-        public virtual string ReadLine()
+        public override string ReadLine()
         {
             try
             {
@@ -66,12 +67,12 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public virtual void Print(string s)
+        public override void Print(string s)
         {
             @out.Write(s);
         }
 
-        public virtual void WriteByte(byte b)
+        public override void WriteByte(byte b)
         {
             try
             {
@@ -83,27 +84,27 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public virtual bool Eof()
+        public override bool Eof()
         {
             return false;
         }
 
-        public virtual void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }
 
-        public virtual void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }
 
-        public virtual bool IsOpen()
+        public override bool IsOpen()
         {
             return true;
         }
 
-        public virtual void Dispose()
+        public override void Dispose()
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }
