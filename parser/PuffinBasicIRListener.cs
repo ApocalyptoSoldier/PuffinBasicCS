@@ -52,9 +52,9 @@ namespace Org.Puffinbasic.Parser
         private readonly bool graphics;
         private readonly ParseTreeProperty<Instruction> nodeToInstruction;
         //private readonly Dictionary<Variable, UDFState> udfStateMap;
-        private readonly Dictionary<string, UDFState> udfStateMap = new Dictionary<string, UDFState>();
-        private readonly LinkedList<WhileLoopState> whileLoopStateList;
-        private readonly LinkedList<ForLoopState> forLoopStateList;
+        private readonly Dictionary<int, UDFState> udfStateMap = new Dictionary<int, UDFState>();
+        private readonly LinkedList<WhileLoopState> whileLoopStateList = new LinkedList<WhileLoopState>();
+        private readonly LinkedList<ForLoopState> forLoopStateList = new LinkedList<ForLoopState>();
         private readonly LinkedList<IfState> ifStateList;
         private UDFState currentUdfState;
         private readonly ParseTreeProperty<IfState> nodeToIfState;
@@ -66,10 +66,6 @@ namespace Org.Puffinbasic.Parser
             this.ir = ir;
             this.graphics = graphics;
             this.nodeToInstruction = new ParseTreeProperty<Instruction>();
-            //this.udfStateMap = new Dictionary<Variable, UDFState>();
-            this.whileLoopStateList = new LinkedList<WhileLoopState>();
-            this.forLoopStateList = new LinkedList<ForLoopState>();
-            this.ifStateList = new LinkedList<IfState>();
             this.nodeToIfState = new ParseTreeProperty<IfState>();
         }
 
@@ -188,13 +184,24 @@ namespace Org.Puffinbasic.Parser
         //
         private Instruction ExitLeafVariable(PuffinBasicParser.LeafvariableContext ctx)
         {
-            //throw new NotImplementedException();
+            PuffinBasicSymbolTable symbolTable = ir.GetSymbolTable();
+            symbolTable.CheckUnused(ctx.varname().VARNAME().GetText()); // Check that the variable name doesn't match an existing user defined type
 
-            ir.GetSymbolTable().CheckUnused(ctx.varname().VARNAME().GetText());
+            IScope currentScope = symbolTable.GetCurrentScope();
+
+            // Check for any existing variable with this suffix, regardless of data type or suffix
+            // TODO: check if we need to always do this, or only if the data type has not been inferred
             var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
-            //var idHolder = new AtomicInteger();
-            int refId = 0;
-            ir.GetSymbolTable().AddVariableOrUDF(variableName, 
+
+            int refId = currentScope.TryGetIdForVariable(variableName);
+            if (refId != -1)
+            {
+                ISTVariable existingEntry = currentScope.GetNullableEntry(refId) as ISTVariable;
+                if (existingEntry != null)
+                    variableName = existingEntry.GetVariable().GetVariableName();
+            }
+
+            ir.GetSymbolTable().AddVariableOrUDF(variableName,
                 (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), 
                 (varId, varEntry, variable) =>
             {
@@ -231,7 +238,7 @@ namespace Org.Puffinbasic.Parser
 
                     // UDF
                     var udfEntry = (STUDF)varEntry;
-                    var udfState = udfStateMap[variable.ToString()];
+                    var udfState = udfStateMap[varId];
 
                     // Create & Push Runtime scope
                     var pushScopeInstr = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PUSH_RT_SCOPE, varId, NULL_ID, NULL_ID);
@@ -4483,7 +4490,7 @@ namespace Org.Puffinbasic.Parser
                 (varId, varEntry, variable) =>
             {
                 var udfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap[variable.ToString()] =  udfState;
+                udfStateMap[varId] =  udfState;
 
                 // GOTO postFuncDecl
                 udfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, 
@@ -4553,7 +4560,7 @@ namespace Org.Puffinbasic.Parser
                 (varId, varEntry, variable) =>
             {
                 var udfEntry = (STUDF)varEntry;
-                var udfState = udfStateMap[variable.ToString()];
+                var udfState = udfStateMap[varId];
                 foreach (VariableContext fnParamCtx in ctx.variable())
                 {
                     var fnParamInstr = LookupInstruction(fnParamCtx);
@@ -4714,7 +4721,7 @@ namespace Org.Puffinbasic.Parser
                 }
 
                 currentUdfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap[variable.ToString()] = currentUdfState;
+                udfStateMap[varId] = currentUdfState;
 
                 // GOTO postFuncDecl
                 currentUdfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);

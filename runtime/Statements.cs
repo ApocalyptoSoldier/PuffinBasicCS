@@ -469,7 +469,7 @@ namespace Org.Puffinbasic.Runtime
 
         public static void MemberFuncCall(PuffinBasicSymbolTable symbolTable, IList<Instruction> @params, Instruction instruction)
         {
-            STValue[] funcParams = (STValue[])(new ISTValue[@params.Count]);
+            ISTValue[] funcParams = new ISTValue[@params.Count];
             var @object = symbolTable[instruction.op1].GetValue();
             var funcName = symbolTable[instruction.op2].GetValue().GetString();
             ISTValue result = symbolTable[instruction.result].GetValue();

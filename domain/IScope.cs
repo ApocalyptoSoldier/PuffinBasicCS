@@ -28,6 +28,9 @@ namespace Org.Puffinbasic.Domain.Scope
         void PutEntry(int id, ISTEntry entry);
         ISTEntry GetEntry(int id);
         ISTEntry? GetNullableEntry(int id);
+        ISTEntry? GetNullableVariable(VariableName variableName);
+
+        int TryGetIdForVariable(VariableName variableName);
     }
 
     public abstract class Scope : IScope
@@ -117,6 +120,39 @@ namespace Org.Puffinbasic.Domain.Scope
             }
 
             return null;
+        }
+
+        public ISTEntry? GetNullableVariable(VariableName variableName)
+        {
+            if (ContainsVariable(variableName))
+                return entryMap[GetIdForVariable(variableName)];
+
+
+            // The portion of the variable name without the data type or suffix
+            string varname = $"{variableName.GetVarname()}:";
+
+            foreach (var kv in variableNameToEntry)
+                if (kv.Key.StartsWith(varname))
+                    return entryMap[kv.Value];
+
+            return null;
+        }
+
+        public int TryGetIdForVariable(VariableName variableName)
+        {
+            if (ContainsVariable(variableName))
+                return GetIdForVariable(variableName);
+
+            // The portion of the variable name without the data type or suffix
+            string varname = $"{variableName.GetVarname()}:";
+
+            foreach (var kv in variableNameToEntry)
+                if (kv.Key.StartsWith(varname))
+                    return kv.Value;
+
+            return this.GetSearchScope()?.TryGetIdForVariable(variableName) ?? -1;
+
+            return -1;
         }
     }
 

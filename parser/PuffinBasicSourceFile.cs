@@ -33,7 +33,9 @@ namespace Org.Puffinbasic.Parser
 
         public virtual string GetRelativePath()
         {
-            return relativePath;
+            // TODO: make relative path actually be the relative path once I've ported the path related code correctly
+            return relativePath.Remove(0, Environment.CurrentDirectory.Length);
+            //return relativePath;
         }
 
         public virtual string GetLibtag()

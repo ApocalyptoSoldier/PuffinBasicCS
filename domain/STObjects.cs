@@ -87,7 +87,7 @@ namespace Org.Puffinbasic.Domain
         {
             public abstract PuffinBasicTypeId GetTypeId();
             public abstract PuffinBasicAtomTypeId GetAtomTypeId();
-            public abstract STValue NewInstance(PuffinBasicSymbolTable symbolTable);
+            public abstract ISTValue NewInstance(PuffinBasicSymbolTable symbolTable);
 
             public virtual bool CanBeLValue() => false;
 
@@ -128,7 +128,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => atomType;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable) => atomType.CreateValue();
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => atomType.CreateValue();
 
             public override bool Equals(object obj)
             {
@@ -190,7 +190,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => atomType;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable)
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable)
             {
                 var entry = atomType.CreateArrayEntry();
                 var value = entry.GetValue();
@@ -241,7 +241,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => atomType;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable) => throw new PuffinBasicInternalError("Not implemented!");
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => throw new PuffinBasicInternalError("Not implemented!");
 
             public override bool Equals(object obj)
             {
@@ -280,8 +280,6 @@ namespace Org.Puffinbasic.Domain
             public StructType(string typeName)
             {
                 this.typeName = typeName;
-                //this.refIdToTypeMap = new Dictionary<int, PuffinBasicType>();
-                //this.nameToRefIdMap = new Dictionary<VariableName, int>();
             }
 
             public string GetTypeName() => typeName;
@@ -309,7 +307,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => PuffinBasicAtomTypeId.COMPOSITE;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STStruct(symbolTable, this);
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STStruct(symbolTable, this);
 
             public override bool Equals(object obj)
             {
@@ -336,7 +334,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        internal delegate void MemberCallHandler(object o, STValue[] @params, STValue result);
+        internal delegate void MemberCallHandler(object o, ISTValue[] @params, ISTValue result);
 
         internal sealed class MemberFunction
         {
@@ -457,7 +455,7 @@ namespace Org.Puffinbasic.Domain
                     }
                     else
                     {
-                        STValue item = (STValue)list[index];
+                        ISTValue item = (ISTValue)list[index];
                         if (item == null)
                         {
                             throw new PuffinBasicRuntimeError(NOT_INITIALIZED, "Value at list index: " + index + " is not set!");
@@ -493,7 +491,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => COMPOSITE;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STList(type, memberFunctions);
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STList(type, memberFunctions);
 
             public PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
 
@@ -573,7 +571,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => COMPOSITE;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STSet(type, memberFunctions);
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STSet(type, memberFunctions);
 
             public PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
 
@@ -664,9 +662,9 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicAtomTypeId GetAtomTypeId() => COMPOSITE;
 
-            public override STValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STDict(valueType, memberFunctions);
+            public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STDict(valueType, memberFunctions);
 
-            public PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
+            public override PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
 
             public void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
 
@@ -699,8 +697,8 @@ namespace Org.Puffinbasic.Domain
         public interface ISTEntry
         {
             bool IsLValue();
-            STValue GetValue();
-            void SetValue(STValue value);
+            ISTValue GetValue();
+            void SetValue(ISTValue value);
             PuffinBasicType GetType();
             void CreateAndSetInstance(PuffinBasicSymbolTable symbolTable);
         }
@@ -708,17 +706,17 @@ namespace Org.Puffinbasic.Domain
         public abstract class AbstractSTEntry : ISTEntry
         {
             private readonly PuffinBasicType type;
-            private STValue value;
-            public AbstractSTEntry(STValue value, PuffinBasicType type)
+            private ISTValue value;
+            public AbstractSTEntry(ISTValue value, PuffinBasicType type)
             {
                 this.value = value;
                 this.type = type;
             }
 
             public virtual PuffinBasicType GetType() => type; // TODO: check if I actually need this instead of using the property
-            public virtual void SetValue(STValue value) => this.value = value;
+            public virtual void SetValue(ISTValue value) => this.value = value;
 
-            public virtual STValue GetValue()
+            public virtual ISTValue GetValue()
             {
                 if (value == null)
                 {
@@ -735,7 +733,7 @@ namespace Org.Puffinbasic.Domain
 
         public class STLValue : AbstractSTEntry
         {
-            public STLValue(STValue value, PuffinBasicType type) : base(value, type)
+            public STLValue(ISTValue value, PuffinBasicType type) : base(value, type)
             {
             }
 
@@ -750,7 +748,7 @@ namespace Org.Puffinbasic.Domain
         public class STVariable : STLValue, ISTVariable
         {
             private readonly Variable variable;
-            public STVariable(STValue value, Variable variable) : base(value, variable.GetType())
+            public STVariable(ISTValue value, Variable variable) : base(value, variable.GetType())
             {
                 this.variable = variable;
             }
@@ -801,12 +799,12 @@ namespace Org.Puffinbasic.Domain
                 return @ref;
             }
 
-            public override STValue GetValue() => GetRef().GetValue();
+            public override ISTValue GetValue() => GetRef().GetValue();
         }
 
         public sealed class STTmp : AbstractSTEntry
         {
-            public STTmp(STValue value, PuffinBasicType type) : base(value, type)
+            public STTmp(ISTValue value, PuffinBasicType type) : base(value, type)
             {
             }
         }
@@ -874,7 +872,7 @@ namespace Org.Puffinbasic.Domain
 
             public void SetInitialized();
 
-            public void Call(string funcName, STValue[] @params, ISTValue result);
+            public void Call(string funcName, ISTValue[] @params, ISTValue result);
 
             public bool HasLen();
 
@@ -936,7 +934,7 @@ namespace Org.Puffinbasic.Domain
             {
             }
 
-            public virtual void Call(string funcName, STValue[] @params, ISTValue result) => throw new PuffinBasicRuntimeError(BAD_FIELD, "Function call is not supported: " + funcName);
+            public virtual void Call(string funcName, ISTValue[] @params, ISTValue result) => throw new PuffinBasicRuntimeError(BAD_FIELD, "Function call is not supported: " + funcName);
 
             public virtual bool HasLen() => false;
 
@@ -1941,7 +1939,7 @@ namespace Org.Puffinbasic.Domain
                 this.list = new List<object>();
             }
 
-            public void Call(string funcName, STValue[] @params, STValue result) => memberFunctions[funcName].callHandler.Invoke(list, @params, result);
+            public override void Call(string funcName, ISTValue[] @params, ISTValue result) => memberFunctions[funcName].callHandler.Invoke(list, @params, result);
 
             public override bool HasLen() => true;
 
@@ -1958,7 +1956,7 @@ namespace Org.Puffinbasic.Domain
                 this.set = new HashSet<object>();
             }
 
-            public void Call(string funcName, STValue[] @params, STValue result) => memberFunctions[funcName].callHandler.Invoke(set, @params, result);
+            public override void Call(string funcName, ISTValue[] @params, ISTValue result) => memberFunctions[funcName].callHandler.Invoke(set, @params, result);
 
             public override bool HasLen() => true;
 
@@ -1975,7 +1973,7 @@ namespace Org.Puffinbasic.Domain
                 this.dict = new Dictionary<object, object>();
             }
 
-            public void Call(string funcName, STValue[] @params, STValue result) => memberFunctions[funcName].callHandler.Invoke(dict, @params, result);
+            public override void Call(string funcName, ISTValue[] @params, ISTValue result) => memberFunctions[funcName].callHandler.Invoke(dict, @params, result);
 
             public override bool HasLen() => true;
 
@@ -2138,7 +2136,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        public static STValue CreateValue(this PuffinBasicAtomTypeId atomTypeId)
+        public static ISTValue CreateValue(this PuffinBasicAtomTypeId atomTypeId)
         {
             switch (atomTypeId)
             {
@@ -2158,7 +2156,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        public static object GetValueFrom(this PuffinBasicAtomTypeId atomTypeId, STValue src)
+        public static object GetValueFrom(this PuffinBasicAtomTypeId atomTypeId, ISTValue src)
         {
             switch (atomTypeId)
             {
@@ -2179,7 +2177,7 @@ namespace Org.Puffinbasic.Domain
         }
 
 
-        public static void SetValueIn(this PuffinBasicAtomTypeId atomTypeId, object value, STValue dest)
+        public static void SetValueIn(this PuffinBasicAtomTypeId atomTypeId, object value, ISTValue dest)
         {
             switch (atomTypeId)
             {
@@ -2204,7 +2202,7 @@ namespace Org.Puffinbasic.Domain
             }
         }
 
-        public static void CopyArray(this PuffinBasicAtomTypeId atomTypeId, IList src, STValue dst)
+        public static void CopyArray(this PuffinBasicAtomTypeId atomTypeId, IList src, ISTValue dst)
         {
 
             if (atomTypeId == PuffinBasicAtomTypeId.INT32)

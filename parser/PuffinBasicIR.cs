@@ -981,7 +981,7 @@ namespace Org.Puffinbasic.Parser
                 return hash;
             }
 
-            public new string ToString()
+            public override string ToString()
             {
                 return "[" + sourceFile.GetRelativePath() + ":" + lineNumber + "(" + inputStartIndex + "-" + inputStopIndex + ")]";
             }
@@ -1018,9 +1018,10 @@ namespace Org.Puffinbasic.Parser
                 this.op2 = op2;
             }
 
-            public new string ToString()
+            public override string ToString()
             {
-                return String.Format("[%s:%4d]\t%4s\t%4s %4s %4s", inputRef.sourceFile.GetRelativePath(), inputRef.lineNumber, opCode.Repr(), op1, op2, result);
+                return $"[{inputRef.sourceFile.GetRelativePath()}:{inputRef.lineNumber}]\t{opCode.Repr()}\t{op1} {op2} {result}";
+                //return String.Format("[%s:%4d]\t%4s\t%4s %4s %4s", inputRef.sourceFile.GetRelativePath(), inputRef.lineNumber, opCode.Repr(), op1, op2, result);
             }
         }
     }
