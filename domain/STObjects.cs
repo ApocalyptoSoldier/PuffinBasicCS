@@ -274,8 +274,7 @@ namespace Org.Puffinbasic.Domain
         {
             private readonly string typeName;
             internal readonly Dictionary<int, PuffinBasicType> refIdToTypeMap = new Dictionary<int, PuffinBasicType>();
-            //internal readonly Dictionary<VariableName, int> nameToRefIdMap;
-            internal readonly Dictionary<string, int> nameToRefIdMap = new Dictionary<string, int>();
+            internal readonly Dictionary<VariableName, int> nameToRefIdMap = new Dictionary<VariableName, int>();
             private int counter;
             public StructType(string typeName)
             {
@@ -286,11 +285,11 @@ namespace Org.Puffinbasic.Domain
 
             public PuffinBasicType GetMemberType(VariableName memberName) => refIdToTypeMap[GetMemberRefId(memberName)];
 
-            public bool ContainsMember(VariableName memberName) => nameToRefIdMap.ContainsKey(memberName.ToString());
+            public bool ContainsMember(VariableName memberName) => nameToRefIdMap.ContainsKey(memberName);
 
             public int GetMemberRefId(VariableName memberName)
             {
-                if (!nameToRefIdMap.TryGetValue(memberName.ToString(), out int memberRefId))
+                if (!nameToRefIdMap.TryGetValue(memberName, out int memberRefId))
                     throw new PuffinBasicRuntimeError(BAD_FIELD, "Missing field " + typeName + "." + memberName);
 
                 return memberRefId;
@@ -300,7 +299,7 @@ namespace Org.Puffinbasic.Domain
             {
                 int refId = counter++;
                 refIdToTypeMap.Add(refId, type);
-                nameToRefIdMap.Add(memberName.ToString(), refId);
+                nameToRefIdMap.Add(memberName, refId);
             }
 
             public override PuffinBasicTypeId GetTypeId() => PuffinBasicTypeId.STRUCT;
@@ -493,11 +492,11 @@ namespace Org.Puffinbasic.Domain
 
             public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STList(type, memberFunctions);
 
-            public PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
+            public override PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
 
-            public void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
+            public override void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
 
-            public bool Equals(object obj)
+            public override bool Equals(object obj)
             {
                 if (this == obj)
                 {
@@ -573,9 +572,9 @@ namespace Org.Puffinbasic.Domain
 
             public override ISTValue NewInstance(PuffinBasicSymbolTable symbolTable) => new STSet(type, memberFunctions);
 
-            public PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
+            public override PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
 
-            public void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
+            public override void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
 
             public bool Equals(object obj)
             {
@@ -666,7 +665,7 @@ namespace Org.Puffinbasic.Domain
 
             public override PuffinBasicType GetFuncCallReturnType(string funcName) => memberFunctions[funcName].returnType;
 
-            public void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
+            public override void CheckFuncCallArguments(string funcName, IList<PuffinBasicType> paramTypes) => memberFunctions.CheckFuncCallArguments(funcName, paramTypes);
 
             public bool Equals(object obj)
             {

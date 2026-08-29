@@ -36,7 +36,7 @@ namespace Org.Puffinbasic.Domain
 
             public new string ToString() => varname + ":" + suffix + ":" + dataType;
 
-            public new bool Equals(object o)
+            public override bool Equals(object o)
             {
                 if (this == o)
                     return true;
@@ -46,7 +46,7 @@ namespace Org.Puffinbasic.Domain
                 return this.varname == other.varname && this.suffix == other.suffix;
             }
 
-            public int GetHashCode()
+            public override int GetHashCode()
             {
                 int hash = 17;
                 hash = hash * 23 + varname.GetHashCode();
@@ -111,7 +111,7 @@ namespace Org.Puffinbasic.Domain
 
         public virtual string ToString() => variableName + ":" + type.GetTypeId();
 
-        public new bool Equals(object o)
+        public override bool Equals(object o)
         {
             if (this == o)
                 return true;
@@ -146,7 +146,7 @@ namespace Org.Puffinbasic.Domain
         //    return variableName.Equals(variable.variableName) && type.Equals(variable.type);
         //}
 
-        public virtual int GetHashCode()
+        public override int GetHashCode()
         {
             int hash = 17;
             hash = hash * 23 + variableName.GetHashCode();

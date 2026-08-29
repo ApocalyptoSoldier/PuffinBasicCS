@@ -51,8 +51,8 @@ namespace Org.Puffinbasic.Parser
         private readonly PuffinBasicIR ir;
         private readonly bool graphics;
         private readonly ParseTreeProperty<Instruction> nodeToInstruction;
-        //private readonly Dictionary<Variable, UDFState> udfStateMap;
-        private readonly Dictionary<int, UDFState> udfStateMap = new Dictionary<int, UDFState>();
+        private readonly Dictionary<Variable, UDFState> udfStateMap = new Dictionary<Variable, UDFState>();
+        //private readonly Dictionary<int, UDFState> udfStateMap = new Dictionary<int, UDFState>();
         private readonly LinkedList<WhileLoopState> whileLoopStateList = new LinkedList<WhileLoopState>();
         private readonly LinkedList<ForLoopState> forLoopStateList = new LinkedList<ForLoopState>();
         private readonly LinkedList<IfState> ifStateList;
@@ -189,18 +189,9 @@ namespace Org.Puffinbasic.Parser
 
             IScope currentScope = symbolTable.GetCurrentScope();
 
-            // Check for any existing variable with this suffix, regardless of data type or suffix
-            // TODO: check if we need to always do this, or only if the data type has not been inferred
             var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
 
-            int refId = currentScope.TryGetIdForVariable(variableName);
-            if (refId != -1)
-            {
-                ISTVariable existingEntry = currentScope.GetNullableEntry(refId) as ISTVariable;
-                if (existingEntry != null)
-                    variableName = existingEntry.GetVariable().GetVariableName();
-            }
-
+            int refId = 0;
             ir.GetSymbolTable().AddVariableOrUDF(variableName,
                 (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), 
                 (varId, varEntry, variable) =>
@@ -238,7 +229,7 @@ namespace Org.Puffinbasic.Parser
 
                     // UDF
                     var udfEntry = (STUDF)varEntry;
-                    var udfState = udfStateMap[varId];
+                    var udfState = udfStateMap[variable];
 
                     // Create & Push Runtime scope
                     var pushScopeInstr = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PUSH_RT_SCOPE, varId, NULL_ID, NULL_ID);
@@ -478,6 +469,9 @@ namespace Org.Puffinbasic.Parser
         //
         public override void ExitExprString(PuffinBasicParser.ExprStringContext ctx)
         {
+            var v = ctx.@string().STRING();
+            var w = v.GetText();
+  
             var text = Unquote(ctx.@string().STRING().GetText());
             var id = ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (entry) => entry.GetValue().SetString(text));
             CopyAndRegisterExprResult(ctx, ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.VALUE, id, NULL_ID, id), false);
@@ -4490,7 +4484,7 @@ namespace Org.Puffinbasic.Parser
                 (varId, varEntry, variable) =>
             {
                 var udfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap[varId] =  udfState;
+                udfStateMap[variable] =  udfState;
 
                 // GOTO postFuncDecl
                 udfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, 
@@ -4560,7 +4554,7 @@ namespace Org.Puffinbasic.Parser
                 (varId, varEntry, variable) =>
             {
                 var udfEntry = (STUDF)varEntry;
-                var udfState = udfStateMap[varId];
+                var udfState = udfStateMap[variable];
                 foreach (VariableContext fnParamCtx in ctx.variable())
                 {
                     var fnParamInstr = LookupInstruction(fnParamCtx);
@@ -4586,19 +4580,6 @@ namespace Org.Puffinbasic.Parser
 
                 // Patch GOTO postFuncDecl
                 udfState.gotoPostFuncDecl.PatchOp1(labelPostFuncDecl.op1);
-
-                //IScope searchScope = ir.GetSymbolTable().GetCurrentScope();
-
-                //do
-                //{
-                //    var varIdInScope = searchScope.GetIdForVariable(variable.GetVariableName());
-                //    string msg = "";
-                //    if (varIdInScope != -1)
-                //        msg = $"{variable.GetVariableName().ToString()} exists in scope ${searchScope.GetCallerInstrId()} as {varIdInScope}";
-
-                //    searchScope = searchScope.GetParent();
-                //}
-                //while (searchScope != null);
             });
         }
 
@@ -4721,7 +4702,7 @@ namespace Org.Puffinbasic.Parser
                 }
 
                 currentUdfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap[varId] = currentUdfState;
+                udfStateMap[variable] = currentUdfState;
 
                 // GOTO postFuncDecl
                 currentUdfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.GOTO_LABEL, ir.GetSymbolTable().AddGotoTarget(), NULL_ID, NULL_ID);
@@ -8740,18 +8721,35 @@ namespace Org.Puffinbasic.Parser
             var accessMode = GetFileAccessMode(null);
             var lockMode = GetLockMode(null);
             var fileNumber = Numbers.ParseInt32(ctx.filenum.Text, GetCtxString(ctx));
-            var recordLenInstrId = ctx.reclen != null ? LookupInstruction(ctx.reclen).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(File.PuffinBasicFile.DEFAULT_RECORD_LEN));
+            var recordLenInstrId = ctx.reclen != null ? 
+                LookupInstruction(ctx.reclen).result : 
+                ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(File.PuffinBasicFile.DEFAULT_RECORD_LEN));
+
             Types.AssertString(ir.GetSymbolTable()[filenameInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             Types.AssertNumeric(ir.GetSymbolTable()[recordLenInstrId].GetType().GetAtomTypeId(), GetCtxString(ctx));
 
             // fileName, fileNumber
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, filenameInstr.result, ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(fileNumber)), NULL_ID);
+            ir.AddInstruction(
+                sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, 
+                OpCode.PARAM2, 
+                filenameInstr.result, 
+                ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(fileNumber)), 
+                NULL_ID);
 
             // openMode, accessMode
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PARAM2, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(fileOpenMode.ToString())), ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(accessMode.ToString())), NULL_ID);
+            ir.AddInstruction(
+                sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, 
+                OpCode.PARAM2, 
+                ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(fileOpenMode.ToString())), 
+                ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(accessMode.ToString())), NULL_ID);
 
             // lockMode, recordLen
-            ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.OPEN, ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(lockMode.ToString())), recordLenInstrId, NULL_ID);
+            ir.AddInstruction(
+                sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, 
+                OpCode.OPEN,
+                ir.GetSymbolTable().AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.GetValue().SetString(lockMode.ToString())), 
+                recordLenInstrId, 
+                NULL_ID);
         }
 
         //
