@@ -28,7 +28,10 @@ namespace Org.Puffinbasic.Runtime
             public IIFormatter Get(string format)
             {
                 if (!cache.TryGetValue(format, out IIFormatter formatter))
-                    cache[format] = Formatter.GetFormatter(format);
+                {
+                    formatter = Formatter.GetFormatter(format);
+                    cache[format] = formatter;
+                }
                 return formatter;
     
                 //return cache.ComputeIfAbsent(format, Formatter.GetFormatter());

@@ -21,13 +21,12 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
+using Org.Puffinbasic.Common;
 
 namespace Org.Puffinbasic.Runtime
 {
     public class Functions
     {
-        private static readonly Encoding ISOCharset = Encoding.GetEncoding("ISO-8859-1");
-
         public static void Abs(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var op1Entry = symbolTable[instruction.op1];
@@ -215,7 +214,7 @@ namespace Org.Puffinbasic.Runtime
             byte[] b = new byte[4];
             BitConverter.GetBytes(value).CopyTo(b, 0);
 
-            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+            symbolTable[instruction.result].GetValue().SetString(ISOEncoding.GetString(b));
 
 
             //int value = symbolTable[instruction.op1].GetValue().GetInt32();
@@ -229,7 +228,7 @@ namespace Org.Puffinbasic.Runtime
             byte[] b = new byte[8];
             BitConverter.GetBytes(value).CopyTo(b, 0);
 
-            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+            symbolTable[instruction.result].GetValue().SetString(ISOEncoding.GetString(b));
 
             //long value = symbolTable[instruction.op1].GetValue().GetInt64();
             //string str = new string (ByteBuffer.Allocate(8).PutLong(value).Array(), StandardCharsets.ISO_8859_1);
@@ -242,7 +241,7 @@ namespace Org.Puffinbasic.Runtime
             byte[] b = new byte[4];
             BitConverter.GetBytes(value).CopyTo(b, 0);
 
-            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+            symbolTable[instruction.result].GetValue().SetString(ISOEncoding.GetString(b));
 
             //float value = symbolTable[instruction.op1].GetValue().GetFloat32();
             //string str = new string (ByteBuffer.Allocate(4).PutFloat(value).Array(), StandardCharsets.ISO_8859_1);
@@ -255,7 +254,7 @@ namespace Org.Puffinbasic.Runtime
             byte[] b = new byte[8];
             BitConverter.GetBytes(value).CopyTo(b, 0);
 
-            symbolTable[instruction.result].GetValue().SetString(ISOCharset.GetString(b));
+            symbolTable[instruction.result].GetValue().SetString(ISOEncoding.GetString(b));
 
             //double value = symbolTable[instruction.op1].GetValue().GetFloat64();
             //string str = new string (ByteBuffer.Allocate(8).PutDouble(value).Array(), StandardCharsets.ISO_8859_1);
@@ -270,7 +269,7 @@ namespace Org.Puffinbasic.Runtime
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVI$: value: " + value + " length must be 4, found: " + value.Length);
             }
 
-            int intValue = BitConverter.ToInt32(ISOCharset.GetBytes(value), 0);
+            int intValue = BitConverter.ToInt32(ISOEncoding.GetBytes(value), 0);
             symbolTable[instruction.result].GetValue().SetInt32(intValue);
 
             //int intValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 4).GetInt();
@@ -285,7 +284,7 @@ namespace Org.Puffinbasic.Runtime
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVL$: value: " + value + " length must be 8, found: " + value.Length);
             }
 
-            long longValue = BitConverter.ToInt64(ISOCharset.GetBytes(value), 0);
+            long longValue = BitConverter.ToInt64(ISOEncoding.GetBytes(value), 0);
 
             //long longValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 8).GetLong();
             symbolTable[instruction.result].GetValue().SetInt64(longValue);
@@ -299,7 +298,7 @@ namespace Org.Puffinbasic.Runtime
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVS$: value: " + value + " length must be 4, found: " + value.Length);
             }
 
-            float floatValue = BitConverter.ToSingle(ISOCharset.GetBytes(value), 0);
+            float floatValue = BitConverter.ToSingle(ISOEncoding.GetBytes(value), 0);
 
             //float floatValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 4).GetFloat();
             symbolTable[instruction.result].GetValue().SetFloat32(floatValue);
@@ -313,7 +312,7 @@ namespace Org.Puffinbasic.Runtime
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVD$: value: " + value + " length must be 8, found: " + value.Length);
             }
 
-            double doubleValue = BitConverter.ToDouble(ISOCharset.GetBytes(value), 0);
+            double doubleValue = BitConverter.ToDouble(ISOEncoding.GetBytes(value), 0);
             //double doubleValue = ByteBuffer.Wrap(value.GetBytes(StandardCharsets.ISO_8859_1), 0, 8).GetDouble();
             symbolTable[instruction.result].GetValue().SetFloat64(doubleValue);
         }

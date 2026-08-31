@@ -18,8 +18,10 @@ namespace Org.Puffinbasic.Runtime
 
             public virtual string Get(string key)
             {
-                string result = overrides[key];
-                return result != null ? result : Environment.GetEnvironmentVariable(key);
+                if (overrides.TryGetValue(key, out string result))
+                    return result;
+                else
+                    return Environment.GetEnvironmentVariable(key);
             }
 
             public string this[string key] => Get(key);

@@ -15,11 +15,14 @@ using static Org.Puffinbasic.Runtime.Formatter;
 using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
 using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
 using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+using static Org.Puffinbasic.Common.ISOEncoding;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.IO;
+using Org.Puffinbasic.Common;
 
 namespace Org.Puffinbasic.Runtime
 {
@@ -196,7 +199,7 @@ namespace Org.Puffinbasic.Runtime
             else
             {
                 byte[] bytes = new byte[destLen];
-                Array.Copy(value.ToCharArray(), 0, bytes, 0, valLen);
+                Array.Copy(ISOEncoding.GetBytes(value), 0, bytes, 0, valLen);
                 //java.util.Arrays.Fill(bytes, valLen, destLen, (byte)' ');
                 Arrays.Fill(bytes, (byte)' ', valLen, destLen);
                 result = new string(bytes.Select(b => (char)b).ToArray());
