@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using static Org.Puffinbasic.File.IPuffinBasicFile;
 using System.IO;
+using Org.Puffinbasic.Common;
 
 namespace Org.Puffinbasic.File
 {
@@ -60,40 +61,49 @@ namespace Org.Puffinbasic.File
 
         public override string ReadLine()
         {
-            throw new NotImplementedException();
-            //AssertOpen();
-            //try
-            //{
-            //    if (lastLine == null)
-            //    {
-            //        lastLine = @in.ReadLine();
-            //    }
+            AssertOpen();
+            try
+            {
+                if (lastLine == null)
+                {
+                    StringBuilder sb = new StringBuilder();
 
-            //    bytesAccessed += lastLine.Length;
-            //    var result = lastLine.TrimEnd();
-            //    lastLine = null;
-            //    return result;
-            //}
-            //catch (System.IO.IOException e)
-            //{
-            //    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
-            //}
+                    char c;
+                    do
+                    {
+                        c = (char)@in.ReadByte();
+                        bytesAccessed++;
+
+                        sb.Append(c);
+
+                    } while (c != '\n');
+
+                    lastLine = sb.ToString();
+                }
+
+                var result = lastLine.TrimEnd();
+                lastLine = null;
+                return result;
+            }
+            catch (System.IO.IOException e)
+            {
+                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
+            }
         }
 
         public override byte[] ReadBytes(int n)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
             //byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
-            //if (n >= line.Length)
-            //{
-            //    return line;
-            //}
-            //else
-            //{
-            //    byte[] copy = new byte[Math.Min(n, line.Length)];
-            //    Array.Copy(line, 0, copy, 0, n);
-            //    return copy;
-            //}
+            byte[] line = ISOEncoding.GetBytes(ReadLine());
+            if (n >= line.Length)
+            {
+                return line;
+            }
+            else
+            {
+                return line.Take(Math.Min(n, line.Length)).ToArray();
+            }
         }
 
         public override void Print(string s)
@@ -119,12 +129,12 @@ namespace Org.Puffinbasic.File
             }
         }
 
-        public override void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Put(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             ThrowIllegalAccess();
         }
 
-        public override void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             ThrowIllegalAccess();
         }

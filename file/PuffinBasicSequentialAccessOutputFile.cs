@@ -11,13 +11,15 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Org.Puffinbasic.Common;
 
 namespace Org.Puffinbasic.File
 {
     public class PuffinBasicSequentialAccessOutputFile : IPuffinBasicFile
     {
         private readonly string filename;
-        private readonly TextWriter @out;
+        //private readonly TextWriter @out;
+        private readonly FileStream @out;
         private long bytesAccessed;
         private IPuffinBasicFile.FileState fileState;
         private string lastLine;
@@ -27,6 +29,13 @@ namespace Org.Puffinbasic.File
 
             this.filename = filename;
             this.bytesAccessed = 0;
+            try
+            { 
+                @out = System.IO.File.OpenWrite(filename);
+            }
+            catch (Exception e) {
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to open file {filename} for writing, error: ${e.Message}");
+            }
             //try
             //{
             //    this.@out = new PrintStream(new BufferedOutputStream(new FileOutputStream(filename, append)));
@@ -67,7 +76,7 @@ namespace Org.Puffinbasic.File
         public virtual void Print(string s)
         {
             bytesAccessed += s.Length;
-            @out.Write(s);
+            @out.Write(ISOEncoding.GetBytes(s), (int)@out.Position, s.Length);
         }
 
         public virtual void WriteByte(byte b)
@@ -75,7 +84,7 @@ namespace Org.Puffinbasic.File
             bytesAccessed++;
             try
             {
-                @out.Write((char)b);
+                @out.WriteByte(b);
             }
             catch (Exception e)
             {
@@ -88,12 +97,12 @@ namespace Org.Puffinbasic.File
             return false;
         }
 
-        public virtual void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public virtual void Put(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             throw GetIllegalAccess();
         }
 
-        public virtual void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public virtual void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             throw GetIllegalAccess();
         }
@@ -113,6 +122,7 @@ namespace Org.Puffinbasic.File
             AssertOpen();
             try
             {
+                this.@out.Flush();
                 this.@out.Dispose();
             }
             catch (Exception e)

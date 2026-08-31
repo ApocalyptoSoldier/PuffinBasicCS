@@ -41,13 +41,11 @@ namespace Org.Puffinbasic.File
                 file = new PuffinBasicSequentialAccessOutputFile(filename, true);
             }
 
-            var existing = files[fileNumber];
-            if (existing != null && existing.IsOpen())
-            {
+            if (files.TryGetValue(fileNumber, out var existing) && existing.IsOpen()) {
                 throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "FileNumber: " + fileNumber + " is already open, cannot open another file: " + filename + " with same file number.");
             }
 
-            files.Add(fileNumber, file);
+            files[fileNumber] = file;
             return file;
         }
 
@@ -62,13 +60,10 @@ namespace Org.Puffinbasic.File
         public virtual IPuffinBasicFile Get(int fileNumber)
         {
             AssertPositiveFileNumber(fileNumber);
-            var file = files[fileNumber];
-            if (file == null)
-            {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Failed to find file for fileNumber: " + fileNumber);
-            }
-
-            return file;
+            if (files.TryGetValue(fileNumber, out var file))
+                return file;
+            
+            throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Failed to find file for fileNumber: " + fileNumber);
         }
 
         public IPuffinBasicFile this[int fileNumber] => Get(fileNumber);

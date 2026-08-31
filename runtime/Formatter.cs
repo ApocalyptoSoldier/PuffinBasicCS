@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Globalization;
 
 namespace Org.Puffinbasic.Runtime
 {
@@ -234,7 +235,7 @@ namespace Org.Puffinbasic.Runtime
                     value = -value;
                 }
 
-                return Format(value.ToString(decimalFormat), isNegative);
+                return Format(value.ToString(decimalFormat, CultureInfo.InvariantCulture), isNegative);
             }
 
             // Handle prefix '+' or '-'
@@ -250,7 +251,7 @@ namespace Org.Puffinbasic.Runtime
                     value = -value;
                 }
 
-                return Format(value.ToString(decimalFormat), isNegative);
+                return Format(value.ToString(decimalFormat, CultureInfo.InvariantCulture), isNegative);
             }
 
             // Handle prefix '+' or '-'
@@ -380,7 +381,7 @@ namespace Org.Puffinbasic.Runtime
                 if (format.Length >= 2)
                 {
                     length = format.Length;
-                    var spaces = format.Substring(1, format.Length - 1);
+                    var spaces = format.Substring(1, format.Length - 2);
                     for (int i = 0; i < spaces.Length; i++)
                     {
                         if (spaces[i] != ' ')

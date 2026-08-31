@@ -9086,7 +9086,7 @@ namespace Org.Puffinbasic.Parser
         {
             //var fileNumbers = ctx.DECIMAL().Stream().Map((fileNumberCtx) => Numbers.ParseInt32(fileNumberCtx.GetText(), GetCtxString(ctx))).Collect(Collectors.ToList());
             var fileNumbers = ctx.DECIMAL().Select((fileNumberCtx) => Numbers.ParseInt32(fileNumberCtx.GetText(), GetCtxString(ctx)));
-            if (fileNumbers.Any())
+            if (!fileNumbers.Any())
             {
                 ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.CLOSE_ALL, NULL_ID, NULL_ID, NULL_ID);
             }

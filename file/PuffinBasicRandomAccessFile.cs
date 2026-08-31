@@ -16,6 +16,8 @@ using System.Text;
 using static Org.Puffinbasic.File.IPuffinBasicFile;
 using System.IO;
 using System.ComponentModel;
+using Org.Puffinbasic.Common;
+using Microsoft.Win32.SafeHandles;
 
 namespace Org.Puffinbasic.File
 {
@@ -24,7 +26,9 @@ namespace Org.Puffinbasic.File
         private readonly string filename;
         private readonly FileAccessMode accessMode;
         //private readonly System.IO.FileInfo file; // System.IO.RandomAccess?
-        private readonly FileStream file;
+        //private readonly FileStream file;
+        private FileStream file;
+        private readonly SafeFileHandle fileHandle;
         private readonly int recordLength;
         private readonly byte[] recordBuffer;
         private List<int> recordParts;
@@ -38,7 +42,7 @@ namespace Org.Puffinbasic.File
             if (recordLen  < 0) throw new ArgumentOutOfRangeException(nameof(recordLen));
             if (accessMode == null) throw new ArgumentNullException(nameof(accessMode));
 
-            this.filename = filename;
+            this.filename = filename.Replace('/', '\\');
             this.accessMode = accessMode;
             this.recordLength = recordLen;
             this.recordBuffer = new byte[recordLength];
@@ -46,8 +50,11 @@ namespace Org.Puffinbasic.File
             this.currentFilePosBytes = 0;
             try
             {
+                FileAccess fileAccess = accessMode == FileAccessMode.READ_ONLY ? FileAccess.Read : 
+                    accessMode == FileAccessMode.READ_WRITE ? FileAccess.ReadWrite : FileAccess.Write;
+                this.fileHandle = System.IO.File.OpenHandle(this.filename, FileMode.OpenOrCreate, FileAccess.ReadWrite);
                 //this.file = new RandomAccessFile(filename, accessMode.mode);
-                this.file = System.IO.File.Open(filename, FileMode.OpenOrCreate); // TODO: Add conversion for FileAccessMode
+                //this.file = System.IO.File.Open(filename, FileMode.OpenOrCreate); // TODO: Add conversion for FileAccessMode
             }
             catch (System.IO.FileNotFoundException e)
             {
@@ -95,6 +102,7 @@ namespace Org.Puffinbasic.File
             AssertOpen();
             try
             {
+                return RandomAccess.GetLength(fileHandle);
                 return file.Length;
             }
             catch (System.IO.IOException e)
@@ -108,7 +116,7 @@ namespace Org.Puffinbasic.File
             return currentFilePosBytes >= GetFileSizeInBytes();
         }
 
-        public override void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Put(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             AssertOpen();
             if (accessMode == FileAccessMode.READ_ONLY)
@@ -116,43 +124,41 @@ namespace Org.Puffinbasic.File
                 throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is open for read-only");
             }
 
-            if (recordNumber == null)
+            this.lastPutRecordNumber = recordNumber.GetValueOrDefault(lastPutRecordNumber + 1);
+            SeekToRecord(this.lastPutRecordNumber);
+
+            var pos = GetRecordBytePos(this.lastPutRecordNumber);
+
+            List <ReadOnlyMemory<byte>> recordBufferParts = new List<ReadOnlyMemory<byte>>();
+
+            for (int i = 0; i < recordParts.Count; i++)
             {
-                recordNumber = lastPutRecordNumber + 1;
+                var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
+                var value = entry.GetString();
+                var valueLength = value.Length;
+                var fieldLength = entry.GetFieldLength();
+
+                // Put first fieldLength bytes only
+                if (fieldLength < valueLength)
+                    value = value.Substring(0, fieldLength);
+
+                // TODO: figure out if there's a better way to do this
+                value = value.Replace('\0', ' ');
+
+                var valueBytes = ISOEncoding.GetBytes(value);
+
+                var byteBuffer = new byte[fieldLength];
+
+                Array.Fill(byteBuffer, (byte)' ');
+                Array.Copy(valueBytes, byteBuffer, valueBytes.Length);
+
+                recordBufferParts.Add(new ReadOnlyMemory<byte>(byteBuffer));
             }
-
-            SeekToRecord(recordNumber);
-            this.lastPutRecordNumber = recordNumber;
-
-
-            //// Create a new buffer and fill with spaces.
-            //using (var bb = ClearAndGetRecordBuffer())
-            //{
-            //    for (int i = 0; i < recordParts.Count; i++)
-            //    {
-            //        var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
-            //        var value = entry.GetString();
-            //        var valueLength = value.Length();
-            //        var fieldLength = entry.GetFieldLength();
-
-            //        // Put first fieldLength bytes only
-            //        if (fieldLength < valueLength)
-            //            value = value.Substring(0, fieldLength);
-
-            //        bb.Write(value);
-            //        //bb.Put(value.GetBytes());
-
-            //        // If fieldLength > valueLength, skip fieldLength - valueLength
-            //        if (fieldLength > valueLength)
-            //            bb.BaseStream.Position += fieldLength - valueLength;
-            //    }
-            //}
-
 
             // Write the record buffer to file
             try
             {
-                var entry = symbolTable[recordParts[recordNumber]].GetValue();
+                RandomAccess.Write(fileHandle, recordBufferParts, pos);
             }
             catch (System.IO.IOException e)
             {
@@ -166,26 +172,55 @@ namespace Org.Puffinbasic.File
         // Put first fieldLength bytes only
         // If fieldLength > valueLength, skip fieldLength - valueLength
         // Write the record buffer to file
-        public override void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
             AssertOpen();
             if (accessMode == FileAccessMode.WRITE_ONLY)
             {
                 throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is open for write-only");
             }
 
-            if (recordNumber == null)
-            {
-                recordNumber = lastGetRecordNumber + 1;
+            this.lastGetRecordNumber = recordNumber.GetValueOrDefault(this.lastGetRecordNumber + 1);
+
+            SeekToRecord(this.lastGetRecordNumber);
+            var pos = GetRecordBytePos(this.lastGetRecordNumber);
+
+            //var recordPartBuffers = new byte[recordParts.Count][];
+            //Memory<byte()
+
+            var recordPartBuffers = new List<Memory<byte>>();
+
+            for (int i = 0; i < recordParts.Count; i++) {
+                var entry = symbolTable[recordParts[i]].GetValue();
+                recordPartBuffers.Add(new Memory<byte>(new byte[entry.GetFieldLength()]));
+                //recordPartBuffers[i] = new byte[entry.GetFieldLength()];
             }
 
-            SeekToRecord(recordNumber);
-            this.lastGetRecordNumber = recordNumber;
-            var entry = symbolTable[recordParts[recordNumber]].GetValue();
-            byte[] strBytes = new byte[entry.GetFieldLength()];
-            file.Read(strBytes, (int)file.Position, strBytes.Length);
-            //entry.SetString(new string(strBytes));
+            RandomAccess.Read(fileHandle, recordPartBuffers, currentFilePosBytes);
+
+            for (int i = 0; i != recordParts.Count; i++) {
+                var entry = symbolTable[recordParts[i]].GetValue();
+                entry.SetString(ISOEncoding.GetString(recordPartBuffers[i].ToArray()));
+            }
+
+            //SeekToRecord(lastGetRecordNumber);
+
+            //for (int i = 0; i < recordParts.Count; i++) {
+            //    var entry = symbolTable[recordParts[i]].GetValue();
+            //    byte[] strBytes = new byte[entry.GetFieldLength()];
+
+            //    //Console.WriteLine($"Len {file.Length} pos {file.Position} fieldLen {strBytes.Length}");
+
+            //    //int toRead = strBytes.Length;
+            //    //if (toRead + file.Position > file.Length)
+            //    //    toRead = (int)(file.Length - file.Position);
+            //    //file.Read(strBytes, (int)file.Position, strBytes.Length);
+            //    var byteSpan = new Span<byte>(strBytes);
+            //    file.ReadAtLeast(byteSpan, strBytes.Length, false );
+
+            //    entry.SetString(ISOEncoding.GetString(byteSpan.ToArray()));
+            //}
 
             // Seek to record number and read the record into record buffer
             // I don't think we're doing this because we're already working with a filestream
@@ -219,10 +254,8 @@ namespace Org.Puffinbasic.File
             //Runtime.Arrays.Fill(recordBuffer, 0, recordBuffer.Length, (byte)' ');
             Runtime.Arrays.Fill(recordBuffer, (byte)' ', 0, recordBuffer.Length);
             
-            using (var ms = new MemoryStream(recordBuffer))
-            {
-                return new BinaryWriter(ms);
-            }
+            var ms = new MemoryStream(recordBuffer);
+            return new BinaryWriter(ms);
         }
 
         // Create a new buffer and fill with spaces.
@@ -259,7 +292,8 @@ namespace Org.Puffinbasic.File
                 long destPosBytes = GetRecordBytePos(recordNumber);
                 if (destPosBytes != currentFilePosBytes)
                 {
-                    currentFilePosBytes = file.Seek(destPosBytes, SeekOrigin.Begin);
+                    currentFilePosBytes = destPosBytes;
+                    //currentFilePosBytes = file.Seek((int)destPosBytes, SeekOrigin.Begin);
                 }
             }
             catch (System.IO.IOException e)
@@ -304,7 +338,7 @@ namespace Org.Puffinbasic.File
             AssertOpen();
             try
             {
-                this.file.Dispose();
+                //this.file.Dispose();
             }
             catch (Exception e)
             {

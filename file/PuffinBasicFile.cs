@@ -19,8 +19,8 @@ namespace Org.Puffinbasic.File
         void Print(string s);
         void WriteByte(byte b);
         bool Eof();
-        void Put(int recordNumber, PuffinBasicSymbolTable symbolTable);
-        void Get(int recordNumber, PuffinBasicSymbolTable symbolTable);
+        void Put(int? recordNumber, PuffinBasicSymbolTable symbolTable);
+        void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable);
         bool IsOpen();
         void Dispose();
         enum FileOpenMode
@@ -69,6 +69,11 @@ namespace Org.Puffinbasic.File
     {
         public static IPuffinBasicFile.FileAccessMode FileAccessModeValueOf(string name)
         {
+            // TODO: decide if I should fix this to match the original values or rework everything to match ToString()
+            foreach (var val in (IPuffinBasicFile.FileAccessMode[])Enum.GetValues(typeof(IPuffinBasicFile.FileAccessMode)))
+                if (name == val.ToString())
+                    return val;
+
             switch (name) {
                 case "r":
                     return IPuffinBasicFile.FileAccessMode.READ_ONLY;
@@ -83,7 +88,12 @@ namespace Org.Puffinbasic.File
 
         public static IPuffinBasicFile.FileOpenMode FileOpenModeValueOf(string name)
         {
-           switch (name) {
+            // TODO: decide if I should fix this to match the original values or rework everything to match ToString()
+            foreach (var val in (IPuffinBasicFile.FileOpenMode[])Enum.GetValues(typeof(IPuffinBasicFile.FileOpenMode)))
+                if (name == val.ToString())
+                    return val;
+
+            switch (name) {
                 case "INPUT":
                     return IPuffinBasicFile.FileOpenMode.INPUT;
                 case "OUTPUT":
@@ -99,6 +109,11 @@ namespace Org.Puffinbasic.File
 
         public static IPuffinBasicFile.LockMode LockModeValueOf(string name)
         {
+            // TODO: decide if I should fix this to match the original values or rework everything to match ToString()
+            foreach (var val in (IPuffinBasicFile.LockMode[])Enum.GetValues(typeof(IPuffinBasicFile.LockMode)))
+                if (name == val.ToString())
+                    return val;
+
             switch (name)
             {
                 case "SHARED":
@@ -131,12 +146,12 @@ namespace Org.Puffinbasic.File
         internal static readonly int DEFAULT_RECORD_LEN = 128;
         public abstract void Dispose();
         public abstract bool Eof();
-        public abstract void Get(int recordNumber, PuffinBasicSymbolTable symbolTable);
+        public abstract void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable);
         public abstract int GetCurrentRecordNumber();
         public abstract long GetFileSizeInBytes();
         public abstract bool IsOpen();
         public abstract void Print(string s);
-        public abstract void Put(int recordNumber, PuffinBasicSymbolTable symbolTable);
+        public abstract void Put(int? recordNumber, PuffinBasicSymbolTable symbolTable);
         public abstract byte[] ReadBytes(int n);
         public abstract string ReadLine();
         public abstract void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts);

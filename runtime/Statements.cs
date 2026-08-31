@@ -280,14 +280,14 @@ namespace Org.Puffinbasic.Runtime
         public static void Putf(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var fileNumber = symbolTable[instruction.op1].GetValue().GetInt32();
-            int recordNumber = instruction.op2 == NULL_ID ? 0 : symbolTable[instruction.op2].GetValue().GetInt32();
+            int? recordNumber = instruction.op2 == NULL_ID ? null : symbolTable[instruction.op2].GetValue().GetInt32();
             files[fileNumber].Put(recordNumber, symbolTable);
         }
 
         public static void Getf(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var fileNumber = symbolTable[instruction.op1].GetValue().GetInt32();
-            int recordNumber = instruction.op2 == NULL_ID ? 0 : symbolTable[instruction.op2].GetValue().GetInt32();
+            int? recordNumber = instruction.op2 == NULL_ID ? null : symbolTable[instruction.op2].GetValue().GetInt32();
             files[fileNumber].Get(recordNumber, symbolTable);
         }
 
@@ -326,7 +326,52 @@ namespace Org.Puffinbasic.Runtime
                 file = files.sys;
             }
 
-            throw new NotImplementedException();
+            //using (var parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(file.))
+
+            // TODO: Implement this properly
+
+            //throw new NotImplementedException();
+
+            bool retry = false;
+
+            //do
+            //{
+            //    if (retry)
+            //        if (printPrompt)
+            //            Console.Error.WriteLine("?Redo from start");
+            //        else
+            //            throw new PuffinBasicRuntimeError(IO_ERROR, "Record mismatch: expected=" + instructions.Count + ", found in file=" + record.Count + ", record: " + record);
+
+                var record = file.ReadLine().Split(',');
+
+                int i = 0;
+                foreach (var instr0 in instructions)
+                {
+                    var entry = symbolTable[instr0.op1];
+                    var value = entry.GetValue();
+                    switch (entry.GetType().GetAtomTypeId())
+                    {
+                        case INT32:
+                            value.SetInt32(int.Parse(record[i].Trim()));
+                            break;
+                        case INT64:
+                            value.SetInt64(long.Parse(record[i].Trim()));
+                            break;
+                        case FLOAT:
+                            value.SetFloat32(float.Parse(record[i].Trim()));
+                            break;
+                        case DOUBLE:
+                            value.SetFloat64(Double.Parse(record[i].Trim()));
+                            break;
+                        case STRING:
+                            value.SetString(record[i].Trim());
+                            break;
+                    }
+
+                    ++i;
+                }
+
+            //} while (false);
 
             //CSVRecord record = null;
             //bool retry = false;

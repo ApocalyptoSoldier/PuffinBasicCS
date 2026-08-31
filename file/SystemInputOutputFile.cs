@@ -89,12 +89,12 @@ namespace Org.Puffinbasic.File
             return false;
         }
 
-        public override void Put(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Put(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }
 
-        public override void Get(int recordNumber, PuffinBasicSymbolTable symbolTable)
+        public override void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not supported for System IN/OUT!");
         }

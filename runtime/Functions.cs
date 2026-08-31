@@ -720,7 +720,7 @@ namespace Org.Puffinbasic.Runtime
             }
 
             symbolTable[instruction.result].GetValue()
-                .SetString(System.Text.Encoding.UTF8.GetString(read, 0, read.Length));
+                .SetString(ISOEncoding.GetString(read));
                 //.SetString(new string (read));
         }
 
