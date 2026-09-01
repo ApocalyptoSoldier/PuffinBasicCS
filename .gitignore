@@ -4,14 +4,13 @@
 
 /.vs
 /app.config
-/obj/x86/Debug
 *.warning
 *.user
 /packages
-/obj
+**/obj
 /antlr-4.13.2-complete.jar
-/bin/Debug
+**/bin/Debug
+**/bin/Release
+**/bin/x64
 /IDEAS.md
-/bin/Release/net10.0
-/bin/x64/Debug/net10.0
 /Properties/launchSettings.json
