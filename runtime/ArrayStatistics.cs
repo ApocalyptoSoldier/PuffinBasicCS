@@ -3,7 +3,6 @@
 namespace Org.Puffinbasic.Runtime
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -18,34 +17,31 @@ namespace Org.Puffinbasic.Runtime
 
         public double GetSum() => values.Sum();
 
-        public double GetMean() => values.Average();
+        public double GetMean() => values.Sum() / values.Count;
 
         // https://stackoverflow.com/a/57862581
         public double GetVariance() { 
             double mean = GetMean();
 
             double variance = 0.0;
-            foreach (int value in values)
+            foreach (var value in values)
                 variance += Math.Pow(value - mean, 2.0);
             
-            return variance / values.Count;
+            return variance / (values.Count - 1);
         }
 
         // https://stackoverflow.com/a/8137455
         public double GetPercentile(double percentile)
         {
             values.Sort();
-            int N = values.Count;
-            double n = (N - 1) * percentile + 1;
-            // Another method: double n = (N + 1) * percentile;
-            if (n == 1d) return values[0];
-            else if (n == N) return values[N - 1];
+
+            double realIndex = (percentile / 100) * (values.Count - 1);
+            int index = (int)realIndex; // If we ceil this then PCT matches the original test case, but MEDIAN does not, and vice versa
+            double frac = realIndex - index;
+            if (index + 1 < values.Count)
+                return values[index] * (1 - frac) + values[index + 1] * frac;
             else
-            {
-                int k = (int)n;
-                double d = n - k;
-                return values[k - 1] + d * (values[k] - values[k - 1]);
-            }
+                return values[index];
         }
     }
 }
