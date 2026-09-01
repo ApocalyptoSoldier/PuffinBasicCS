@@ -1,15 +1,13 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.File.IPuffinBasicFile;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.File
 {
+    using Org.Puffinbasic.Error;
+
+    using static Org.Puffinbasic.File.IPuffinBasicFile;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+
+    using System.Collections.Generic;
+
     public class PuffinBasicFiles
     {
         public readonly IPuffinBasicFile sys;
@@ -42,7 +40,7 @@ namespace Org.Puffinbasic.File
             }
 
             if (files.TryGetValue(fileNumber, out var existing) && existing.IsOpen()) {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "FileNumber: " + fileNumber + " is already open, cannot open another file: " + filename + " with same file number.");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"FileNumber: {fileNumber} is already open, cannot open another file: {filename} with same file number.");
             }
 
             files[fileNumber] = file;
@@ -53,7 +51,7 @@ namespace Org.Puffinbasic.File
         {
             if (fileNumber < 0)
             {
-                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.ILLEGAL_FUNCTION_PARAM, "File number: " + fileNumber + " cannot be negative");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.ILLEGAL_FUNCTION_PARAM, $"File number: {fileNumber} cannot be negative");
             }
         }
 
@@ -63,7 +61,7 @@ namespace Org.Puffinbasic.File
             if (files.TryGetValue(fileNumber, out var file))
                 return file;
             
-            throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Failed to find file for fileNumber: " + fileNumber);
+            throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"Failed to find file for fileNumber: {fileNumber}");
         }
 
         public IPuffinBasicFile this[int fileNumber] => Get(fileNumber);

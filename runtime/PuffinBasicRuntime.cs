@@ -1,27 +1,24 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Puffinbasic.Error;
-using Org.Puffinbasic.File;
-using Org.Puffinbasic.Parser;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-using static Org.Puffinbasic.Runtime.ArraysUtil;
-using static Org.Puffinbasic.Runtime.Formatter;
-using static Org.Puffinbasic.Runtime.GraphicsRuntime;
-using static Org.Puffinbasic.Runtime.Statements;
-//using Java.Io;
-//using Java.Util;
-//using Java.Util.Stream;
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Parser.PuffinBasicIR.OpCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.IO;
-using System.Collections;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Error;
+    using Org.Puffinbasic.File;
+    using Org.Puffinbasic.Parser;
+
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using static Org.Puffinbasic.Runtime.ArraysUtil;
+    using static Org.Puffinbasic.Runtime.Formatter;
+    using static Org.Puffinbasic.Runtime.Statements;
+    //using Java.Io;
+    //using Java.Util;
+    //using Java.Util.Stream;
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+    using static Org.Puffinbasic.Parser.PuffinBasicIR.OpCode;
+
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+
     public class PuffinBasicRuntime
     {
         private readonly PuffinBasicIR ir;

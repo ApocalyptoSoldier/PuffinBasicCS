@@ -1,5 +1,7 @@
 //using Com.Google.Common.Base;
 //using It.Unimi.Dsi.Fastutil.Ints;
+namespace Org.Puffinbasic.File
+{
 using Org.Puffinbasic.Domain;
 using Org.Puffinbasic.Error;
 //using Org.Jetbrains.Annotations;
@@ -10,17 +12,12 @@ using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
 using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using static Org.Puffinbasic.File.IPuffinBasicFile;
 using System.IO;
-using System.ComponentModel;
 using Org.Puffinbasic.Common;
 using Microsoft.Win32.SafeHandles;
 
-namespace Org.Puffinbasic.File
-{
     public class PuffinBasicRandomAccessFile : PuffinBasicFile
     {
         private readonly string filename;
@@ -38,7 +35,7 @@ namespace Org.Puffinbasic.File
         private FileState fileState;
         public PuffinBasicRandomAccessFile(string filename, FileAccessMode accessMode, int recordLen)
         {
-            if (String.IsNullOrWhiteSpace(filename)) throw new ArgumentNullException("filename");
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(filename);
             if (recordLen  < 0) throw new ArgumentOutOfRangeException(nameof(recordLen));
             if (accessMode == null) throw new ArgumentNullException(nameof(accessMode));
 
@@ -58,7 +55,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.FileNotFoundException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to open file '{filename}' for writing, error: {e.Message}");
             }
 
             this.fileState = FileState.OPEN;
@@ -66,8 +63,8 @@ namespace Org.Puffinbasic.File
 
         public override void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts)
         {
-            if (symbolTable == null) throw new ArgumentNullException(nameof(symbolTable));
-            if (recordParts == null) throw new ArgumentNullException(nameof(recordParts));
+            ArgumentNullException.ThrowIfNull(symbolTable);
+            ArgumentNullException.ThrowIfNull(recordParts);
 
             int totalComputedLength = 0;
             foreach (var recordPart in recordParts)
@@ -77,7 +74,7 @@ namespace Org.Puffinbasic.File
                 var dataType = entry.GetType().GetAtomTypeId();
                 if (dataType != STRING)
                 {
-                    throw new PuffinBasicInternalError("Expected String recordPart but found: " + dataType);
+                    throw new PuffinBasicInternalError($"Expected String recordPart but found: {dataType}");
                 }
 
                 totalComputedLength += value.GetFieldLength();
@@ -85,7 +82,7 @@ namespace Org.Puffinbasic.File
 
             if (totalComputedLength != recordLength)
             {
-                throw new PuffinBasicInternalError("Sum of capacity of recordParts (=" + totalComputedLength + ") don't match recordLength (=" + recordLength + ")");
+                throw new PuffinBasicInternalError($"Sum of capacity of recordParts (={totalComputedLength}) don't match recordLength (={recordLength})");
             }
 
             this.recordParts = recordParts;
@@ -107,7 +104,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to get length of the file '" + filename + "', error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to get length of the file '{filename}', error: {e.Message}");
             }
         }
 
@@ -121,7 +118,7 @@ namespace Org.Puffinbasic.File
             AssertOpen();
             if (accessMode == FileAccessMode.READ_ONLY)
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is open for read-only");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"File {filename} is open for read-only");
             }
 
             this.lastPutRecordNumber = recordNumber.GetValueOrDefault(lastPutRecordNumber + 1);
@@ -162,7 +159,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write to file '" + filename + "', error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to write to file '{filename}', error: {e.Message}");
             }
 
             UpdateCurrentBytePos();
@@ -178,7 +175,7 @@ namespace Org.Puffinbasic.File
             AssertOpen();
             if (accessMode == FileAccessMode.WRITE_ONLY)
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is open for write-only");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"File {filename} is open for write-only");
             }
 
             this.lastGetRecordNumber = recordNumber.GetValueOrDefault(this.lastGetRecordNumber + 1);
@@ -251,7 +248,7 @@ namespace Org.Puffinbasic.File
         // Seek to record number and read the record into record buffer
         private BinaryWriter ClearAndGetRecordBuffer()
         {
-            //Runtime.Arrays.Fill(recordBuffer, 0, recordBuffer.Length, (byte)' ');
+            Array.Fill(recordBuffer, (byte)' ');
             Runtime.Arrays.Fill(recordBuffer, (byte)' ', 0, recordBuffer.Length);
             
             var ms = new MemoryStream(recordBuffer);
@@ -312,7 +309,7 @@ namespace Org.Puffinbasic.File
         {
             if (!IsOpen())
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is not open!");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"File {filename} is not open!");
             }
         }
 

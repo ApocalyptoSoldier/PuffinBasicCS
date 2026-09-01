@@ -5,12 +5,7 @@ using Org.Puffinbasic.Error;
 //using Java.Util.Stream;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
 
-namespace Org.Puffinbasic.Parser
-{
     public class PuffinBasicImportPath
     {
         private static readonly string PUFFIN_BASIC_PATH_ENVVAR = "PUFFIN_BASIC_PATH";

@@ -12,3 +12,5 @@
 /antlr-4.13.2-complete.jar
 /bin/Debug
 /IDEAS.md
+/bin/Release/net10.0
+/bin/x64/Debug/net10.0

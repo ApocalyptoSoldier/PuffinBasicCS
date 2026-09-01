@@ -1,16 +1,14 @@
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Domain;
+    using Org.Puffinbasic.Error;
+
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+
+    using System;
+
     sealed class Operators
     {
         public static void UnaryMinus(PuffinBasicSymbolTable symbolTable, Instruction instruction)

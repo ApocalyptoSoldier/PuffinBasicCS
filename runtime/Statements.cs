@@ -1,31 +1,26 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
 //using Org.Apache.Commons.Csv;
-using Org.Puffinbasic.Domain;
-using static Org.Puffinbasic.Domain.STObjects;
-using Org.Puffinbasic.Error;
-using Org.Puffinbasic.File;
-using static Org.Puffinbasic.File.IPuffinBasicFile;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-using static Org.Puffinbasic.Runtime.Formatter;
-//using Java.Io;
-//using Java.Time;
-//using Java.Util;
-//using Java.Util.Concurrent;
-//using Java.Util.Concurrent.Locks;
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using static Org.Puffinbasic.Common.ISOEncoding;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.IO;
-using Org.Puffinbasic.Common;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Domain;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using Org.Puffinbasic.Error;
+    using Org.Puffinbasic.File;
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using static Org.Puffinbasic.Runtime.Formatter;
+    //using Java.Io;
+    //using Java.Time;
+    //using Java.Util;
+    //using Java.Util.Concurrent;
+    //using Java.Util.Concurrent.Locks;
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Org.Puffinbasic.Common;
+
     public class Statements
     {
         public static void Sleep(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -200,9 +195,11 @@ namespace Org.Puffinbasic.Runtime
             {
                 byte[] bytes = new byte[destLen];
                 Array.Copy(ISOEncoding.GetBytes(value), 0, bytes, 0, valLen);
-                //java.util.Arrays.Fill(bytes, valLen, destLen, (byte)' ');
-                Arrays.Fill(bytes, (byte)' ', valLen, destLen);
-                result = new string(bytes.Select(b => (char)b).ToArray());
+                // fill(int[] a, int fromIndex, int toIndex, int val)
+                //Arrays.Fill(bytes, (byte)' ', valLen, destLen);
+                //Fill<T>(T[] array, T value, int startIndex, int count);
+                ArrayUtil.Fill(bytes, (byte)' ', valLen, destLen - valLen);
+                result = ISOEncoding.GetString(bytes);
             }
 
             destEntry.SetString(result);
@@ -233,9 +230,12 @@ namespace Org.Puffinbasic.Runtime
             {
                 byte[] bytes = new byte[destLen];
                 int offset = destLen - valLen;
-                Arrays.Fill(bytes, (byte)' ', 0, offset);
+                // fill(int[] a, int fromIndex, int toIndex, int val)
+                //Fill<T>(T[] array, T value, int startIndex, int count);
+                //Arrays.Fill(bytes, (byte)' ', 0, offset);
+                ArrayUtil.Fill(bytes, (byte)' ', offset, valLen);
                 Array.Copy(value.ToCharArray(), 0, bytes, offset, valLen);
-                result = new string (bytes.Select(b => (char)b).ToArray());
+                result = ISOEncoding.GetString(bytes);
             }
 
             destEntry.SetString(result);
@@ -490,7 +490,7 @@ namespace Org.Puffinbasic.Runtime
         {
             var variable = symbolTable.GetVariable(instruction.op1);
             var data = readData.Next();
-            Types.AssertBothStringOrNumeric(variable.GetType().GetAtomTypeId(), data.GetType().GetAtomTypeId(), "Read Data mismatch for variable: " + variable + " and data: " + data.GetValue().PrintFormat());
+            Types.AssertBothStringOrNumeric(variable.GetType().GetAtomTypeId(), data.GetType().GetAtomTypeId(), $"Read Data mismatch for variable: {variable} and data: {data.GetValue().PrintFormat()}");
             variable.GetValue().Assign(data.GetValue());
         }
 

@@ -1,35 +1,28 @@
 //using Com.Google.Common.Collect;
 
-//using It.Unimi.Dsi.Fastutil.Ints;
-//using It.Unimi.Dsi.Fastutil.Objects;
-
-//using Java.Time;
-//using Java.Time.Format;
-//using Java.Util;
-
-using Org.Puffinbasic.Error;
-using Org.Puffinbasic.Runtime;
-
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Configuration;
-using System.Linq;
-using System.Runtime.Remoting.Messaging;
-using System.Security;
-using System.Security.Cryptography;
-using System.Text;
-
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Domain.Variable;
-using static Org.Puffinbasic.Domain.Variable;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-
 namespace Org.Puffinbasic.Domain
 {
+    //using It.Unimi.Dsi.Fastutil.Ints;W
+    //using It.Unimi.Dsi.Fastutil.Objects;
+
+    //using Java.Time;
+    //using Java.Time.Format;
+    //using Java.Util;
+
+    using Org.Puffinbasic.Error;
+    using Org.Puffinbasic.Runtime;
+
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Domain.Variable;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+
     public class STObjects
     {
         public enum PuffinBasicTypeId
@@ -1628,12 +1621,12 @@ namespace Org.Puffinbasic.Domain
             {
                 if (dim < 0 || dim >= dimensions.Count)
                 {
-                    throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, "Dimension index " + dim + " is out of range, #dims=" + dimensions.Count);
+                    throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, $"Dimension index {dim} is out of range, #dims={dimensions.Count}");
                 }
 
                 if (index < 0 || index >= dimensions.ElementAt(dim))
                 {
-                    throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, "Index " + index + " is out of range for dimension[" + dim + "]=" + dimensions.ElementAt(dim));
+                    throw new PuffinBasicRuntimeError(ARRAY_INDEX_OUT_OF_BOUNDS, $"Index {index} is out of range for dimension[{dim}]={dimensions[dim]}");
                 }
 
                 int dIplus1 = dim + 1 < ndim ? dimensions.ElementAt(dim + 1) : 1;
@@ -1655,10 +1648,10 @@ namespace Org.Puffinbasic.Domain
                 value = from.value;
             }
 
-            public override void Fill(int fill) => Arrays.Fill(value, (int)fill);
-            public override void Fill(long fill) => Arrays.Fill(value, (int)fill);
-            public override void Fill(float fill) => Arrays.Fill(value, (int)fill);
-            public override void Fill(double fill) => Arrays.Fill(value, (int)fill);
+            public override void Fill(int fill) => Array.Fill(value, (int)fill);
+            public override void Fill(long fill) => Array.Fill(value, (int)fill);
+            public override void Fill(float fill) => Array.Fill(value, (int)fill);
+            public override void Fill(double fill) => Array.Fill(value, (int)fill);
 
             public int[] GetValue() => value;
 
@@ -1698,16 +1691,16 @@ namespace Org.Puffinbasic.Domain
 
             public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
 
-            public override void SetString(string value) => throw new PuffinBasicInternalError("Can't cast String to int32: '" + value + "'");
+            public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }
 
         public sealed class STInt64ArrayValue : AbstractSTArrayValue
         {
             private long[] value;
-            public override void Fill(int fill) => Arrays.Fill(value, (long)fill);
-            public override void Fill(long fill) => Arrays.Fill(value, (long)fill);
-            public override void Fill(float fill) => Arrays.Fill(value, (long)fill);
-            public override void Fill(double fill) => Arrays.Fill(value, (long)fill);
+            public override void Fill(int fill) => Array.Fill(value, (long)fill);
+            public override void Fill(long fill) => Array.Fill(value, (long)fill);
+            public override void Fill(float fill) => Array.Fill(value, (long)fill);
+            public override void Fill(double fill) => Array.Fill(value, (long)fill);
 
             public long[] GetValue() => value;
 
@@ -1745,16 +1738,16 @@ namespace Org.Puffinbasic.Domain
 
             public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
 
-            public override void SetString(string value) => throw new PuffinBasicInternalError("Can't cast String to int32: '" + value + "'");
+            public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }
 
         public sealed class STFloat32ArrayValue : AbstractSTArrayValue
         {
             private float[] value;
-            public override void Fill(int fill) => Arrays.Fill(value, (float)fill);
-            public override void Fill(long fill) => Arrays.Fill(value, (float)fill);
-            public override void Fill(float fill) => Arrays.Fill(value, (float)fill);
-            public override void Fill(double fill) => Arrays.Fill(value, (float)fill);
+            public override void Fill(int fill) => Array.Fill(value, (float)fill);
+            public override void Fill(long fill) => Array.Fill(value, (float)fill);
+            public override void Fill(float fill) => Array.Fill(value, (float)fill);
+            public override void Fill(double fill) => Array.Fill(value, (float)fill);
 
             public float[] GetValue() => value;
 
@@ -1792,16 +1785,16 @@ namespace Org.Puffinbasic.Domain
 
             public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
 
-            public override void SetString(string value) => throw new PuffinBasicInternalError("Can't cast String to int32: '" + value + "'");
+            public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }
 
         public sealed class STFloat64ArrayValue : AbstractSTArrayValue
         {
             private double[] value;
-            public override void Fill(int fill) => Arrays.Fill(value, (double)fill);
-            public override void Fill(long fill) => Arrays.Fill(value, (double)fill);
-            public override void Fill(float fill) => Arrays.Fill(value, (double)fill);
-            public override void Fill(double fill) => Arrays.Fill(value, (double)fill);
+            public override void Fill(int fill) => Array.Fill(value, (double)fill);
+            public override void Fill(long fill) => Array.Fill(value, (double)fill);
+            public override void Fill(float fill) => Array.Fill(value, (double)fill);
+            public override void Fill(double fill) => Array.Fill(value, (double)fill);
 
             public double[] GetValue() => value;
 
@@ -1839,21 +1832,21 @@ namespace Org.Puffinbasic.Domain
 
             public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
 
-            public override void SetString(string value) => throw new PuffinBasicInternalError("Can't cast String to int32: '" + value + "'");
+            public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }
 
         public sealed class STStringArrayValue : AbstractSTArrayValue
         {
-            private String[] value;
-            public override void FillString(string fill) => Arrays.Fill(value, fill);
+            private string[] value;
+            public override void FillString(string fill) => Array.Fill(value, fill);
 
-            public String[] GetValue() => value;
+            public string[] GetValue() => value;
 
             public override void SetArrayDimensions(List<int> dims)
             {
                 base.SetArrayDimensions(dims);
                 this.value = new string[GetTotalLength()];
-                Arrays.Fill(value, "", 0, value.Length);
+                Array.Fill(value, "");
             }
 
             public override string PrintFormat() => Formatter.PrintFormatString(value[GetArrayIndex1D()]);
@@ -1930,12 +1923,11 @@ namespace Org.Puffinbasic.Domain
 
         sealed class STList : STCompositeValue
         {
-            private readonly IList<object> list;
+            private readonly List<object> list = new List<object>();
             private readonly MemberFunctions memberFunctions;
             public STList(PuffinBasicType type, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.LIST, type.GetAtomTypeId())
             {
                 this.memberFunctions = memberFunctions;
-                this.list = new List<object>();
             }
 
             public override void Call(string funcName, ISTValue[] @params, ISTValue result) => memberFunctions[funcName].callHandler.Invoke(list, @params, result);
@@ -1947,12 +1939,11 @@ namespace Org.Puffinbasic.Domain
 
         sealed class STSet : STCompositeValue
         {
-            private readonly HashSet<object> set;
+            private readonly HashSet<object> set = new HashSet<object>();
             private readonly MemberFunctions memberFunctions;
             public STSet(PuffinBasicType type, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.SET, type.GetAtomTypeId())
             {
                 this.memberFunctions = memberFunctions;
-                this.set = new HashSet<object>();
             }
 
             public override void Call(string funcName, ISTValue[] @params, ISTValue result) => memberFunctions[funcName].callHandler.Invoke(set, @params, result);
@@ -1964,12 +1955,11 @@ namespace Org.Puffinbasic.Domain
 
         sealed class STDict : STCompositeValue
         {
-            private readonly Dictionary<object, object> dict;
+            private readonly Dictionary<object, object> dict = new Dictionary<object, object>();
             private readonly MemberFunctions memberFunctions;
             public STDict(PuffinBasicType valueType, MemberFunctions memberFunctions) : base(PuffinBasicTypeId.DICT, valueType.GetAtomTypeId())
             {
                 this.memberFunctions = memberFunctions;
-                this.dict = new Dictionary<object, object>();
             }
 
             public override void Call(string funcName, ISTValue[] @params, ISTValue result) => memberFunctions[funcName].callHandler.Invoke(dict, @params, result);
@@ -2007,13 +1997,13 @@ namespace Org.Puffinbasic.Domain
             {
                 if (!(entry is STStruct))
                 {
-                    throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, "Expected STStruct but found: " + entry.GetType());
+                    throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, $"Expected STStruct but found: {entry.GetType()}");
                 }
 
                 STStruct other = (STStruct)entry;
                 if (!structType.Equals(other.structType))
                 {
-                    throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, "Expected struct " + structType + ", but found " + other.structType);
+                    throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, $"Expected struct {structType}, but found {other.structType}");
                 }
 
                 this.memberRefIdToValueId.Clear();

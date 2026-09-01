@@ -1,30 +1,15 @@
 //using Org.Apache.Commons.Io;
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-using static Org.Puffinbasic.Runtime.GraphicsUtil;
-//using Javax.Imageio;
-//using Javax.Swing;
-//using Java.Awt;
-//using Java.Awt.Event;
-//using Java.Awt.Geom;
-//using Java.Awt.Image;
-//using Java.Io;
-//using Java.Util;
-//using Java.Util.Regex;
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-
 namespace Org.Puffinbasic.Runtime
 {
+    //using Javax.Imageio;
+    //using Javax.Swing;
+    //using Java.Awt;
+    //using Java.Awt.Event;
+    //using Java.Awt.Geom;
+    //using Java.Awt.Image;
+    //using Java.Io;
+    //using Java.Util;
+    //using Java.Util.Regex;
     public class GraphicsRuntime
     {
         /*

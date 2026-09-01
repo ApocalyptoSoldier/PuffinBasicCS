@@ -1,20 +1,17 @@
 //using Com.Google.Common.Base;
 //using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-//using Org.Jetbrains.Annotations;
-//using Java.Io;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Text;
-using Org.Puffinbasic.Common;
-
 namespace Org.Puffinbasic.File
 {
+    using Org.Puffinbasic.Domain;
+    using Org.Puffinbasic.Error;
+    //using Org.Jetbrains.Annotations;
+    //using Java.Io;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using Org.Puffinbasic.Common;
+
     public class PuffinBasicSequentialAccessOutputFile : IPuffinBasicFile
     {
         private readonly string filename;
@@ -88,7 +85,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write buffer to output, error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to write buffer to output, error: {e.Message}");
             }
         }
 
@@ -127,7 +124,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to close file '{filename}', error: {e.Message}");
             }
 
             this.fileState = IPuffinBasicFile.FileState.CLOSED;
@@ -137,7 +134,7 @@ namespace Org.Puffinbasic.File
         {
             if (!IsOpen())
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is not open!");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"File {filename} is not open!");
             }
         }
     }

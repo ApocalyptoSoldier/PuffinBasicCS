@@ -1,19 +1,14 @@
 //using Com.Google.Common.Base;
 //using Org.Jetbrains.Annotations;
-using static Org.Puffinbasic.Domain.STObjects;
-using Org.Puffinbasic.Error;
-//using Java.Util;
-//using Java.Util.Function;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Runtime.Remoting.Messaging;
-
 namespace Org.Puffinbasic.Domain
 {
+    using static Org.Puffinbasic.Domain.STObjects;
+    using Org.Puffinbasic.Error;
+    //using Java.Util;
+    //using Java.Util.Function;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+    using System;
+
     public class Variable
     {
         public sealed class VariableName
@@ -23,7 +18,7 @@ namespace Org.Puffinbasic.Domain
             internal readonly PuffinBasicAtomTypeId dataType;
             public VariableName(string varname, string suffix, STObjects.PuffinBasicAtomTypeId dataType)
             {
-                if (varname == null) throw new ArgumentNullException(nameof(varname));
+                ArgumentNullException.ThrowIfNull(varname);
                 if (dataType == null) throw new ArgumentNullException(nameof(dataType));
                 this.varname = varname;
                 this.suffix = suffix == null ? "" : suffix;
@@ -40,7 +35,7 @@ namespace Org.Puffinbasic.Domain
             {
                 if (this == o)
                     return true;
-                if (o == null || !(o is VariableName)) 
+                if (o == null || o is not VariableName) 
                     return false;
                 VariableName other = (VariableName)o;
                 return this.varname == other.varname && this.suffix == other.suffix;

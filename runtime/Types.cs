@@ -1,21 +1,16 @@
-using Org.Puffinbasic.Domain;
-using static Org.Puffinbasic.Domain.STObjects;
-using Org.Puffinbasic.Error;
-using Org.Puffinbasic.Parser;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-//using Java.Util.Function;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using RuntimeErrorCode = Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using SemanticErrorCode = Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Domain;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using Org.Puffinbasic.Error;
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    //using Java.Util.Function;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+    using RuntimeErrorCode = Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using SemanticErrorCode = Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+    using System;
+
     public class Types
     {
         public static void Copy(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -39,7 +34,7 @@ namespace Org.Puffinbasic.Runtime
             }
             else
             {
-                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, "Expected LValue, but found: " + toEntry.GetType());
+                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, $"Expected LValue, but found: {toEntry.GetType()}");
             }
         }
 
@@ -53,7 +48,7 @@ namespace Org.Puffinbasic.Runtime
             }
             else
             {
-                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, "Expected LValue, but found: " + dst.GetType());
+                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, $"Expected LValue, but found: {dst.GetType()}");
             }
         }
 
@@ -80,7 +75,7 @@ namespace Org.Puffinbasic.Runtime
         {
             if (dt != STRING)
             {
-                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected String type but found: " + dt);
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, $"Expected String type but found: {dt}");
             }
         }
 
@@ -96,7 +91,7 @@ namespace Org.Puffinbasic.Runtime
         {
             if (dt != INT32 && dt != INT64)
             {
-                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected int type but found: " + dt);
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, $"Expected int type but found: {dt}");
             }
         }
 
@@ -112,7 +107,7 @@ namespace Org.Puffinbasic.Runtime
         {
             if ((dt1 != STRING || dt2 != STRING) && (dt1 == STRING || dt2 == STRING))
             {
-                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, "Expected either both numeric or both string type but found: " + dt1 + " and " + dt2);
+                throw new PuffinBasicSemanticError(SemanticErrorCode.DATA_TYPE_MISMATCH, line, $"Expected either both numeric or both string type but found: {dt1} and {dt2}");
             }
         }
 

@@ -1,21 +1,20 @@
 //using It.Unimi.Dsi.Fastutil.Objects;
 
-//using Java.Text;
-//using Java.Util;
-
-using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Globalization;
-
 namespace Org.Puffinbasic.Runtime
 {
+    //using Java.Text;
+    //using Java.Util;
+
+    using Org.Puffinbasic.Error;
+
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Globalization;
+    using Org.Puffinbasic.Common;
+
     public class Formatter
     {
         public sealed class FormatterCache
@@ -409,9 +408,12 @@ namespace Org.Puffinbasic.Runtime
                     else
                     {
                         byte[] bytes = new byte[this.length];
-                        Array.Copy(str.ToArray(), 0, bytes, 0, str.Length);
-                        Arrays.Fill(bytes, (byte)' ', str.Length, length);
-                        return new string (bytes.Select(b => (char)b).ToArray());
+                        Array.Copy(str.ToArray(), 0, bytes, 0, strlen);
+                        // fill(int[] a, int fromIndex, int toIndex, int val)
+                        //Arrays.Fill(bytes, (byte)' ', str.Length, length);
+                        //Fill<T>(T[] array, T value, int startIndex, int count);
+                        ArrayUtil.Fill(bytes, (byte)' ', strlen, this.length - strlen);
+                        return ISOEncoding.GetString(bytes);
                     }
                 }
                 else

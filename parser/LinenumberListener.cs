@@ -4,22 +4,19 @@
 //using Org.Antlr.V4.Runtime.Misc;
 //using Org.Jetbrains.Annotations;
 //using Org.Puffinbasic.Antlr4;
-using Org.Puffinbasic.Error;
-//using Java.Util;
-//using Java.Util.Concurrent.Atomic;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using static Org.Puffinbasic.Runtime.Types;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using Org.Puffinbasic.Antlr;
-using System.Threading;
-using Antlr4.Runtime.Misc;
-
 namespace Org.Puffinbasic.Parser
 {
+    using Org.Puffinbasic.Error;
+    //using Java.Util;
+    //using Java.Util.Concurrent.Atomic;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static Org.Puffinbasic.Runtime.Types;
+    using System;
+    using System.Collections.Generic;
+    using Org.Puffinbasic.Antlr;
+    using System.Threading;
+    using Antlr4.Runtime.Misc;
+
     public class LinenumberListener : PuffinBasicBaseListener
     {
         public enum ThrowOnDuplicate
@@ -39,8 +36,8 @@ namespace Org.Puffinbasic.Parser
         private string libtag;
         public LinenumberListener(Antlr4.Runtime.ICharStream input, ThrowOnDuplicate throwOnDuplicate)
         {
-            if (input == null) throw new ArgumentNullException("input");
-            if (throwOnDuplicate == null) throw new ArgumentNullException("throwOnDuplicate");
+            ArgumentNullException.ThrowIfNull(input);
+            if (throwOnDuplicate == null) throw new ArgumentNullException(nameof(throwOnDuplicate));
             this.input = input;
             this.throwOnDuplicate = throwOnDuplicate;
             this.sortedLines = new SortedDictionary<int, string>();
@@ -101,7 +98,7 @@ namespace Org.Puffinbasic.Parser
 
             if (sortedLines.ContainsKey(linenum))
             {
-                var message = "Duplicate line number!" + Environment.NewLine + "OLD:" + Environment.NewLine + line + "NEW:" + Environment.NewLine + line;
+                var message = $"Duplicate line number!{Environment.NewLine}OLD:{Environment.NewLine}{line}NEW:{Environment.NewLine}{line}";
                 if (throwOnDuplicate == ThrowOnDuplicate.THROW)
                 {
                     throw new PuffinBasicSyntaxError(message);
@@ -156,7 +153,7 @@ namespace Org.Puffinbasic.Parser
             }
             else
             {
-                throw new PuffinBasicRuntimeError(IMPORT_ERROR, "Multiple libtags found: " + tag + ", previous: " + libtag);
+                throw new PuffinBasicRuntimeError(IMPORT_ERROR, $"Multiple libtags found: {tag}, previous: {libtag}");
             }
         }
 
@@ -168,7 +165,7 @@ namespace Org.Puffinbasic.Parser
             }
             catch (FormatException e)
             {
-                throw new PuffinBasicSyntaxError("Bad line number: '" + txt + "'");
+                throw new PuffinBasicSyntaxError($"Bad line number: '{txt}'");
             }
         }
     }

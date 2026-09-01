@@ -1,19 +1,14 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
 //using It.Unimi.Dsi.Fastutil.Objects;
-using Org.Puffinbasic.Domain.Scope;
-
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects;
-using static Org.Puffinbasic.Domain.Variable;
-
 namespace Org.Puffinbasic.Domain.Scope
 {
+    using System;
+    using System.Collections.Generic;
+
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using static Org.Puffinbasic.Domain.Variable;
+
     public interface IScope
     {
         int GetCallerInstrId();

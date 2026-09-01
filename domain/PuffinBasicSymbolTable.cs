@@ -1,25 +1,21 @@
 //using It.Unimi.Dsi.Fastutil.Chars;
 //using It.Unimi.Dsi.Fastutil.Objects;
-using Org.Puffinbasic.Domain.Scope;
-
-using static Org.Puffinbasic.Domain.STObjects;
-using IScope = Org.Puffinbasic.Domain.Scope.IScope;
-using static Org.Puffinbasic.Domain.Variable;
-using Org.Puffinbasic.Error;
-//using Java.Util;
-//using Java.Util.Concurrent.Atomic;
-//using Java.Util.Function;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading;
-
 namespace Org.Puffinbasic.Domain
 {
+    using Org.Puffinbasic.Domain.Scope;
+
+    using static Org.Puffinbasic.Domain.STObjects;
+    using static Org.Puffinbasic.Domain.Variable;
+    using Org.Puffinbasic.Error;
+    //using Java.Util;
+    //using Java.Util.Concurrent.Atomic;
+    //using Java.Util.Function;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+
     public class PuffinBasicSymbolTable
     {
         public delegate void VariableConsumer(int id, ISTEntry entry, Variable variable);

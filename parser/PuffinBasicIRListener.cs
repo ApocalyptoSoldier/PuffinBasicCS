@@ -6,38 +6,36 @@
 //using Org.Jetbrains.Annotations;
 //using Org.Puffinbasic.Antlr4;
 //using Org.Puffinbasic.Antlr4.PuffinBasicParser;
-using Org.Puffinbasic.Domain;
-using static Org.Puffinbasic.Domain.STObjects;
-using static Org.Puffinbasic.Domain.Variable;
-using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.File.IPuffinBasicFile;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-using Org.Puffinbasic.Runtime;
-//using Java.Util;
-//using Java.Util.Concurrent.Atomic;
-//using Java.Util.Function;
-//using Java.Util.Stream;
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
-using static Org.Puffinbasic.Parser.LinenumberListener;
-using static Org.Puffinbasic.Runtime.Types;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
-using Antlr4.Runtime.Misc;
-using Org.Puffinbasic.Antlr;
-using static Org.Puffinbasic.Antlr.PuffinBasicParser;
-using System.Threading;
-using Org.Puffinbasic.Domain.Scope;
-
 namespace Org.Puffinbasic.Parser
 {
+    using Org.Puffinbasic.Domain;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using static Org.Puffinbasic.Domain.Variable;
+    using Org.Puffinbasic.Error;
+    using static Org.Puffinbasic.File.IPuffinBasicFile;
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using Org.Puffinbasic.Runtime;
+    //using Java.Util;
+    //using Java.Util.Concurrent.Atomic;
+    //using Java.Util.Function;
+    //using Java.Util.Stream;
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+    using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+    using static Org.Puffinbasic.Parser.LinenumberListener;
+    using static Org.Puffinbasic.Runtime.Types;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Antlr4.Runtime;
+    using Antlr4.Runtime.Tree;
+    using Antlr4.Runtime.Misc;
+    using Org.Puffinbasic.Antlr;
+    using static Org.Puffinbasic.Antlr.PuffinBasicParser;
+    using System.Threading;
+    using Org.Puffinbasic.Domain.Scope;
+
     public class PuffinBasicIRListener : PuffinBasicBaseListener
     {
         private enum NumericOrString
@@ -92,7 +90,7 @@ namespace Org.Puffinbasic.Parser
             var exprInstruction = nodeToInstruction.Get(ctx);
             if (exprInstruction == null)
             {
-                throw new PuffinBasicInternalError("Failed to find instruction for node: " + ctx.GetText());
+                throw new PuffinBasicInternalError($"Failed to find instruction for node: {ctx.GetText()}");
             }
 
             return exprInstruction;
@@ -201,15 +199,17 @@ namespace Org.Puffinbasic.Parser
                 {
 
                     // Scalar
-                    if (ctx.expr().Count() != 0)
+                    if (ctx.expr().Length != 0)
                     {
                         var expr = ctx.expr().ToList();
-                        throw new PuffinBasicSemanticError(PuffinBasicSemanticError.ErrorCode.SCALAR_VARIABLE_CANNOT_BE_INDEXED, GetCtxString(ctx), "Scalar variable cannot be indexed: " + variable);
+                        throw new PuffinBasicSemanticError(PuffinBasicSemanticError.ErrorCode.SCALAR_VARIABLE_CANNOT_BE_INDEXED, 
+                            GetCtxString(ctx),
+                            $"Scalar variable cannot be indexed: {variable}");
                     }
                 }
                 else if (variable.IsArray())
                 {
-                    if (ctx.expr().Count() != 0)
+                    if (ctx.expr().Length != 0)
                     {
 
                         // Array
@@ -235,9 +235,11 @@ namespace Org.Puffinbasic.Parser
                     var pushScopeInstr = ir.AddInstruction(sourceFile, currentLineNumber, ctx.Start.StartIndex, ctx.Stop.StopIndex, OpCode.PUSH_RT_SCOPE, varId, NULL_ID, NULL_ID);
 
                     // Copy caller params to Runtime scope
-                    if (ctx.expr().Count() != udfEntry.GetNumDeclaredParams())
+                    if (ctx.expr().Length != udfEntry.GetNumDeclaredParams())
                     {
-                        throw new PuffinBasicSemanticError(INSUFFICIENT_UDF_ARGS, GetCtxString(ctx), variable + " expects " + udfEntry.GetNumDeclaredParams() + ", #args passed: " + ctx.expr().Count());
+                        throw new PuffinBasicSemanticError(INSUFFICIENT_UDF_ARGS, 
+                            GetCtxString(ctx),
+                            $"{variable} expects {udfEntry.GetNumDeclaredParams()}, #args passed: {ctx.expr().Length}");
                     }
 
                     int i = 0;
@@ -284,7 +286,7 @@ namespace Org.Puffinbasic.Parser
             var rootId = ir.GetSymbolTable().GetCompositeVariableIdForVariable(new VariableName(root, null, COMPOSITE));
             var structType = ir.GetSymbolTable()[rootId].GetType().AsStruct();
             var parentTypeName = structType.GetTypeName();
-            for (int i = 1; i < ctx.varname().Count(); i++)
+            for (int i = 1; i < ctx.varname().Length; i++)
             {
                 var localStruct = ir.GetSymbolTable().GetStructType(parentTypeName);
                 var childVarname = ctx.varname(i).VARNAME().GetText();
@@ -2024,7 +2026,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFuncInstr(PuffinBasicParser.FuncInstrContext ctx)
         {
             int xdlr, ydlr, n;
-            if (ctx.expr().Count()== 3)
+            if (ctx.expr().Length == 3)
             {
 
                 // n, x$, y$
@@ -2073,7 +2075,7 @@ namespace Org.Puffinbasic.Parser
         public override void ExitFuncMidDlr(PuffinBasicParser.FuncMidDlrContext ctx)
         {
             int xdlr, n, m;
-            if (ctx.expr().Count()== 3)
+            if (ctx.expr().Length == 3)
             {
 
                 // x$, n, m
@@ -2398,7 +2400,7 @@ namespace Org.Puffinbasic.Parser
             var x = LookupInstruction(ctx.expr(0));
             Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             int fileNumberId;
-            if (ctx.expr().Count()== 2)
+            if (ctx.expr().Length == 2)
             {
                 var fileNumber = LookupInstruction(ctx.expr(1));
                 Types.AssertNumeric(ir.GetSymbolTable()[fileNumber.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
@@ -3302,7 +3304,7 @@ namespace Org.Puffinbasic.Parser
             var objectType = ir.GetSymbolTable()[varInstruction.result].GetType();
             var funcName = ctx.funcname().GetText();
             var returnType = objectType.GetFuncCallReturnType(funcName);
-            IList<PuffinBasicType> paramTypes = new List<PuffinBasicType>(ctx.expr().Count());
+            IList<PuffinBasicType> paramTypes = new List<PuffinBasicType>(ctx.expr().Length);
             foreach (var exprCtx in ctx.expr())
             {
                 var exprInstruction = LookupInstruction(exprCtx);
@@ -3722,7 +3724,7 @@ namespace Org.Puffinbasic.Parser
                     // array
                     var arrayName = compCtx.elem.VARNAME().GetText();
                     var arrayAtomType = ir.GetSymbolTable().GetDataTypeFor(arrayName, compCtx.elemsuffix != null ? compCtx.elemsuffix.GetText() : null);
-                    List<int> dims = new List<int>(compCtx.DECIMAL().Count());
+                    List<int> dims = new List<int>(compCtx.DECIMAL().Length);
                     foreach (var dimStrNode in compCtx.DECIMAL())
                     {
                         dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), GetCtxString(ctx)));
@@ -4353,8 +4355,8 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitDimstmt(PuffinBasicParser.DimstmtContext ctx)
         {
-            List<int> dims = new List<int>(ctx.expr().Count());
-            for (int i = 0; i < ctx.expr().Count(); i++)
+            List<int> dims = new List<int>(ctx.expr().Length);
+            for (int i = 0; i < ctx.expr().Length; i++)
             {
                 dims.Add(0);
             }
@@ -4415,8 +4417,8 @@ namespace Org.Puffinbasic.Parser
         // throw
         public override void ExitReallocstmt(PuffinBasicParser.ReallocstmtContext ctx)
         {
-            List<int> dims = new List<int>(ctx.expr().Count());
-            for (int i = 0; i < ctx.expr().Count(); i++)
+            List<int> dims = new List<int>(ctx.expr().Length);
+            for (int i = 0; i < ctx.expr().Length; i++)
             {
                 dims.Add(0);
             }
@@ -4862,7 +4864,7 @@ namespace Org.Puffinbasic.Parser
                     // array
                     var arrayName = compCtx.elem.VARNAME().GetText();
                     var arrayAtomType = ir.GetSymbolTable().GetDataTypeFor(arrayName, compCtx.elemsuffix != null ? compCtx.elemsuffix.GetText() : null);
-                    List<int> dims = new List<int>(compCtx.DECIMAL().Count());
+                    List<int> dims = new List<int>(compCtx.DECIMAL().Length);
                     foreach (var dimStrNode in compCtx.DECIMAL())
                     {
                         dims.Add(Numbers.ParseInt32(dimStrNode.GetText(), GetCtxString(ctx)));
@@ -9268,7 +9270,7 @@ namespace Org.Puffinbasic.Parser
         {
             var fileNumberInstr = LookupInstruction(ctx.filenum);
             Types.AssertNumeric(ir.GetSymbolTable()[fileNumberInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
-            var numEntries = ctx.variable().Count();
+            var numEntries = ctx.variable().Length;
             for (int i = 0; i < numEntries; i++)
             {
                 var recordPartLen = Numbers.ParseInt32(ctx.DECIMAL(i).GetText(), GetCtxString(ctx));
@@ -10279,8 +10281,8 @@ namespace Org.Puffinbasic.Parser
         {
             var varInstr = LookupInstruction(ctx.variable());
             var nInstr = LookupInstruction(ctx.expr(0));
-            var mInstrId = ctx.expr().Count()== 3 ? LookupInstruction(ctx.expr(1)).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(-1));
-            var replacement = ctx.expr().Count()== 3 ? LookupInstruction(ctx.expr(2)) : LookupInstruction(ctx.expr(1));
+            var mInstrId = ctx.expr().Length == 3 ? LookupInstruction(ctx.expr(1)).result : ir.GetSymbolTable().AddTmp(INT32, (e) => e.GetValue().SetInt32(-1));
+            var replacement = ctx.expr().Length == 3 ? LookupInstruction(ctx.expr(2)) : LookupInstruction(ctx.expr(1));
             Types.AssertString(ir.GetSymbolTable()[varInstr.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             Types.AssertString(ir.GetSymbolTable()[replacement.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));
@@ -13983,8 +13985,8 @@ namespace Org.Puffinbasic.Parser
             var title = LookupInstruction(ctx.expr(0));
             var w = LookupInstruction(ctx.expr(1));
             var h = LookupInstruction(ctx.expr(2));
-            var iw = ctx.expr().Count()== 5 ? LookupInstruction(ctx.expr(3)) : w;
-            var ih = ctx.expr().Count()== 5 ? LookupInstruction(ctx.expr(4)) : h;
+            var iw = ctx.expr().Length == 5 ? LookupInstruction(ctx.expr(3)) : w;
+            var ih = ctx.expr().Length == 5 ? LookupInstruction(ctx.expr(4)) : h;
             var manualRepaintFlag = ctx.mr != null;
             var doubleBufferFlag = ctx.db != null;
             Types.AssertString(ir.GetSymbolTable()[title.result].GetType().GetAtomTypeId(), GetCtxString(ctx));

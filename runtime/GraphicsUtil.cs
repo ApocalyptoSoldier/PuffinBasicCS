@@ -1,21 +1,13 @@
 //using It.Unimi.Dsi.Fastutil.Longs;
 //using It.Unimi.Dsi.Fastutil.Objects;
-using Org.Puffinbasic.Error;
-//using Javax.Swing;
-//using Java.Awt;
-//using Java.Awt.Event;
-//using Java.Awt.Image;
-//using Java.Util;
-//using Java.Util.Concurrent.Locks;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.Runtime
 {
+    //using Javax.Swing;
+    //using Java.Awt;
+    //using Java.Awt.Event;
+    //using Java.Awt.Image;
+    //using Java.Util;
+    //using Java.Util.Concurrent.Locks;
     public sealed class GraphicsUtil
     {
         public static readonly int MAX_WIDTH = 4000;

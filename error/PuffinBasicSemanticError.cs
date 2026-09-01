@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.Error
 {
+    using System;
+
     public class PuffinBasicSemanticError : Exception
     {
         public enum ErrorCode
@@ -27,7 +23,7 @@ namespace Org.Puffinbasic.Error
             BAD_FUNCTION_DEF
         }
 
-        public PuffinBasicSemanticError(ErrorCode errorCode, string line, string message) : base("[" + errorCode + "] " + message + Environment.NewLine + "LINE:" + Environment.NewLine + line)
+        public PuffinBasicSemanticError(ErrorCode errorCode, string line, string message) : base($"[{errorCode}] {message}{Environment.NewLine}LINE:{Environment.NewLine}{line}")
         {
         }
     }

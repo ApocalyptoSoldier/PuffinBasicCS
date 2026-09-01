@@ -1,19 +1,17 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-//using Org.Jetbrains.Annotations;
-//using Java.Io;
-//using Java.Nio.Charset;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.IO;
-
 namespace Org.Puffinbasic.File
 {
+    using Org.Puffinbasic.Domain;
+    using Org.Puffinbasic.Error;
+    //using Org.Jetbrains.Annotations;
+    //using Java.Io;
+    //using Java.Nio.Charset;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+
     public class SystemInputOutputFile : PuffinBasicFile
     {
         private readonly TextReader @in;
@@ -80,7 +78,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to write buffer to output, error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to write buffer to output, error: {e.Message}");
             }
         }
 

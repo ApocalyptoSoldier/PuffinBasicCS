@@ -1,14 +1,11 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Puffinbasic.Domain;
-//using Org.Jetbrains.Annotations;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.File
 {
+    using Org.Puffinbasic.Domain;
+    //using Org.Jetbrains.Annotations;
+    using System;
+    using System.Collections.Generic;
+
     public interface IPuffinBasicFile
     {
         void SetFieldParams(PuffinBasicSymbolTable symbolTable, List<int> recordParts);

@@ -5,11 +5,7 @@
     using Org.Puffinbasic.Error;
 
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     public class LexerErrorListener : IAntlrErrorListener<int>
     {
@@ -36,7 +32,7 @@
                 inputLine = "<LINE OUT OF RANGE>";
             }
 
-            throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine + inputLine);
+            throw new PuffinBasicSyntaxError($"[{line}:{charPositionInLine}] {msg}{Environment.NewLine}{inputLine}");
         }
     }
 }

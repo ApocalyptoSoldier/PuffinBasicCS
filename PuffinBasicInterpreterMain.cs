@@ -5,6 +5,7 @@
 //using Org.Antlr.V4.Runtime;
 //using Org.Antlr.V4.Runtime.Tree;
 //using Org.Puffinbasic.Antlr4;
+namespace Org.Puffinbasic
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Org.Puffinbasic.Domain;
@@ -13,7 +14,6 @@ using Org.Puffinbasic.Parser;
 using static Org.Puffinbasic.Parser.LinenumberListener;
 using Org.Puffinbasic.Runtime;
 using static Org.Puffinbasic.Runtime.IEnvironment;
-using static Org.Puffinbasic.Runtime.IEnvironment.SystemEnv;
 //using Java.Io;
 //using Java.Nio.Charset;
 //using Java.Nio.File;
@@ -24,18 +24,11 @@ using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 using static Org.Puffinbasic.Parser.LinenumberListener.ThrowOnDuplicate;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Text;
 using System.IO;
 using System.CommandLine;
-using System.CommandLine.Parsing;
-using System.Runtime.Remoting.Messaging;
-using Antlr4.Runtime.Atn;
 using Org.Puffinbasic.Antlr;
 
-namespace Org.Puffinbasic
-{
     public sealed class PuffinBasicInterpreterMain
     {
         private static readonly string UNKNOWN_SOURCE_FILE = "<UNKNOWN>";
@@ -57,7 +50,6 @@ namespace Org.Puffinbasic
 
         private static UserOptions ParseCommandLineArgs(params string[] args)
         {
-
             RootCommand command = new RootCommand();
 
             Option<bool> logDuplicate = new Option<bool>("-d", "--logduplicate") { Description = "Log error on duplicate"};
@@ -97,7 +89,7 @@ namespace Org.Puffinbasic
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read source code: " + filename + ", error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to read source code: {filename}, error: {e.Message}");
             }
 
             return sb.ToString();
@@ -151,7 +143,7 @@ namespace Org.Puffinbasic
         private static void LogTimeTaken(string tag, DateTime t1, bool log)
         {
             var duration = DateTime.Now - t1;
-            Log("[" + tag + "] time taken = " + duration.TotalSeconds + " s", log);
+            Log($"[{tag}] time taken = {duration.TotalSeconds} s", log);
         }
 
         private static void Run(PuffinBasicIR ir, TextWriter @out, IEnvironment env)
@@ -204,12 +196,12 @@ namespace Org.Puffinbasic
             {
                 if (linenumListener.HasLineNumbers())
                 {
-                    throw new PuffinBasicRuntimeError(IMPORT_ERROR, "Lib " + sourceFile + " should not have line numbers!");
+                    throw new PuffinBasicRuntimeError(IMPORT_ERROR, $"Lib {sourceFile} should not have line numbers!");
                 }
 
                 if (linenumListener.GetLibtag() == null)
                 {
-                    throw new PuffinBasicRuntimeError(IMPORT_ERROR, "Lib " + sourceFile + " should set a LIBTAG!");
+                    throw new PuffinBasicRuntimeError(IMPORT_ERROR, $"Lib {sourceFile} should set a LIBTAG!");
                 }
             }
 
@@ -259,7 +251,7 @@ namespace Org.Puffinbasic
                     inputLine = "<LINE OUT OF RANGE>";
                 }
 
-                throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine + inputLine);
+                throw new PuffinBasicSyntaxError($"[{line}:{charPositionInLine}] {msg}{Environment.NewLine}{inputLine}");
             }
 
             //public /*override*/ void SyntaxError(Recognizer<Symbol, Antlr4.Runtime.Atn.ATNSimulator> recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)

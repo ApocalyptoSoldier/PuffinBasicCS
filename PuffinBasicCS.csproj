@@ -1,190 +1,50 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.props" Condition="Exists('packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <LangVersion>10.0</LangVersion>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{647C0B18-5EC1-3ED4-F519-9FED203034D7}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <NoStandardLibraries>false</NoStandardLibraries>
-    <AssemblyName>PuffinBasicCLI</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <FileAlignment>512</FileAlignment>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RootNamespace>PuffinBasicCS</RootNamespace>
-  </PropertyGroup>
-  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <StartupObject>Org.Puffinbasic.PuffinBasicInterpreterMain</StartupObject>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.CommandLine, Version=2.0.11.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\System.CommandLine.2.0.11\lib\netstandard2.0\System.CommandLine.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
+    <Compile Remove="Common\EnumLabelLookup.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="app.config" />
-    <None Include="domain\PuffinBasicSymbolTable.warning" />
-    <None Include="domain\Scope.warning" />
-    <None Include="domain\STObjects.warning" />
-    <None Include="domain\Variable.warning" />
-    <None Include="error\PuffinBasicInternalError.warning" />
-    <None Include="error\PuffinBasicRuntimeError.warning" />
-    <None Include="error\PuffinBasicSemanticError.warning" />
-    <None Include="error\PuffinBasicSyntaxError.warning" />
-    <None Include="file\PuffinBasicFile.warning" />
-    <None Include="file\PuffinBasicFiles.warning" />
-    <None Include="file\PuffinBasicRandomAccessFile.warning" />
-    <None Include="file\PuffinBasicSequentialAccessInputFile.warning" />
-    <None Include="file\PuffinBasicSequentialAccessOutputFile.warning" />
-    <None Include="file\SystemInputOutputFile.warning" />
-    <None Include="organizer.ps1" />
-    <None Include="packages.config" />
-    <None Include="parser\LinenumberListener.warning" />
-    <None Include="parser\PuffinBasicImportPath.warning" />
-    <None Include="parser\PuffinBasicIR.warning" />
-    <None Include="PuffinBasicInterpreterMain.warning" />
-    <None Include="README.md" />
+    <None Remove="antlr4\PuffinBasic.interp" />
+    <None Remove="antlr4\PuffinBasic.tokens" />
+    <None Remove="antlr4\PuffinBasicLexer.interp" />
+    <None Remove="antlr4\PuffinBasicLexer.tokens" />
+    <None Remove="cs.output" />
+    <None Remove="domain\PuffinBasicSymbolTable.warning" />
+    <None Remove="domain\Scope.warning" />
+    <None Remove="domain\STObjects.warning" />
+    <None Remove="domain\Variable.warning" />
+    <None Remove="error\PuffinBasicInternalError.warning" />
+    <None Remove="error\PuffinBasicRuntimeError.warning" />
+    <None Remove="error\PuffinBasicSemanticError.warning" />
+    <None Remove="error\PuffinBasicSyntaxError.warning" />
+    <None Remove="file\PuffinBasicFile.warning" />
+    <None Remove="file\PuffinBasicFiles.warning" />
+    <None Remove="file\PuffinBasicRandomAccessFile.warning" />
+    <None Remove="file\PuffinBasicSequentialAccessInputFile.warning" />
+    <None Remove="file\PuffinBasicSequentialAccessOutputFile.warning" />
+    <None Remove="file\SystemInputOutputFile.warning" />
+    <None Remove="IDEAS.md" />
+    <None Remove="java.output" />
+    <None Remove="organizer.ps1" />
+    <None Remove="parser\LinenumberListener.warning" />
+    <None Remove="parser\PuffinBasicImportPath.warning" />
+    <None Remove="parser\PuffinBasicIR.warning" />
+    <None Remove="PuffinBasicInterpreterMain.warning" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="antlr4\PuffinBasicBaseListener.cs" />
-    <Compile Include="antlr4\PuffinBasicLexer.cs" />
-    <Compile Include="antlr4\PuffinBasicListener.cs" />
-    <Compile Include="antlr4\PuffinBasicParser.cs" />
-    <Compile Include="domain\PuffinBasicSymbolTable.cs" />
-    <Compile Include="domain\IScope.cs" />
-    <Compile Include="domain\STObjects.cs" />
-    <Compile Include="domain\Variable.cs" />
-    <Compile Include="error\PuffinBasicInternalError.cs" />
-    <Compile Include="error\PuffinBasicRuntimeError.cs" />
-    <Compile Include="error\PuffinBasicSemanticError.cs" />
-    <Compile Include="error\PuffinBasicSyntaxError.cs" />
-    <Compile Include="file\PuffinBasicFile.cs" />
-    <Compile Include="file\PuffinBasicFiles.cs" />
-    <Compile Include="file\PuffinBasicRandomAccessFile.cs" />
-    <Compile Include="file\PuffinBasicSequentialAccessInputFile.cs" />
-    <Compile Include="file\PuffinBasicSequentialAccessOutputFile.cs" />
-    <Compile Include="file\SystemInputOutputFile.cs" />
-    <Compile Include="parser\LexerErrorListener.cs" />
-    <Compile Include="parser\LinenumberListener.cs" />
-    <Compile Include="parser\PuffinBasicImportPath.cs" />
-    <Compile Include="parser\PuffinBasicIR.cs" />
-    <Compile Include="parser\PuffinBasicIRListener.cs" />
-    <Compile Include="parser\PuffinBasicSourceFile.cs" />
-    <Compile Include="PuffinBasicInterpreterMain.cs" />
-    <Compile Include="runtime\ArraysUtil.cs" />
-    <Compile Include="runtime\Environment.cs" />
-    <Compile Include="runtime\Formatter.cs" />
-    <Compile Include="runtime\Functions.cs" />
-    <Compile Include="runtime\GraphicsRuntime.cs" />
-    <Compile Include="runtime\GraphicsUtil.cs" />
-    <Compile Include="runtime\Numbers.cs" />
-    <Compile Include="runtime\Operators.cs" />
-    <Compile Include="runtime\PrintBuffer.cs" />
-    <Compile Include="runtime\PuffinBasicRuntime.cs" />
-    <Compile Include="runtime\SoundState.cs" />
-    <Compile Include="runtime\Statements.cs" />
-    <Compile Include="runtime\ArrayStatistics.cs" />
-    <Compile Include="runtime\Types.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup />
-  <ItemGroup>
-    <PackageReference Include="Antlr4">
-      <Version>4.6.6</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
-    <PackageReference Include="Antlr4BuildTasks">
-      <Version>12.14.0</Version>
-    </PackageReference>
+    <PackageReference Include="System.CommandLine" Version="2.0.11" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="antlr4\PuffinBasic.g4">
-      <Listener>false</Listener>
-      <Visitor>false</Visitor>
-      <GAtn>false</GAtn>
-      <Package>Org.Puffinbasic.Antlr4</Package>
-      <Error>false</Error>
-    </None>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
-  <ProjectExtensions>
-    <VisualStudio AllowExistingFolder="true" />
-  </ProjectExtensions>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <Error Condition="!Exists('packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.props'))" />
-    <Error Condition="!Exists('packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.targets'))" />
-  </Target>
-  <Import Project="packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.targets" Condition="Exists('packages\Antlr4.CodeGenerator.4.6.6\build\Antlr4.CodeGenerator.targets')" />
+
 </Project>

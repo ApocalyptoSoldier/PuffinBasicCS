@@ -1,20 +1,17 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
 //using Org.Apache.Commons.Math3.Stat.Descriptive;
-using Org.Puffinbasic.Domain;
-using static Org.Puffinbasic.Domain.STObjects;
-using Org.Puffinbasic.Error;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-//using Java.Util;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using static Org.Puffinbasic.Runtime.Functions;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Domain;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using Org.Puffinbasic.Error;
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    //using Java.Util;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static Org.Puffinbasic.Runtime.Functions;
+    using System;
+    using System.Collections.Generic;
+
     public sealed class ArraysUtil
     {
         public sealed class ArrayState
@@ -127,12 +124,14 @@ namespace Org.Puffinbasic.Runtime
             var array2 = array2Entry.GetValue();
             if (array1Entry.GetType().GetAtomTypeId() != array2Entry.GetType().GetAtomTypeId())
             {
-                throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, "Array data type mismatch: " + array1Entry.GetType().GetAtomTypeId() + " is not compatible with " + array2Entry.GetType().GetAtomTypeId());
+                throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, 
+                    $"Array data type mismatch: {array1Entry.GetType().GetAtomTypeId()} is not compatible with {array2Entry.GetType().GetAtomTypeId()}");
             }
 
             if (array1.GetTotalLength() != array2.GetTotalLength())
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "Array length mismatch: " + array1.GetTotalLength() + " is not compatible with " + array2.GetTotalLength());
+                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM,
+                    $"Array length mismatch: {array1.GetTotalLength()} is not compatible with {array2.GetTotalLength()}");
             }
 
             switch (array1Entry.GetType().GetAtomTypeId())
@@ -140,35 +139,36 @@ namespace Org.Puffinbasic.Runtime
                 case PuffinBasicAtomTypeId.INT32:
                 {
                     int[] value = ((STInt32ArrayValue)array1).GetValue();
-                    Array.Copy(value, 0, ((STInt32ArrayValue)array2).GetValue(), 0, value.Length);
+                    //Array.Copy(value, 0, ((STInt32ArrayValue)array2).GetValue(), 0, value.Length);
+                    Array.Copy(value, ((STInt32ArrayValue)array2).GetValue(), value.Length);
                 }
 
                     break;
                 case PuffinBasicAtomTypeId.INT64:
                 {
                     long[] value = ((STInt64ArrayValue)array1).GetValue();
-                    Array.Copy(value, 0, ((STInt64ArrayValue)array2).GetValue(), 0, value.Length);
+                    Array.Copy(value, ((STInt64ArrayValue)array2).GetValue(), value.Length);
                 }
 
                     break;
                 case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array1).GetValue();
-                    Array.Copy(value, 0, ((STFloat32ArrayValue)array2).GetValue(), 0, value.Length);
+                    Array.Copy(value, ((STFloat32ArrayValue)array2).GetValue(), value.Length);
                 }
 
                     break;
                 case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array1).GetValue();
-                    Array.Copy(value, 0, ((STFloat64ArrayValue)array2).GetValue(), 0, value.Length);
+                    Array.Copy(value, ((STFloat64ArrayValue)array2).GetValue(), value.Length);
                 }
 
                     break;
                 case PuffinBasicAtomTypeId.STRING:
                 {
                     String[] value = ((STStringArrayValue)array1).GetValue();
-                    Array.Copy(value, 0, ((STStringArrayValue)array2).GetValue(), 0, value.Length);
+                    Array.Copy(value, ((STStringArrayValue)array2).GetValue(), value.Length);
                 }
 
                     break;
@@ -210,7 +210,10 @@ namespace Org.Puffinbasic.Runtime
                 {
                     int[] value = ((STInt32ArrayValue)array).GetValue();
                     Array.Copy(value, src0, value, dst0, len);
-                    Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
+                    // fill(int[] a, int fromIndex, int toIndex, int val)
+                    //Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
+                    //Fill<T>(T[] array, T value, int startIndex, int count);
+                    ArrayUtil.Fill(value, 0, fillSrc0, delta);
                 }
 
                     break;
@@ -218,32 +221,36 @@ namespace Org.Puffinbasic.Runtime
                 {
                     long[] value = ((STInt64ArrayValue)array).GetValue();
                     Array.Copy(value, src0, value, dst0, len);
-                    Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
-                }
+                    //Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
+                    ArrayUtil.Fill(value, 0, fillSrc0, delta);
+                    }
 
                     break;
                 case PuffinBasicAtomTypeId.FLOAT:
                 {
                     float[] value = ((STFloat32ArrayValue)array).GetValue();
                     Array.Copy(value, src0, value, dst0, len);
-                    Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
-                }
+                    //Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
+                    ArrayUtil.Fill(value, 0, fillSrc0, delta);
+                    }
 
                     break;
                 case PuffinBasicAtomTypeId.DOUBLE:
                 {
                     double[] value = ((STFloat64ArrayValue)array).GetValue();
                     Array.Copy(value, src0, value, dst0, len);
-                    Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
-                }
+                    //Arrays.Fill(value, fillSrc0, fillSrc0 + delta, 0);
+                    ArrayUtil.Fill(value, 0, fillSrc0, delta);
+                    }
 
                     break;
                 case PuffinBasicAtomTypeId.STRING:
                 {
                     String[] value = ((STStringArrayValue)array).GetValue();
                     Array.Copy(value, src0, value, dst0, len);
-                    Arrays.Fill(value, "", fillSrc0, fillSrc0 + delta);
-                }
+                    //Arrays.Fill(value, "", fillSrc0, fillSrc0 + delta);
+                    ArrayUtil.Fill(value, "", fillSrc0, delta);
+                    }
 
                     break;
                 default:
@@ -477,17 +484,20 @@ namespace Org.Puffinbasic.Runtime
             var len = symbolTable[instruction.op1].GetValue().GetInt32();
             if (srcEntry.GetType().GetAtomTypeId() != dstEntry.GetType().GetAtomTypeId())
             {
-                throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, "Array data type mismatch: " + srcEntry.GetType().GetAtomTypeId() + " is not compatible with " + dstEntry.GetType().GetAtomTypeId());
+                throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, 
+                    $"Array data type mismatch: {srcEntry.GetType().GetAtomTypeId()} is not compatible with {dstEntry.GetType().GetAtomTypeId()}");
             }
 
             if (src.GetNumArrayDimensions() != 1 && dst.GetNumArrayDimensions() != 1)
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "Array #dim!=1 : src=" + src.GetNumArrayDimensions() + " and dst=" + dst.GetNumArrayDimensions());
+                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, 
+                    $"Array #dim!=1 : src={src.GetNumArrayDimensions()} and dst={dst.GetNumArrayDimensions()}");
             }
 
             if (src0 < 0 || src0 >= src.GetTotalLength() || dst0 < 0 || len < 0 || dst0 + len > dst.GetTotalLength())
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "Bad params: srcOrigin=" + src0 + " dstOrigin=" + dst0 + " len=" + len + " srcArraySize=" + src.GetTotalLength() + " dstArraySize=" + dst.GetTotalLength());
+                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, 
+                    $"Bad params: srcOrigin={src0} dstOrigin={dst0} len={len} srcArraySize={src.GetTotalLength()} dstArraySize={dst.GetTotalLength()}");
             }
 
             switch (srcEntry.GetType().GetAtomTypeId())
@@ -785,7 +795,7 @@ namespace Org.Puffinbasic.Runtime
             var pct = symbolTable[instruction.op2].GetValue().GetFloat64();
             if (pct < 0 || pct > 100)
             {
-                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.DATA_OUT_OF_RANGE, "Percentile value out of range: " + pct);
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"Percentile value out of range: {pct}");
             }
 
             var result = symbolTable[instruction.result].GetValue();
@@ -866,7 +876,7 @@ namespace Org.Puffinbasic.Runtime
             var y2 = Math.Min(Math.Max(0, symbolTable[i2.op2].GetValue().GetInt32()), numRows - 1);
             if (y1 * numCols + x1 >= n || y2 * numCols + x2 >= n)
             {
-                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.INDEX_OUT_OF_BOUNDS, "x1=" + x1 + "/y1=" + y1 + "/x2=" + x2 + "/y2=" + y2 + " is out of bounds, array length=" + n);
+                throw new PuffinBasicRuntimeError(INDEX_OUT_OF_BOUNDS, $"x1={x1}/y1={y1}/x2={x2}/y2={y2} is out of bounds, array length={n}");
             }
 
             switch (arrayEntry.GetType().GetAtomTypeId())
@@ -911,7 +921,7 @@ namespace Org.Puffinbasic.Runtime
             var y2 = Math.Min(Math.Max(0, symbolTable[i2.op2].GetValue().GetInt32()), numRows - 1);
             if (y1 * numCols + x1 >= n || y2 * numCols + x2 >= n)
             {
-                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.INDEX_OUT_OF_BOUNDS, "x1=" + x1 + "/y1=" + y1 + "/x2=" + x2 + "/y2=" + y2 + " is out of bounds, array length=" + n);
+                throw new PuffinBasicRuntimeError(INDEX_OUT_OF_BOUNDS, $"x1={x1}/y1={y1}/x2={x2}/y2={y2} is out of bounds, array length={n}");
             }
 
             switch (arrayEntry.GetType().GetAtomTypeId())
@@ -1107,21 +1117,13 @@ namespace Org.Puffinbasic.Runtime
         }
     }
 
-    // TODO: Rework this
-    public static class Arrays
+    public static class ArrayUtil
     {
         public static void Fill<T>(T[] array, T value, int startIndex, int count)
         {
             if (array.Length < (startIndex + count))
                 Array.Resize(ref array, (startIndex + count));
-
-            for (int i = startIndex; i < count; i++)
-                array[i] = value; 
-        }
-
-        public static void Fill<T>(T[] array, T value)
-        {
-            Arrays.Fill(array, value, 0, array.Length);
+            Array.Fill(array, value, startIndex, count);
         }
     }
 }

@@ -1,22 +1,19 @@
-using Org.Puffinbasic.Error;
-//using Java.Util.Function;
-using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Globalization;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Error;
+    //using Java.Util.Function;
+    using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+
+    using System;
+    using System.Globalization;
+
     public class Numbers
     {
         public static int ParseInt32(string value, string line)
         {
             try
             {
-                return int.Parse(value);
+                return Int32.Parse(value);
             }
             catch (FormatException e)
             {
@@ -40,7 +37,7 @@ namespace Org.Puffinbasic.Runtime
         {
             try
             {
-                return long.Parse(value);
+                return Int64.Parse(value);
             }
             catch (FormatException e)
             {
@@ -64,7 +61,7 @@ namespace Org.Puffinbasic.Runtime
         {
             try
             {
-                return float.Parse(value, CultureInfo.InvariantCulture);
+                return Single.Parse(value, CultureInfo.InvariantCulture);
             }
             catch (FormatException e)
             {

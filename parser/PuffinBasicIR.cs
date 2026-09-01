@@ -1,19 +1,16 @@
 //using Org.Antlr.V4.Runtime.Misc;
 //using Org.Jetbrains.Annotations;
-using Antlr4.Runtime.Misc;
-
-using Org.Puffinbasic.Domain;
-//using Java.Util;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-
 namespace Org.Puffinbasic.Parser
 {
+    using Antlr4.Runtime.Misc;
+
+    using Org.Puffinbasic.Domain;
+    //using Java.Util;
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Reflection;
+
     public static class OpCodeRepr
     {
         private static readonly Dictionary<PuffinBasicIR.OpCode, string> opCodeToRepr = new Dictionary<PuffinBasicIR.OpCode, string>();

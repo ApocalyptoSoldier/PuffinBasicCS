@@ -1,14 +1,9 @@
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-
 namespace Org.Puffinbasic.Error
 {
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+
+    using System;
+
     public class PuffinBasicRuntimeError : Exception
     {
         public enum ErrorCode
@@ -34,17 +29,17 @@ namespace Org.Puffinbasic.Error
         }
 
         private readonly ErrorCode errorCode;
-        public PuffinBasicRuntimeError(ErrorCode errorCode, string message) : base("[" + errorCode + "] " + message)
+        public PuffinBasicRuntimeError(ErrorCode errorCode, string message) : base($"[{errorCode}] {message}")
         {
             this.errorCode = errorCode;
         }
 
-        public PuffinBasicRuntimeError(PuffinBasicRuntimeError cause, Instruction instruction, string line) : base(cause.Message + Environment.NewLine + "Line: " + instruction.inputRef + Environment.NewLine + line, cause)
+        public PuffinBasicRuntimeError(PuffinBasicRuntimeError cause, Instruction instruction, string line) : base($"{cause.Message}{Environment.NewLine}Line: {instruction.inputRef}{Environment.NewLine}{line}", cause)
         {
             this.errorCode = cause.errorCode;
         }
 
-        public PuffinBasicRuntimeError(Exception cause, Instruction instruction, string line) : base(cause.Message + Environment.NewLine + "Line: " + instruction.inputRef + Environment.NewLine + line, cause)
+        public PuffinBasicRuntimeError(Exception cause, Instruction instruction, string line) : base($"{cause.Message}{Environment.NewLine}Line: {instruction.inputRef}{Environment.NewLine}{line}", cause)
         {
             this.errorCode = ErrorCode.UNKNOWN;
         }

@@ -1,30 +1,27 @@
 //using Com.Google.Common.Base;
 //using It.Unimi.Dsi.Fastutil.Doubles;
-using Org.Puffinbasic.Domain;
-using static Org.Puffinbasic.Domain.STObjects;
-using Org.Puffinbasic.Error;
-using Org.Puffinbasic.File;
-using static Org.Puffinbasic.Parser.PuffinBasicIR;
-//using Java.Nio;
-//using Java.Nio.Charset;
-//using Java.Time;
-//using Java.Util;
-//using Java.Util.Concurrent;
-using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.IO;
-using Org.Puffinbasic.Common;
-
 namespace Org.Puffinbasic.Runtime
 {
+    using Org.Puffinbasic.Domain;
+    using static Org.Puffinbasic.Domain.STObjects;
+    using Org.Puffinbasic.Error;
+    using Org.Puffinbasic.File;
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    //using Java.Nio;
+    //using Java.Nio.Charset;
+    //using Java.Time;
+    //using Java.Util;
+    //using Java.Util.Concurrent;
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using System;
+    using System.Linq;
+    using System.Text;
+    using System.Text.RegularExpressions;
+    using Org.Puffinbasic.Common;
+
     public class Functions
     {
         public static void Abs(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -57,7 +54,7 @@ namespace Org.Puffinbasic.Runtime
             var value = symbolTable[instruction.op1].GetValue().GetString();
             if (String.IsNullOrEmpty(value))
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "IllegalFunctionCall: null/empty string: '" + value + "'");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, $"IllegalFunctionCall: null/empty string: '{value}'");
             }
 
             var ascii = (int)value[0];
@@ -191,7 +188,7 @@ namespace Org.Puffinbasic.Runtime
             double value = entry.GetFloat64();
             if (value < long.MinValue || value > long.MaxValue)
             {
-                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CLONG: value: " + value + " overflows an int64");
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"CLONG: value: {value} overflows an int64");
             }
 
             symbolTable[instruction.result].GetValue().SetInt64(entry.GetRoundedInt64());
@@ -266,7 +263,7 @@ namespace Org.Puffinbasic.Runtime
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 4)
             {
-                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVI$: value: " + value + " length must be 4, found: " + value.Length);
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"CVI$: value: {value} length must be 4, found: {value.Length}");
             }
 
             int intValue = BitConverter.ToInt32(ISOEncoding.GetBytes(value), 0);
@@ -281,7 +278,7 @@ namespace Org.Puffinbasic.Runtime
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 8)
             {
-                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVL$: value: " + value + " length must be 8, found: " + value.Length);
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"CVL$: value: {value} length must be 8, found: {value.Length}");
             }
 
             long longValue = BitConverter.ToInt64(ISOEncoding.GetBytes(value), 0);
@@ -295,7 +292,7 @@ namespace Org.Puffinbasic.Runtime
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 4)
             {
-                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVS$: value: " + value + " length must be 4, found: " + value.Length);
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"CVS$: value: {value} length must be 4, found: {value.Length}");
             }
 
             float floatValue = BitConverter.ToSingle(ISOEncoding.GetBytes(value), 0);
@@ -309,7 +306,7 @@ namespace Org.Puffinbasic.Runtime
             string value = symbolTable[instruction.op1].GetValue().GetString();
             if (value.Length != 8)
             {
-                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "CVD$: value: " + value + " length must be 8, found: " + value.Length);
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"CVD$: value: {value} length must be 8, found: {value.Length}");
             }
 
             double doubleValue = BitConverter.ToDouble(ISOEncoding.GetBytes(value), 0);
@@ -340,7 +337,7 @@ namespace Org.Puffinbasic.Runtime
             }
             catch (FormatException e)
             {
-                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "Failed to parse string: " + str + " as numeric");
+                throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, $"Failed to parse string: {str} as numeric");
             }
         }
 
@@ -404,7 +401,7 @@ namespace Org.Puffinbasic.Runtime
                 int axis = instruction.op2 != NULL_ID ? symbolTable[instruction.op2].GetValue().GetInt32() : 0;
                 if (axis < 0 || axis >= value.GetNumArrayDimensions())
                 {
-                    throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "Bad axis=" + axis + ", #dims=" + value.GetNumArrayDimensions());
+                    throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, $"Bad axis={axis}, #dims={value.GetNumArrayDimensions()}");
                 }
 
                 len = value.GetArrayDimensions()[axis];

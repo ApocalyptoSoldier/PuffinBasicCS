@@ -1,22 +1,21 @@
 //using Com.Google.Common.Base;
 //using It.Unimi.Dsi.Fastutil.Ints;
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-//using Org.Jetbrains.Annotations;
-//using Java.Io;
-//using Java.Nio.Charset;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using static Org.Puffinbasic.File.IPuffinBasicFile;
-using System.IO;
-using Org.Puffinbasic.Common;
-
 namespace Org.Puffinbasic.File
 {
+    using Org.Puffinbasic.Domain;
+    using Org.Puffinbasic.Error;
+    //using Org.Jetbrains.Annotations;
+    //using Java.Io;
+    //using Java.Nio.Charset;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using static Org.Puffinbasic.File.IPuffinBasicFile;
+    using System.IO;
+    using Org.Puffinbasic.Common;
+
     public class PuffinBasicSequentialAccessInputFile : PuffinBasicFile
     {
         private readonly string filename;
@@ -36,7 +35,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.FileNotFoundException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for reading, error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to open file '{filename}' for reading, error: {e.Message}");
             }
 
             this.fileState = FileState.OPEN;
@@ -87,7 +86,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to read line!, error: {e.Message}");
             }
         }
 
@@ -125,7 +124,7 @@ namespace Org.Puffinbasic.File
             }
             catch (System.IO.IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!, error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to read line!, error: {e.Message}");
             }
         }
 
@@ -158,7 +157,7 @@ namespace Org.Puffinbasic.File
             }
             catch (Exception e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.Message);
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to close file '{filename}', error: {e.Message}");
             }
 
             this.fileState = FileState.CLOSED;
@@ -168,7 +167,7 @@ namespace Org.Puffinbasic.File
         {
             if (!IsOpen())
             {
-                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "File " + filename + " is not open!");
+                throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, $"File {filename} is not open!");
             }
         }
     }
