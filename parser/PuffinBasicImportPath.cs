@@ -1,10 +1,12 @@
-using Org.Puffinbasic.Error;
-//using Java.Io;
-//using Java.Nio.File;
-//using Java.Util;
-//using Java.Util.Stream;
-using System;
-using System.Collections.Generic;
+namespace Org.Puffinbasic.Parser
+{
+    using Org.Puffinbasic.Error;
+    //using Java.Io;
+    //using Java.Nio.File;
+    //using Java.Util;
+    //using Java.Util.Stream;
+    using System;
+    using System.Collections.Generic;
 
     public class PuffinBasicImportPath
     {
