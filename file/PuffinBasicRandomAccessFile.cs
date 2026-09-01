@@ -2,21 +2,21 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
 namespace Org.Puffinbasic.File
 {
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-//using Org.Jetbrains.Annotations;
-//using Java.Io;
-//using Java.Nio;
-//using Java.Util;
-using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Org.Puffinbasic.File.IPuffinBasicFile;
-using System.IO;
-using Org.Puffinbasic.Common;
-using Microsoft.Win32.SafeHandles;
+    using Org.Puffinbasic.Domain;
+    using Org.Puffinbasic.Error;
+    //using Org.Jetbrains.Annotations;
+    //using Java.Io;
+    //using Java.Nio;
+    //using Java.Util;
+    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using static Org.Puffinbasic.File.IPuffinBasicFile;
+    using System.IO;
+    using Org.Puffinbasic.Common;
+    using Microsoft.Win32.SafeHandles;
 
     public class PuffinBasicRandomAccessFile : PuffinBasicFile
     {
@@ -181,62 +181,27 @@ using Microsoft.Win32.SafeHandles;
             this.lastGetRecordNumber = recordNumber.GetValueOrDefault(this.lastGetRecordNumber + 1);
 
             SeekToRecord(this.lastGetRecordNumber);
-            var pos = GetRecordBytePos(this.lastGetRecordNumber);
-
-            //var recordPartBuffers = new byte[recordParts.Count][];
-            //Memory<byte()
 
             var recordPartBuffers = new List<Memory<byte>>();
 
             for (int i = 0; i < recordParts.Count; i++) {
                 var entry = symbolTable[recordParts[i]].GetValue();
                 recordPartBuffers.Add(new Memory<byte>(new byte[entry.GetFieldLength()]));
-                //recordPartBuffers[i] = new byte[entry.GetFieldLength()];
             }
 
-            RandomAccess.Read(fileHandle, recordPartBuffers, currentFilePosBytes);
+            try
+            {
+                RandomAccess.Read(fileHandle, recordPartBuffers, currentFilePosBytes);
+            }
+            catch (System.IO.IOException e)
+            {
+                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to read from file '{filename}, recordNumber: {recordNumber}', error: {e.Message}");
+            }
 
             for (int i = 0; i != recordParts.Count; i++) {
                 var entry = symbolTable[recordParts[i]].GetValue();
                 entry.SetString(ISOEncoding.GetString(recordPartBuffers[i].ToArray()));
             }
-
-            //SeekToRecord(lastGetRecordNumber);
-
-            //for (int i = 0; i < recordParts.Count; i++) {
-            //    var entry = symbolTable[recordParts[i]].GetValue();
-            //    byte[] strBytes = new byte[entry.GetFieldLength()];
-
-            //    //Console.WriteLine($"Len {file.Length} pos {file.Position} fieldLen {strBytes.Length}");
-
-            //    //int toRead = strBytes.Length;
-            //    //if (toRead + file.Position > file.Length)
-            //    //    toRead = (int)(file.Length - file.Position);
-            //    //file.Read(strBytes, (int)file.Position, strBytes.Length);
-            //    var byteSpan = new Span<byte>(strBytes);
-            //    file.ReadAtLeast(byteSpan, strBytes.Length, false );
-
-            //    entry.SetString(ISOEncoding.GetString(byteSpan.ToArray()));
-            //}
-
-            // Seek to record number and read the record into record buffer
-            // I don't think we're doing this because we're already working with a filestream
-            //try
-            //{
-            //    file.ReadFully(recordBuffer);
-            //}
-            //catch (System.IO.IOException e)
-            //{
-            //    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + ", recordNumber: " + recordNumber + "', error: " + e.Message);
-            //}
-
-            //for (int i =  0; i < recordParts.Count; i++)
-            //{
-            //    var entry = symbolTable[recordParts[i]].GetValue();
-            //    byte[] strBytes = new byte[entry.GetFieldLength()];
-            //    file.Read(strBytes, 0, strBytes.
-            //    entry.SetString(new string(strBytes));
-            //}
 
             UpdateCurrentBytePos();
         }
@@ -249,7 +214,6 @@ using Microsoft.Win32.SafeHandles;
         private BinaryWriter ClearAndGetRecordBuffer()
         {
             Array.Fill(recordBuffer, (byte)' ');
-            Runtime.Arrays.Fill(recordBuffer, (byte)' ', 0, recordBuffer.Length);
             
             var ms = new MemoryStream(recordBuffer);
             return new BinaryWriter(ms);
@@ -282,21 +246,9 @@ using Microsoft.Win32.SafeHandles;
         // Seek to record number and read the record into record buffer
         private void SeekToRecord(int recordNumber)
         {
-
-            // Seek only when record number is not sequential
-            try
-            {
-                long destPosBytes = GetRecordBytePos(recordNumber);
-                if (destPosBytes != currentFilePosBytes)
-                {
-                    currentFilePosBytes = destPosBytes;
-                    //currentFilePosBytes = file.Seek((int)destPosBytes, SeekOrigin.Begin);
-                }
-            }
-            catch (System.IO.IOException e)
-            {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read from file '" + filename + "', error: " + e.Message);
-            }
+            // TODO: we're only using this method to keep track of currentFilePosBytes, with System.IO.RandomAccess we don't actually need to seek
+            // so rework this
+            currentFilePosBytes = GetRecordBytePos(recordNumber);
         }
 
         // Create a new buffer and fill with spaces.
@@ -333,14 +285,8 @@ using Microsoft.Win32.SafeHandles;
         public override void Dispose()
         {
             AssertOpen();
-            try
-            {
-                //this.file.Dispose();
-            }
-            catch (Exception e)
-            {
-                throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to close file '" + filename + "', error: " + e.Message);
-            }
+
+            this.fileHandle.Dispose();
 
             this.fileState = FileState.CLOSED;
         }
