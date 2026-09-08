@@ -1,36 +1,36 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
-    using Org.Puffinbasic.Error;
-    using Org.Puffinbasic.File;
-    using Org.Puffinbasic.Parser;
-
-    using static Org.Puffinbasic.Parser.PuffinBasicIR;
-    using static Org.Puffinbasic.Runtime.ArraysUtil;
-    using static Org.Puffinbasic.Runtime.Formatter;
-    using static Org.Puffinbasic.Runtime.Statements;
+    using PuffinBasicCS.Parser;
+    using static PuffinBasicCS.Parser.PuffinBasicIR;
+    using static PuffinBasicCS.Runtime.ArraysUtil;
+    using static PuffinBasicCS.Runtime.Formatter;
+    using static PuffinBasicCS.Runtime.Statements;
     //using Java.Io;
     //using Java.Util;
     //using Java.Util.Stream;
-    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-    using static Org.Puffinbasic.Parser.PuffinBasicIR.OpCode;
+    using static PuffinBasicCS.Domain.PuffinBasicSymbolTable;
+    using static PuffinBasicCS.Parser.PuffinBasicIR.OpCode;
 
     using System;
     using System.Collections.Generic;
     using System.IO;
 
+    using PuffinBasicCS.File;
+    using PuffinBasicCS.Error;
+
     public class PuffinBasicRuntime
     {
         private readonly PuffinBasicIR ir;
-        private PrintBuffer printBuffer;
-        private ArrayState arrayState;
-        private Stack<int> gosubReturnLabelStack;
+        private PrintBuffer printBuffer = new PrintBuffer();
+        private ArrayState arrayState = new ArrayState();
+        private Stack<int> gosubReturnLabelStack = new Stack<int>();
         private int programCounter;
-        private Random random;
+        private Random random = new Random();
         private Dictionary<int, int> labelToInstrNum;
         private Dictionary<int, int> lineNumToInstrNum;
-        private IList<Instruction> @params;
-        private FormatterCache formatterCache;
+        private IList<Instruction> @params = new List<Instruction>();
+        private FormatterCache formatterCache = new FormatterCache();
         private PuffinBasicFiles files;
         private ReadData readData;
         private readonly TextWriter @out;
@@ -99,12 +99,6 @@ namespace Org.Puffinbasic.Runtime
             var instructions = ir.GetInstructions();
             this.labelToInstrNum = ComputeLabelToInstructionNumber(instructions);
             this.lineNumToInstrNum = ComputeLineNumberToInstructionNumber(instructions);
-            this.printBuffer = new PrintBuffer();
-            this.arrayState = new ArrayState();
-            this.gosubReturnLabelStack = new Stack<int>();
-            this.random = new Random();
-            this.formatterCache = new FormatterCache();
-            this.@params = new List<Instruction>();
             this.files = new PuffinBasicFiles(new SystemInputOutputFile(Console.In, @out));
             this.readData = ProcessDataInstructions(instructions);
             //this.graphicsState = new GraphicsState();
@@ -148,7 +142,7 @@ namespace Org.Puffinbasic.Runtime
             
             foreach (Instruction i  in instructions)
                 if (i.opCode == OpCode.DATA)
-                    entries.Add((Domain.STObjects.ISTEntry)ir.GetSymbolTable()[i.op1]);
+                    entries.Add(ir.SymbolTable[i.op1]);
 
             return new ReadData(entries);
         }
@@ -159,7 +153,7 @@ namespace Org.Puffinbasic.Runtime
             switch (instruction.opCode)
             {
                 case VARREF:
-                    Types.Varref(ir.GetSymbolTable(), instruction);
+                    Types.Varref(ir.SymbolTable, instruction);
                     break;
                 case DIM:
                 {
@@ -168,7 +162,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected >0 params, but found none!");
                     }
 
-                    ArraysUtil.Dim(ir.GetSymbolTable(), @params, instruction);
+                    ArraysUtil.Dim(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -180,7 +174,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected >0 params, but found none!");
                     }
 
-                    ArraysUtil.AllocArray(ir.GetSymbolTable(), @params, instruction);
+                    ArraysUtil.AllocArray(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -192,13 +186,13 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected >0 params, but found none!");
                     }
 
-                    ArraysUtil.ReallocArray(ir.GetSymbolTable(), @params, instruction);
+                    ArraysUtil.ReallocArray(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
                     break;
                 case CREATE_INSTANCE:
-                    Statements.CreateInstance(ir.GetSymbolTable(), instruction);
+                    Statements.CreateInstance(ir.SymbolTable, instruction);
                     break;
                 case STRUCT_LVALUE:
                 {
@@ -207,14 +201,14 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected >0 params, but found none!");
                     }
 
-                    Statements.StructLValue(ir.GetSymbolTable(), @params, instruction);
+                    Statements.StructLValue(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
                     break;
                 case MEMBER_FUNC_CALL:
                 {
-                    Statements.MemberFuncCall(ir.GetSymbolTable(), @params, instruction);
+                    Statements.MemberFuncCall(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -226,51 +220,51 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected >0 params, but found none!");
                     }
 
-                    Statements.StructMemberRef(ir.GetSymbolTable(), @params, instruction);
+                    Statements.StructMemberRef(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
                     break;
                 case ASSIGN:
                 case COPY:
-                    Types.Copy(ir.GetSymbolTable(), instruction);
+                    Types.Copy(ir.SymbolTable, instruction);
                     break;
                 case PARAM_COPY:
-                    Types.ParamCopy(ir.GetSymbolTable(), instruction);
+                    Types.ParamCopy(ir.SymbolTable, instruction);
                     break;
                 case UNARY_MINUS:
-                    Operators.UnaryMinus(ir.GetSymbolTable(), instruction);
+                    Operators.UnaryMinus(ir.SymbolTable, instruction);
                     break;
                 case PRINT:
-                    Statements.Print(printBuffer, ir.GetSymbolTable(), instruction);
+                    Statements.Print(printBuffer, ir.SymbolTable, instruction);
                     break;
                 case PRINTUSING:
-                    Statements.Printusing(formatterCache, printBuffer, ir.GetSymbolTable(), instruction);
+                    Statements.Printusing(formatterCache, printBuffer, ir.SymbolTable, instruction);
                     break;
                 case FLUSH:
-                    Statements.Flush(files, printBuffer, ir.GetSymbolTable(), instruction);
+                    Statements.Flush(files, printBuffer, ir.SymbolTable, instruction);
                     break;
                 case RESET_ARRAY_IDX:
-                    ArraysUtil.ResetIndex(arrayState, ir.GetSymbolTable(), instruction);
+                    ArraysUtil.ResetIndex(arrayState, ir.SymbolTable, instruction);
                     break;
                 case SET_ARRAY_IDX:
-                    ArraysUtil.SetIndex(arrayState, ir.GetSymbolTable(), instruction);
+                    ArraysUtil.SetIndex(arrayState, ir.SymbolTable, instruction);
                     break;
                 case ARRAYREF:
-                    ArraysUtil.Arrayref(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Arrayref(ir.SymbolTable, instruction);
                     break;
                 case LABEL:
                     break;
                 case GOTO_LINENUM:
                 {
-                    var lineNumber = ir.GetSymbolTable()[instruction.op1].GetValue().GetInt32();
+                    var lineNumber = ir.SymbolTable[instruction.op1].Value.GetInt32();
                     nextProgramCounter = GetInstrNumForLineNumber(lineNumber);
                 }
 
                     break;
                 case GOTO_LABEL_IF:
                 {
-                    if (ir.GetSymbolTable()[instruction.op1].GetValue().GetInt64() != 0)
+                    if (ir.SymbolTable[instruction.op1].Value.GetInt64() != 0)
                     {
                         nextProgramCounter = GetInstrNumForLabel(instruction.op2);
                     }
@@ -281,13 +275,13 @@ namespace Org.Puffinbasic.Runtime
                     nextProgramCounter = GetInstrNumForLabel(instruction.op1);
                     break;
                 case GOTO_CALLER:
-                    nextProgramCounter = ir.GetSymbolTable().GetCurrentScope().GetCallerInstrId();
+                    nextProgramCounter = ir.SymbolTable.GetCurrentScope().GetCallerInstrId();
                     break;
                 case PUSH_RT_SCOPE:
-                    ir.GetSymbolTable().PushRuntimeScope(instruction.op1, GetInstrNumForLabel(instruction.op2));
+                    ir.SymbolTable.PushRuntimeScope(instruction.op1, GetInstrNumForLabel(instruction.op2));
                     break;
                 case POP_RT_SCOPE:
-                    ir.GetSymbolTable().PopScope();
+                    ir.SymbolTable.PopScope();
                     break;
                 case PUSH_RETLABEL:
                     gosubReturnLabelStack.Push(instruction.op1);
@@ -303,298 +297,298 @@ namespace Org.Puffinbasic.Runtime
 
                         // Ignore label because we need to return to the lineNumber
                         gosubReturnLabelStack.Pop();
-                        var lineNumber = ir.GetSymbolTable()[instruction.op1].GetValue().GetInt32();
+                        var lineNumber = ir.SymbolTable[instruction.op1].Value.GetInt32();
                         nextProgramCounter = GetInstrNumForLineNumber(lineNumber);
                     }
                 }
 
                     break;
                 case EXPI32:
-                    Operators.ExpInt32(ir.GetSymbolTable(), instruction);
+                    Operators.ExpInt32(ir.SymbolTable, instruction);
                     break;
                 case EXPI64:
-                    Operators.ExpInt64(ir.GetSymbolTable(), instruction);
+                    Operators.ExpInt64(ir.SymbolTable, instruction);
                     break;
                 case EXPF32:
-                    Operators.ExpFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.ExpFloat32(ir.SymbolTable, instruction);
                     break;
                 case EXPF64:
-                    Operators.ExpFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.ExpFloat64(ir.SymbolTable, instruction);
                     break;
                 case MULI32:
-                    Operators.MulInt32(ir.GetSymbolTable(), instruction);
+                    Operators.MulInt32(ir.SymbolTable, instruction);
                     break;
                 case MULI64:
-                    Operators.MulInt64(ir.GetSymbolTable(), instruction);
+                    Operators.MulInt64(ir.SymbolTable, instruction);
                     break;
                 case MULF32:
-                    Operators.MulFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.MulFloat32(ir.SymbolTable, instruction);
                     break;
                 case MULF64:
-                    Operators.MulFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.MulFloat64(ir.SymbolTable, instruction);
                     break;
                 case IDIV:
-                    Operators.Idiv(ir.GetSymbolTable(), instruction);
+                    Operators.Idiv(ir.SymbolTable, instruction);
                     break;
                 case FDIV:
-                    Operators.Fdiv(ir.GetSymbolTable(), instruction);
+                    Operators.Fdiv(ir.SymbolTable, instruction);
                     break;
                 case ADDI32:
-                    Operators.AddInt32(ir.GetSymbolTable(), instruction);
+                    Operators.AddInt32(ir.SymbolTable, instruction);
                     break;
                 case ADDI64:
-                    Operators.AddInt64(ir.GetSymbolTable(), instruction);
+                    Operators.AddInt64(ir.SymbolTable, instruction);
                     break;
                 case ADDF32:
-                    Operators.AddFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.AddFloat32(ir.SymbolTable, instruction);
                     break;
                 case ADDF64:
-                    Operators.AddFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.AddFloat64(ir.SymbolTable, instruction);
                     break;
                 case SUBI32:
-                    Operators.SubInt32(ir.GetSymbolTable(), instruction);
+                    Operators.SubInt32(ir.SymbolTable, instruction);
                     break;
                 case SUBI64:
-                    Operators.SubInt64(ir.GetSymbolTable(), instruction);
+                    Operators.SubInt64(ir.SymbolTable, instruction);
                     break;
                 case SUBF32:
-                    Operators.SubFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.SubFloat32(ir.SymbolTable, instruction);
                     break;
                 case SUBF64:
-                    Operators.SubFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.SubFloat64(ir.SymbolTable, instruction);
                     break;
                 case MOD:
-                    Operators.Mod(ir.GetSymbolTable(), instruction);
+                    Operators.Mod(ir.SymbolTable, instruction);
                     break;
                 case EQI32:
-                    Operators.EqInt32(ir.GetSymbolTable(), instruction);
+                    Operators.EqInt32(ir.SymbolTable, instruction);
                     break;
                 case EQI64:
-                    Operators.EqInt64(ir.GetSymbolTable(), instruction);
+                    Operators.EqInt64(ir.SymbolTable, instruction);
                     break;
                 case EQF32:
-                    Operators.EqFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.EqFloat32(ir.SymbolTable, instruction);
                     break;
                 case EQF64:
-                    Operators.EqFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.EqFloat64(ir.SymbolTable, instruction);
                     break;
                 case EQSTR:
-                    Operators.EqStr(ir.GetSymbolTable(), instruction);
+                    Operators.EqStr(ir.SymbolTable, instruction);
                     break;
                 case NEI32:
-                    Operators.NeInt32(ir.GetSymbolTable(), instruction);
+                    Operators.NeInt32(ir.SymbolTable, instruction);
                     break;
                 case NEI64:
-                    Operators.NeInt64(ir.GetSymbolTable(), instruction);
+                    Operators.NeInt64(ir.SymbolTable, instruction);
                     break;
                 case NEF32:
-                    Operators.NeFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.NeFloat32(ir.SymbolTable, instruction);
                     break;
                 case NEF64:
-                    Operators.NeFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.NeFloat64(ir.SymbolTable, instruction);
                     break;
                 case NESTR:
-                    Operators.NeStr(ir.GetSymbolTable(), instruction);
+                    Operators.NeStr(ir.SymbolTable, instruction);
                     break;
                 case LTI32:
-                    Operators.LtInt32(ir.GetSymbolTable(), instruction);
+                    Operators.LtInt32(ir.SymbolTable, instruction);
                     break;
                 case LTI64:
-                    Operators.LtInt64(ir.GetSymbolTable(), instruction);
+                    Operators.LtInt64(ir.SymbolTable, instruction);
                     break;
                 case LTF32:
-                    Operators.LtFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.LtFloat32(ir.SymbolTable, instruction);
                     break;
                 case LTF64:
-                    Operators.LtFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.LtFloat64(ir.SymbolTable, instruction);
                     break;
                 case LTSTR:
-                    Operators.LtStr(ir.GetSymbolTable(), instruction);
+                    Operators.LtStr(ir.SymbolTable, instruction);
                     break;
                 case LEI32:
-                    Operators.LeInt32(ir.GetSymbolTable(), instruction);
+                    Operators.LeInt32(ir.SymbolTable, instruction);
                     break;
                 case LEI64:
-                    Operators.LeInt64(ir.GetSymbolTable(), instruction);
+                    Operators.LeInt64(ir.SymbolTable, instruction);
                     break;
                 case LEF32:
-                    Operators.LeFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.LeFloat32(ir.SymbolTable, instruction);
                     break;
                 case LEF64:
-                    Operators.LeFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.LeFloat64(ir.SymbolTable, instruction);
                     break;
                 case LESTR:
-                    Operators.LeStr(ir.GetSymbolTable(), instruction);
+                    Operators.LeStr(ir.SymbolTable, instruction);
                     break;
                 case GTI32:
-                    Operators.GtInt32(ir.GetSymbolTable(), instruction);
+                    Operators.GtInt32(ir.SymbolTable, instruction);
                     break;
                 case GTI64:
-                    Operators.GtInt64(ir.GetSymbolTable(), instruction);
+                    Operators.GtInt64(ir.SymbolTable, instruction);
                     break;
                 case GTF32:
-                    Operators.GtFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.GtFloat32(ir.SymbolTable, instruction);
                     break;
                 case GTF64:
-                    Operators.GtFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.GtFloat64(ir.SymbolTable, instruction);
                     break;
                 case GTSTR:
-                    Operators.GtStr(ir.GetSymbolTable(), instruction);
+                    Operators.GtStr(ir.SymbolTable, instruction);
                     break;
                 case GEI32:
-                    Operators.GeInt32(ir.GetSymbolTable(), instruction);
+                    Operators.GeInt32(ir.SymbolTable, instruction);
                     break;
                 case GEI64:
-                    Operators.GeInt64(ir.GetSymbolTable(), instruction);
+                    Operators.GeInt64(ir.SymbolTable, instruction);
                     break;
                 case GEF32:
-                    Operators.GeFloat32(ir.GetSymbolTable(), instruction);
+                    Operators.GeFloat32(ir.SymbolTable, instruction);
                     break;
                 case GEF64:
-                    Operators.GeFloat64(ir.GetSymbolTable(), instruction);
+                    Operators.GeFloat64(ir.SymbolTable, instruction);
                     break;
                 case GESTR:
-                    Operators.GeStr(ir.GetSymbolTable(), instruction);
+                    Operators.GeStr(ir.SymbolTable, instruction);
                     break;
                 case NOT:
-                    Operators.UnaryNot(ir.GetSymbolTable(), instruction);
+                    Operators.UnaryNot(ir.SymbolTable, instruction);
                     break;
                 case AND:
-                    Operators.And(ir.GetSymbolTable(), instruction);
+                    Operators.And(ir.SymbolTable, instruction);
                     break;
                 case OR:
-                    Operators.Or(ir.GetSymbolTable(), instruction);
+                    Operators.Or(ir.SymbolTable, instruction);
                     break;
                 case XOR:
-                    Operators.Xor(ir.GetSymbolTable(), instruction);
+                    Operators.Xor(ir.SymbolTable, instruction);
                     break;
                 case EQV:
-                    Operators.Eqv(ir.GetSymbolTable(), instruction);
+                    Operators.Eqv(ir.SymbolTable, instruction);
                     break;
                 case IMP:
-                    Operators.Imp(ir.GetSymbolTable(), instruction);
+                    Operators.Imp(ir.SymbolTable, instruction);
                     break;
                 case LEFTSHIFT:
-                    Operators.LeftShift(ir.GetSymbolTable(), instruction);
+                    Operators.LeftShift(ir.SymbolTable, instruction);
                     break;
                 case RIGHTSHIFT:
-                    Operators.RightShift(ir.GetSymbolTable(), instruction);
+                    Operators.RightShift(ir.SymbolTable, instruction);
                     break;
                 case END:
                     return true;
                 case ABS:
-                    Functions.Abs(ir.GetSymbolTable(), instruction);
+                    Functions.Abs(ir.SymbolTable, instruction);
                     break;
                 case ASC:
-                    Functions.Asc(ir.GetSymbolTable(), instruction);
+                    Functions.Asc(ir.SymbolTable, instruction);
                     break;
                 case SIN:
-                    Functions.Sin(ir.GetSymbolTable(), instruction);
+                    Functions.Sin(ir.SymbolTable, instruction);
                     break;
                 case COS:
-                    Functions.Cos(ir.GetSymbolTable(), instruction);
+                    Functions.Cos(ir.SymbolTable, instruction);
                     break;
                 case TAN:
-                    Functions.Tan(ir.GetSymbolTable(), instruction);
+                    Functions.Tan(ir.SymbolTable, instruction);
                     break;
                 case ASIN:
-                    Functions.Asin(ir.GetSymbolTable(), instruction);
+                    Functions.Asin(ir.SymbolTable, instruction);
                     break;
                 case ACOS:
-                    Functions.Acos(ir.GetSymbolTable(), instruction);
+                    Functions.Acos(ir.SymbolTable, instruction);
                     break;
                 case ATN:
-                    Functions.Atn(ir.GetSymbolTable(), instruction);
+                    Functions.Atn(ir.SymbolTable, instruction);
                     break;
                 case SINH:
-                    Functions.Sinh(ir.GetSymbolTable(), instruction);
+                    Functions.Sinh(ir.SymbolTable, instruction);
                     break;
                 case COSH:
-                    Functions.Cosh(ir.GetSymbolTable(), instruction);
+                    Functions.Cosh(ir.SymbolTable, instruction);
                     break;
                 case TANH:
-                    Functions.Tanh(ir.GetSymbolTable(), instruction);
+                    Functions.Tanh(ir.SymbolTable, instruction);
                     break;
                 case SQR:
-                    Functions.Sqr(ir.GetSymbolTable(), instruction);
+                    Functions.Sqr(ir.SymbolTable, instruction);
                     break;
                 case LOG:
-                    Functions.Log(ir.GetSymbolTable(), instruction);
+                    Functions.Log(ir.SymbolTable, instruction);
                     break;
                 case LOG10:
-                    Functions.Log10(ir.GetSymbolTable(), instruction);
+                    Functions.Log10(ir.SymbolTable, instruction);
                     break;
                 case LOG2:
-                    Functions.Log2(ir.GetSymbolTable(), instruction);
+                    Functions.Log2(ir.SymbolTable, instruction);
                     break;
                 case EEXP:
-                    Functions.Exp(ir.GetSymbolTable(), instruction);
+                    Functions.Exp(ir.SymbolTable, instruction);
                     break;
                 case TORAD:
-                    Functions.ToRad(ir.GetSymbolTable(), instruction);
+                    Functions.ToRad(ir.SymbolTable, instruction);
                     break;
                 case TODEG:
-                    Functions.ToDeg(ir.GetSymbolTable(), instruction);
+                    Functions.ToDeg(ir.SymbolTable, instruction);
                     break;
                 case FLOOR:
-                    Functions.Floor(ir.GetSymbolTable(), instruction);
+                    Functions.Floor(ir.SymbolTable, instruction);
                     break;
                 case CEIL:
-                    Functions.Ceil(ir.GetSymbolTable(), instruction);
+                    Functions.Ceil(ir.SymbolTable, instruction);
                     break;
                 case ROUND:
-                    Functions.Round(ir.GetSymbolTable(), instruction);
+                    Functions.Round(ir.SymbolTable, instruction);
                     break;
                 case E:
-                    Functions.E(ir.GetSymbolTable(), instruction);
+                    Functions.E(ir.SymbolTable, instruction);
                     break;
                 case PI:
-                    Functions.Pi(ir.GetSymbolTable(), instruction);
+                    Functions.Pi(ir.SymbolTable, instruction);
                     break;
                 case MIN:
-                    Functions.Min(ir.GetSymbolTable(), instruction);
+                    Functions.Min(ir.SymbolTable, instruction);
                     break;
                 case MAX:
-                    Functions.Max(ir.GetSymbolTable(), instruction);
+                    Functions.Max(ir.SymbolTable, instruction);
                     break;
                 case ARRAYFILL:
-                    ArraysUtil.Arrayfill(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Arrayfill(ir.SymbolTable, instruction);
                     break;
                 case ARRAYCOPY:
-                    ArraysUtil.ArrayCopy(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.ArrayCopy(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DMIN:
-                    ArraysUtil.Array1dMin(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dMin(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DMAX:
-                    ArraysUtil.Array1dMax(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dMax(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DMEAN:
-                    ArraysUtil.Array1dMean(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dMean(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DSUM:
-                    ArraysUtil.Array1dSum(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dSum(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DSTD:
-                    ArraysUtil.Array1dStddev(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dStddev(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DMEDIAN:
-                    ArraysUtil.Array1dMedian(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dMedian(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DPCT:
-                    ArraysUtil.Array1dPercentile(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dPercentile(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DSORT:
-                    ArraysUtil.Array1dSort(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dSort(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DBINSEARCH:
-                    ArraysUtil.Array1dBinSearch(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array1dBinSearch(ir.SymbolTable, instruction);
                     break;
                 case ARRAY2DSHIFTVER:
-                    ArraysUtil.Array2dShiftVertical(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array2dShiftVertical(ir.SymbolTable, instruction);
                     break;
                 case ARRAY2DSHIFTHOR:
-                    ArraysUtil.Array2dShiftHorizontal(ir.GetSymbolTable(), instruction);
+                    ArraysUtil.Array2dShiftHorizontal(ir.SymbolTable, instruction);
                     break;
                 case ARRAY1DCOPY:
                 {
@@ -603,7 +597,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    ArraysUtil.Array1DCopy(ir.GetSymbolTable(), @params[0], @params[1], instruction);
+                    ArraysUtil.Array1DCopy(ir.SymbolTable, @params[0], @params[1], instruction);
                     @params.Clear();
                 }
 
@@ -615,7 +609,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    ArraysUtil.Array2dFindRow(ir.GetSymbolTable(), @params, instruction);
+                    ArraysUtil.Array2dFindRow(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -627,82 +621,82 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    ArraysUtil.Array2dFindColumn(ir.GetSymbolTable(), @params, instruction);
+                    ArraysUtil.Array2dFindColumn(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
                     break;
                 case CINT:
-                    Functions.Cint(ir.GetSymbolTable(), instruction);
+                    Functions.Cint(ir.SymbolTable, instruction);
                     break;
                 case CLNG:
-                    Functions.Clng(ir.GetSymbolTable(), instruction);
+                    Functions.Clng(ir.SymbolTable, instruction);
                     break;
                 case CSNG:
-                    Functions.Csng(ir.GetSymbolTable(), instruction);
+                    Functions.Csng(ir.SymbolTable, instruction);
                     break;
                 case CDBL:
-                    Functions.Cdbl(ir.GetSymbolTable(), instruction);
+                    Functions.Cdbl(ir.SymbolTable, instruction);
                     break;
                 case CHRDLR:
-                    Functions.Chrdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Chrdlr(ir.SymbolTable, instruction);
                     break;
                 case CVI:
-                    Functions.Cvi(ir.GetSymbolTable(), instruction);
+                    Functions.Cvi(ir.SymbolTable, instruction);
                     break;
                 case CVL:
-                    Functions.Cvl(ir.GetSymbolTable(), instruction);
+                    Functions.Cvl(ir.SymbolTable, instruction);
                     break;
                 case CVS:
-                    Functions.Cvs(ir.GetSymbolTable(), instruction);
+                    Functions.Cvs(ir.SymbolTable, instruction);
                     break;
                 case CVD:
-                    Functions.Cvd(ir.GetSymbolTable(), instruction);
+                    Functions.Cvd(ir.SymbolTable, instruction);
                     break;
                 case MKIDLR:
-                    Functions.Mkidlr(ir.GetSymbolTable(), instruction);
+                    Functions.Mkidlr(ir.SymbolTable, instruction);
                     break;
                 case MKLDLR:
-                    Functions.Mkldlr(ir.GetSymbolTable(), instruction);
+                    Functions.Mkldlr(ir.SymbolTable, instruction);
                     break;
                 case MKSDLR:
-                    Functions.Mksdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Mksdlr(ir.SymbolTable, instruction);
                     break;
                 case MKDDLR:
-                    Functions.Mkddlr(ir.GetSymbolTable(), instruction);
+                    Functions.Mkddlr(ir.SymbolTable, instruction);
                     break;
                 case SPACEDLR:
-                    Functions.Spacedlr(ir.GetSymbolTable(), instruction);
+                    Functions.Spacedlr(ir.SymbolTable, instruction);
                     break;
                 case STRDLR:
-                    Functions.Strdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Strdlr(ir.SymbolTable, instruction);
                     break;
                 case VAL:
-                    Functions.Val(ir.GetSymbolTable(), instruction);
+                    Functions.Val(ir.SymbolTable, instruction);
                     break;
                 case INT:
-                    Functions.Fnint(ir.GetSymbolTable(), instruction);
+                    Functions.Fnint(ir.SymbolTable, instruction);
                     break;
                 case FIX:
-                    Functions.Fix(ir.GetSymbolTable(), instruction);
+                    Functions.Fix(ir.SymbolTable, instruction);
                     break;
                 case LEN:
-                    Functions.Len(ir.GetSymbolTable(), instruction);
+                    Functions.Len(ir.SymbolTable, instruction);
                     break;
                 case HEXDLR:
-                    Functions.Hexdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Hexdlr(ir.SymbolTable, instruction);
                     break;
                 case OCTDLR:
-                    Functions.Octdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Octdlr(ir.SymbolTable, instruction);
                     break;
                 case LEFTDLR:
-                    Functions.Leftdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Leftdlr(ir.SymbolTable, instruction);
                     break;
                 case RIGHTDLR:
-                    Functions.Rightdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Rightdlr(ir.SymbolTable, instruction);
                     break;
                 case SPLITDLR:
-                    Functions.Splitdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Splitdlr(ir.SymbolTable, instruction);
                     break;
                 case PARAM1:
                 case PARAM2:
@@ -715,7 +709,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    Functions.Instr(ir.GetSymbolTable(), @params[0], instruction);
+                    Functions.Instr(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -727,7 +721,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    Functions.Middlr(ir.GetSymbolTable(), @params[0], instruction);
+                    Functions.Middlr(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -739,7 +733,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    Statements.Middlr(ir.GetSymbolTable(), @params[0], instruction);
+                    Statements.Middlr(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -751,7 +745,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    Statements.Open(files, ir.GetSymbolTable(), @params[0], @params[1], instruction);
+                    Statements.Open(files, ir.SymbolTable, @params[0], @params[1], instruction);
                     @params.Clear();
                 }
 
@@ -760,11 +754,11 @@ namespace Org.Puffinbasic.Runtime
                     Statements.CloseAll(files);
                     break;
                 case CLOSE:
-                    Statements.Dispose(files, ir.GetSymbolTable(), instruction);
+                    Statements.Dispose(files, ir.SymbolTable, instruction);
                     break;
                 case FIELD:
                 {
-                    Statements.Field(files, ir.GetSymbolTable(), @params, instruction);
+                    Statements.Field(files, ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -776,65 +770,65 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Hsb2rgb(ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Hsb2rgb(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
                     break;
                 case PUTF:
-                    Statements.Putf(files, ir.GetSymbolTable(), instruction);
+                    Statements.Putf(files, ir.SymbolTable, instruction);
                     break;
                 case GETF:
-                    Statements.Getf(files, ir.GetSymbolTable(), instruction);
+                    Statements.Getf(files, ir.SymbolTable, instruction);
                     break;
                 case LOC:
-                    Functions.Loc(files, ir.GetSymbolTable(), instruction);
+                    Functions.Loc(files, ir.SymbolTable, instruction);
                     break;
                 case LOF:
-                    Functions.Lof(files, ir.GetSymbolTable(), instruction);
+                    Functions.Lof(files, ir.SymbolTable, instruction);
                     break;
                 case EOF:
-                    Functions.Eof(files, ir.GetSymbolTable(), instruction);
+                    Functions.Eof(files, ir.SymbolTable, instruction);
                     break;
                 case RND:
-                    Functions.Rnd(random, ir.GetSymbolTable(), instruction);
+                    Functions.Rnd(random, ir.SymbolTable, instruction);
                     break;
                 case RANDOMIZE:
-                    Statements.Randomize(random, ir.GetSymbolTable(), instruction);
+                    Statements.Randomize(random, ir.SymbolTable, instruction);
                     break;
                 case RANDOMIZE_TIMER:
                     Statements.RandomizeTimer(random);
                     break;
                 case SGN:
-                    Functions.Sgn(ir.GetSymbolTable(), instruction);
+                    Functions.Sgn(ir.SymbolTable, instruction);
                     break;
                 case LSET:
-                    Statements.Lset(ir.GetSymbolTable(), instruction);
+                    Statements.Lset(ir.SymbolTable, instruction);
                     break;
                 case RSET:
-                    Statements.Rset(ir.GetSymbolTable(), instruction);
+                    Statements.Rset(ir.SymbolTable, instruction);
                     break;
                 case TIMER:
-                    Functions.Timer(ir.GetSymbolTable(), instruction);
+                    Functions.Timer(ir.SymbolTable, instruction);
                     break;
                 case TIMERMILLIS:
-                    Functions.TimerMillis(ir.GetSymbolTable(), instruction);
+                    Functions.TimerMillis(ir.SymbolTable, instruction);
                     break;
                 case STRINGDLR:
-                    Functions.Stringdlr(ir.GetSymbolTable(), instruction);
+                    Functions.Stringdlr(ir.SymbolTable, instruction);
                     break;
                 case SWAP:
-                    Statements.Swap(ir.GetSymbolTable(), instruction);
+                    Statements.Swap(ir.SymbolTable, instruction);
                     break;
                 case CONCAT:
-                    Operators.Concat(ir.GetSymbolTable(), instruction);
+                    Operators.Concat(ir.SymbolTable, instruction);
                     break;
                 case INPUTDLR:
-                    Functions.Inputdlr(files, ir.GetSymbolTable(), instruction);
+                    Functions.Inputdlr(files, ir.SymbolTable, instruction);
                     break;
                 case INPUT:
                 {
-                    Statements.Input(files, ir.GetSymbolTable(), @params, instruction);
+                    Statements.Input(files, ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -846,13 +840,13 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    Statements.Lineinput(files, ir.GetSymbolTable(), @params[0], instruction);
+                    Statements.Lineinput(files, ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
                     break;
                 case WRITE:
-                    Statements.Write(printBuffer, ir.GetSymbolTable(), instruction);
+                    Statements.Write(printBuffer, ir.SymbolTable, instruction);
                     break;
                 case DATA:
                     break;
@@ -860,13 +854,13 @@ namespace Org.Puffinbasic.Runtime
                     readData.Restore();
                     break;
                 case READ:
-                    Statements.Read(readData, ir.GetSymbolTable(), instruction);
+                    Statements.Read(readData, ir.SymbolTable, instruction);
                     break;
                 case ENVIRONDLR:
-                    Functions.Environdlr(env, ir.GetSymbolTable(), instruction);
+                    Functions.Environdlr(env, ir.SymbolTable, instruction);
                     break;
                 case SLEEP:
-                    Statements.Sleep(ir.GetSymbolTable(), instruction);
+                    Statements.Sleep(ir.SymbolTable, instruction);
                     break;
                 case SCREEN:
                 {
@@ -875,7 +869,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Screen(ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Screen(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -890,7 +884,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 3 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Circle(ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Circle(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -902,7 +896,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Line(ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Line(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -914,7 +908,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Color(ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Color(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -926,7 +920,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Paint(ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Paint(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -938,7 +932,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Pset(ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Pset(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -950,7 +944,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Get(ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Get(ir.SymbolTable, @params, instruction);
                     @params.Clear();
                 }
 
@@ -962,7 +956,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Put(ir.GetSymbolTable(), @params[0], @params[1], instruction);
+                    GraphicsRuntime.Put(ir.SymbolTable, @params[0], @params[1], instruction);
                     @params.Clear();
                 }
 
@@ -974,7 +968,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    GraphicsRuntime.BufferCopyHor(ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.BufferCopyHor(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -986,7 +980,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Font(ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Font(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -998,22 +992,22 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    GraphicsRuntime.Drawstr(ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Drawstr(ir.SymbolTable, @params[0], instruction);
                     @params.Clear();
                 }
 
                     break;
                 case LOADIMG:
-                    GraphicsRuntime.Loadimg(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Loadimg(ir.SymbolTable, instruction);
                     break;
                 case SAVEIMG:
-                    GraphicsRuntime.Saveimg(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Saveimg(ir.SymbolTable, instruction);
                     break;
                 case DRAW:
-                    GraphicsRuntime.Draw(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Draw(ir.SymbolTable, instruction);
                     break;
                 case INKEYDLR:
-                    GraphicsRuntime.Inkeydlr(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Inkeydlr(ir.SymbolTable, instruction);
                     break;
                 case CLS:
                     GraphicsRuntime.Cls();
@@ -1022,40 +1016,40 @@ namespace Org.Puffinbasic.Runtime
                     GraphicsRuntime.Beep();
                     break;
                 case LOADWAV:
-                    GraphicsRuntime.Loadwav(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Loadwav(ir.SymbolTable, instruction);
                     break;
                 case PLAYWAV:
-                    GraphicsRuntime.Playwav(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Playwav(ir.SymbolTable, instruction);
                     break;
                 case STOPWAV:
-                    GraphicsRuntime.Stopwav(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Stopwav(ir.SymbolTable, instruction);
                     break;
                 case LOOPWAV:
-                    GraphicsRuntime.Loopwav(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Loopwav(ir.SymbolTable, instruction);
                     break;
                 case MOUSEMOVEDX:
-                    GraphicsRuntime.MouseMovedX(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseMovedX(ir.SymbolTable, instruction);
                     break;
                 case MOUSEMOVEDY:
-                    GraphicsRuntime.MouseMovedY(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseMovedY(ir.SymbolTable, instruction);
                     break;
                 case MOUSEDRAGGEDX:
-                    GraphicsRuntime.MouseDraggedX(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseDraggedX(ir.SymbolTable, instruction);
                     break;
                 case MOUSEDRAGGEDY:
-                    GraphicsRuntime.MouseDraggedY(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseDraggedY(ir.SymbolTable, instruction);
                     break;
                 case MOUSEBUTTONCLICKED:
-                    GraphicsRuntime.MouseButtonClicked(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseButtonClicked(ir.SymbolTable, instruction);
                     break;
                 case MOUSEBUTTONPRESSED:
-                    GraphicsRuntime.MouseButtonPressed(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseButtonPressed(ir.SymbolTable, instruction);
                     break;
                 case MOUSEBUTTONRELEASED:
-                    GraphicsRuntime.MouseButtonReleased(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseButtonReleased(ir.SymbolTable, instruction);
                     break;
                 case ISKEYPRESSED:
-                    GraphicsRuntime.IsKeyPressed(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.IsKeyPressed(ir.SymbolTable, instruction);
                     break;
             }
 

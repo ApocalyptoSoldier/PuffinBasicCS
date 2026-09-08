@@ -1,8 +1,8 @@
-﻿namespace Org.Puffinbasic.Parser
+﻿namespace PuffinBasicCS.Parser
 {
     using Antlr4.Runtime;
 
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
 
     using System;
     using System.IO;

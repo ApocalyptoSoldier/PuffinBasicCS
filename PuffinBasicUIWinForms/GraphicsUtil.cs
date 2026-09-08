@@ -4,12 +4,18 @@
 //using It.Unimi.Dsi.Fastutil.Objects;
 namespace PuffinBasicUI
 {
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
 
+    using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Drawing;
     using System.Drawing.Drawing2D;
     using System.Drawing.Imaging;
+    using System.IO;
+    using System.Linq;
     using System.Runtime.InteropServices;
+    using System.Threading;
     using System.Windows.Forms;
 
     using static PuffinBasicUI.GraphicsUtil;
@@ -52,10 +58,7 @@ namespace PuffinBasicUI
             }
         }
 
-        public virtual DrawingCanvas GetDrawingCanvas()
-        {
-            return drawingCanvas;
-        }
+        public virtual DrawingCanvas DrawingCanvas => drawingCanvas;
 
         private void HandleFormClosing(object? sender, FormClosingEventArgs e)
         {
@@ -142,21 +145,16 @@ namespace PuffinBasicUI
 
         private interface ICanvas
         {
-            System.Drawing.Bitmap GetFront();
-            Bitmap GetBack1();
-            Graphics GetFrontGraphics2D();
-            Graphics GetBackGraphics2D();
+            System.Drawing.Bitmap Front { get; }
+            Bitmap Back1 { get; }
 
-            Color GetFrontGraphicsColor();
-            Color GetBackGraphicsColor();
+            Graphics FrontGraphics2D { get; }
 
-            void SetFrontGraphicsColor(Color color);
-            void SetBackGraphicsColor(Color color);
+            Graphics BackGraphics2D { get; }
+            Color FrontGraphicsColor { get; set; }
 
-            public Font GetFont();
-
-            public void SetFont(Font font);
-
+            Color BackGraphicsColor { get; set; }
+            public Font Font { get; set; }
 
             Image this[int bufferNumber] => Get(bufferNumber); 
 
@@ -164,11 +162,11 @@ namespace PuffinBasicUI
             {
                 if (bufferNumber == BUFFER_NUM_FRONT)
                 {
-                    return GetFront();
+                    return Front;
                 }
                 else if (bufferNumber == BUFFER_NUM_BACK1)
                 {
-                    return GetBack1();
+                    return Back1;
                 }
                 else
                 {
@@ -179,9 +177,9 @@ namespace PuffinBasicUI
             Graphics GetGraphics(int bufferNumber)
             {
                 if (bufferNumber == BUFFER_NUM_FRONT)
-                    return GetFrontGraphics2D();
+                    return FrontGraphics2D;
                 else if (bufferNumber == BUFFER_NUM_BACK1)
-                    return GetBackGraphics2D();
+                    return BackGraphics2D;
                 else
                     throw new PuffinBasicInternalError("Bad bufferNumber: " + bufferNumber);
             }
@@ -194,57 +192,27 @@ namespace PuffinBasicUI
 
             private readonly Bitmap image;
             private readonly Graphics graphics;
-            private Color color;
-            private Font font;
+            private Color color = Color.White;
+            private Font font = SystemFonts.DefaultFont;
             public SingleImageCanvas(int imageWidth, int imageHeight)
             {
                 this.image = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppArgb);
                 this.graphics = Graphics.FromImage(this.image);
             }
 
-            public Font GetFont() => font;
+            public Font Font { get => font; set => this.font = value; }
 
-            public void SetFont(Font font) => this.font = font;
+            public Bitmap Back1 => image;
 
-            public Bitmap GetBack1()
-            {
-                return image;
-            }
+            public Bitmap Front => image;
 
-            public Bitmap GetFront()
-            {
-                return image;
-            }
+            public Graphics FrontGraphics2D => graphics;
 
-            public Graphics GetFrontGraphics2D()
-            {
-                return graphics;
-            }
+            public Color FrontGraphicsColor { get => color; set => this.color = value; }
 
-            public Color GetFrontGraphicsColor()
-            {
-                return color;
-            }
+            public Color BackGraphicsColor { get => color; set => this.color = value; }
 
-            public Color GetBackGraphicsColor()
-            { 
-                return color;
-            }
-
-            public void SetFrontGraphicsColor(Color color)
-            {
-                this.color = color;
-            }
-
-            public void SetBackGraphicsColor(Color color)
-            {
-                this.color = color;
-            }
-
-            public Graphics GetBackGraphics2D()
-            {
-                return graphics;
-            }
+            public Graphics BackGraphics2D => graphics;
 
             public void PrepareToRender()
             {
@@ -268,59 +236,30 @@ namespace PuffinBasicUI
                 this.graphics[1] = Graphics.FromImage(this.images[1]);
             }
 
-            public Font GetFont() => font;
-            public void SetFont(Font font) => this.font = font;
+            public Font Font { get => font; set => this.font = value; }
 
-            public Bitmap GetBack1()
-            {
-                return images[imageIndex];
-            }
+            public Bitmap Back1 => images[imageIndex];
 
-            public Bitmap GetFront()
-            {
-                return images[(imageIndex + 1) % 2];
-            }
+            public Bitmap Front => images[(imageIndex + 1) % 2];
 
-            public Graphics GetBackGraphics2D()
-            {
-                return graphics[imageIndex];
-            }
+            public Graphics BackGraphics2D => graphics[imageIndex];
 
-            public Graphics GetFrontGraphics2D()
-            {
-                return graphics[(imageIndex + 1) % 2];
-            }
+            public Graphics FrontGraphics2D => graphics[(imageIndex + 1) % 2];
 
             public void PrepareToRender()
             {
                 imageIndex = (imageIndex + 1) % 2;
             }
 
-            public Color GetFrontGraphicsColor()
-            {
-                return color[(imageIndex + 1) % 2];
-            }
+            public Color FrontGraphicsColor { get => color[(imageIndex + 1) % 2]; set => this.color[(imageIndex + 1) % 2] = value; }
 
-            public Color GetBackGraphicsColor()
-            {
-                return color[imageIndex];
-            }
-
-            public void SetFrontGraphicsColor(Color color)
-            {
-                this.color[(imageIndex + 1) % 2] = color;
-            }
-
-            public void SetBackGraphicsColor(Color color)
-            {
-                this.color[imageIndex] = color;
-            }
+            public Color BackGraphicsColor { get => color[imageIndex]; set => this.color[imageIndex] = value; }
         }
 
         //public class DrawingCanvas : JPanel, ActionListener
         public class DrawingCanvas
         {
-            private readonly Timer timer;
+            private readonly System.Windows.Forms.Timer timer;
             private readonly LinkedList<string> keyBuffer;
             private readonly int keyBufferSize;
             private readonly int w;
@@ -352,7 +291,7 @@ namespace PuffinBasicUI
 
 
                 this.canvas = doubleBuffer ? new DoubleBufferedImageCanvas(iw, ih) : new SingleImageCanvas(iw, ih);
-                this.timer = new Timer();
+                this.timer = new System.Windows.Forms.Timer();
                 this.keyBuffer = new LinkedList<string>();
                 this.keyBufferSize = KEY_BUFFER_SIZE;
                 this.mouseState = mouseState;
@@ -373,63 +312,63 @@ namespace PuffinBasicUI
 
             public void DrawString(string text, float x, float y)
             {
-                this.canvas.GetBackGraphics2D().DrawString(text,
-                    this.canvas.GetFont(),
+                this.canvas.BackGraphics2D.DrawString(text,
+                    this.canvas.Font,
                     new SolidBrush(color),
                     x, y);
             }
 
             public void DrawLine(float x1, float y1, float x2, float y2)
             {
-                this.canvas.GetBackGraphics2D().DrawLine(
+                this.canvas.BackGraphics2D.DrawLine(
                     new Pen(GetColor(), 5), x1, y1, x2, y2);
             }
 
             public void DrawRect(float x1, float y1, float x2, float y2)
             {
-                this.canvas.GetBackGraphics2D().DrawRectangle(
+                this.canvas.BackGraphics2D.DrawRectangle(
                     new Pen(GetColor()), x1, y1, x2, y2);
             }
 
             public void FillRect(float x1, float y1, float x2, float y2)
             {
-                this.canvas.GetBackGraphics2D().FillRectangle(
+                this.canvas.BackGraphics2D.FillRectangle(
                     new SolidBrush(GetColor()), x1, y1, x2, y2);
             }
 
             public void DrawPath(GraphicsPath path)
             {
-                this.canvas.GetBackGraphics2D().DrawPath(
+                this.canvas.BackGraphics2D.DrawPath(
                     new Pen(GetColor(), 5), path);
             }
 
             internal void FillOval(int sx, int sy, int w, int h)
             {
-                this.canvas.GetBackGraphics2D().FillEllipse(
+                this.canvas.BackGraphics2D.FillEllipse(
                     new SolidBrush(GetColor()), sx, sy, w, h);
             }
 
             internal void DrawOval(int sx, int sy, int w, int h)
             {
-                this.canvas.GetBackGraphics2D().DrawEllipse(
+                this.canvas.BackGraphics2D.DrawEllipse(
                     new Pen(GetColor()), sx, sy, w, h);
             }
 
-            internal void FillArc(int sx, int sy, int w, int h, int s, int e)
+            internal void FillArc(int sx, int sy, int w, int h, int startAngle, int sweepAngle)
             {
-                this.canvas.GetBackGraphics2D().FillPie(
-                    new SolidBrush(GetColor()), sx, sy, w, h, s, e);
+                this.canvas.BackGraphics2D.FillPie(
+                    new SolidBrush(GetColor()), sx, sy, w, h, startAngle, sweepAngle);
 
             }
 
-            internal void DrawArc(int sx, int sy, int w, int h, int s, int e)
+            internal void DrawArc(int sx, int sy, int w, int h, int startAngle, int sweepAngle)
             {
-                this.canvas.GetBackGraphics2D().DrawArc(
-                    new Pen(GetColor(), 5), sx,sy, w, h, s, e);
+                this.canvas.BackGraphics2D.DrawArc(
+                    new Pen(GetColor(), 5), sx,sy, w, h, startAngle, sweepAngle);
             }
 
             // TODO: rework everything to use the picture box font perhaps?
-            public Font Font { get => canvas.GetFont(); set => canvas.SetFont(value);  }
+            public Font Font { get => canvas.Font; set => canvas.Font = value;  }
             public Color GetColor()
             {
                 return color;
@@ -438,8 +377,8 @@ namespace PuffinBasicUI
             {
                 // TODO: revisit this
                 this.color = color;
-                this.canvas.SetBackGraphicsColor(color);
-                this.canvas.SetFrontGraphicsColor(color);
+                this.canvas.BackGraphicsColor = color;
+                this.canvas.FrontGraphicsColor = color;
             }
 
             // Always use setPreferredSize() here.
@@ -538,7 +477,7 @@ namespace PuffinBasicUI
             // Always use setPreferredSize() here.
             public virtual Graphics GetGraphics2D()
             {
-                return canvas.GetBackGraphics2D();
+                return canvas.BackGraphics2D;
             }
 
             // Always use setPreferredSize() here.
@@ -546,13 +485,13 @@ namespace PuffinBasicUI
             private void Draw(Graphics g)
             {
                 //g.DrawImage(canvas.GetFront(), 0, 0, null);
-                g.DrawImage(canvas.GetFront(), 0, 0);
+                g.DrawImage(canvas.Front, 0, 0);
             }
 
             private void Draw()
             {
                 this.pictureBox.Image?.Dispose();
-                this.pictureBox.Image = (Bitmap)(canvas.GetBack1().Clone());
+                this.pictureBox.Image = (Bitmap)(canvas.Back1.Clone());
             }
 
             // Always use setPreferredSize() here.
@@ -575,14 +514,14 @@ namespace PuffinBasicUI
             // Always use setPreferredSize() here.
             public virtual void FloodFill(int x, int y, int r, int g, int b)
             {
-                var image = canvas.GetBack1();
-                IterativeFloodFill(image, x, y, canvas.GetBackGraphicsColor(), Color.FromArgb(r, g, b));
+                var image = canvas.Back1;
+                IterativeFloodFill(image, x, y, canvas.BackGraphicsColor, Color.FromArgb(r, g, b));
             }
 
             // Always use setPreferredSize() here.
             public virtual void Point(int x, int y, int r, int g, int b)
             {
-                var image = canvas.GetBack1();
+                var image = canvas.Back1;
 
                 Color color;
                 if (r != -1 && g != -1 && b != -1)
@@ -602,8 +541,8 @@ namespace PuffinBasicUI
             // Always use setPreferredSize() here.
             public virtual void BufferCopyHor(int srcx, int dstx, int copyW)
             {
-                var src = canvas.GetFront();
-                var dst = canvas.GetBack1();
+                var src = canvas.Front;
+                var dst = canvas.Back1;
 
                 //int[] srcArray = ((DataBufferInt)src.GetRaster().GetDataBuffer()).GetData();
                 //int[] dstArray = ((DataBufferInt)dst.GetRaster().GetDataBuffer()).GetData();
@@ -615,7 +554,7 @@ namespace PuffinBasicUI
             // Always use setPreferredSize() here.
             public virtual void CopyGraphicsToArray(int bufferNumber, int x1, int y1, int x2, int y2, int[] dest)
             {
-                var image = canvas[bufferNumber] as Bitmap;
+                var image = (Bitmap)canvas[bufferNumber];
                 //int[] srcArray = ((DataBufferInt)image.GetRaster().GetDataBuffer()).GetData();
                 int[] srcArray = image.ToIntArray();
                 int w = Math.Abs(x1 - x2);
@@ -626,7 +565,7 @@ namespace PuffinBasicUI
             // Always use setPreferredSize() here.
             public virtual void CopyArrayToGraphics(int bufferNumber, int x, int y, int w, int h, string action, int[] src, int srcx, int srcy, int scanWidth)
             {
-                var image = canvas[bufferNumber] as Bitmap;
+                var image = (Bitmap)canvas[bufferNumber];
 
                 // TODO: use bitmapdata for all of these
 
@@ -697,7 +636,7 @@ namespace PuffinBasicUI
                             dstVertOffset += w;
                         }
                     }
-                    else if (action.Equals(PUT_AND))
+                    else if (action.Equals(PUT_AND, StringComparison.OrdinalIgnoreCase))
                     {
                         for (int yi = 0; yi < h; yi++)
                         {
@@ -727,7 +666,7 @@ namespace PuffinBasicUI
             // Always use setPreferredSize() here.
             public virtual void Clear()
             {
-                canvas.GetBackGraphics2D().Clear(Color.Black);
+                canvas.BackGraphics2D.Clear(Color.Black);
             }
 
             // Always use setPreferredSize() here.
@@ -1125,7 +1064,7 @@ namespace PuffinBasicUI
                 ms.Write(header);
                 ms.Write(MemoryMarshal.AsBytes(span));
 
-                Bitmap bmp = Bitmap.FromStream(ms) as Bitmap;
+                Bitmap bmp = (Bitmap)Bitmap.FromStream(ms);
                 return bmp;
             }
         }
@@ -1135,34 +1074,34 @@ namespace PuffinBasicUI
             // https://swharden.com/blog/2022-11-04-csharp-create-bitmap/
             return FromIntSpan(array.AsSpan(), width, height);
 
-            const int imageHeaderSize = 54;
-            byte[] bytes = new byte[(array.Length * 4) + imageHeaderSize];
-            bytes[0] = (byte)'B';
-            bytes[1] = (byte)'M';
+            //const int imageHeaderSize = 54;
+            //byte[] bytes = new byte[(array.Length * 4) + imageHeaderSize];
+            //bytes[0] = (byte)'B';
+            //bytes[1] = (byte)'M';
 
-            BitConverter.GetBytes(bytes.Length)   .CopyTo(bytes, 0x02);
-            BitConverter.GetBytes(imageHeaderSize).CopyTo(bytes, 0x0A);
-            BitConverter.GetBytes(40)             .CopyTo(bytes, 0x0E);
-            BitConverter.GetBytes(width)          .CopyTo(bytes, 0x12);
-            BitConverter.GetBytes(height)         .CopyTo(bytes, 0x16);
-            BitConverter.GetBytes(32)             .CopyTo(bytes, 0x1C);
-            BitConverter.GetBytes(width * height) .CopyTo(bytes, 0x22);
+            //BitConverter.GetBytes(bytes.Length)   .CopyTo(bytes, 0x02);
+            //BitConverter.GetBytes(imageHeaderSize).CopyTo(bytes, 0x0A);
+            //BitConverter.GetBytes(40)             .CopyTo(bytes, 0x0E);
+            //BitConverter.GetBytes(width)          .CopyTo(bytes, 0x12);
+            //BitConverter.GetBytes(height)         .CopyTo(bytes, 0x16);
+            //BitConverter.GetBytes(32)             .CopyTo(bytes, 0x1C);
+            //BitConverter.GetBytes(width * height) .CopyTo(bytes, 0x22);
 
-            using (var ms = new MemoryStream(bytes))
-            {
-                using (var br = new BinaryWriter(ms))
-                {
-                    br.BaseStream.Position = 54;
+            //using (var ms = new MemoryStream(bytes))
+            //{
+            //    using (var br = new BinaryWriter(ms))
+            //    {
+            //        br.BaseStream.Position = 54;
 
-                    foreach (var p in array)
-                        br.Write(p);
+            //        foreach (var p in array)
+            //            br.Write(p);
 
-                    Bitmap bmp = Bitmap.FromStream(ms) as Bitmap;
+            //        Bitmap bmp = Bitmap.FromStream(ms) as Bitmap;
 
-                    return bmp;
-                }
+            //        return bmp;
+            //    }
 
-            }
+            //}
         }
 
         public static int[] ToIntArray(this Bitmap image, int x, int y, int w, int h)
@@ -1193,20 +1132,20 @@ namespace PuffinBasicUI
         {
             return ToIntSpan(image).ToArray();
 
-            using (MemoryStream ms = new MemoryStream())
-            {
-                image.Save(ms, ImageFormat.Bmp);
-                int[] ints = new int[image.Width * image.Height];
+            //using (MemoryStream ms = new MemoryStream())
+            //{
+            //    image.Save(ms, ImageFormat.Bmp);
+            //    int[] ints = new int[image.Width * image.Height];
 
-                using (BinaryReader br = new BinaryReader(ms)) {
-                    br.BaseStream.Position = 54;
+            //    using (BinaryReader br = new BinaryReader(ms)) {
+            //        br.BaseStream.Position = 54;
 
-                    for (int i = 0; i < ints.Length; i++)
-                        ints[i] = br.ReadInt32();
-                }
+            //        for (int i = 0; i < ints.Length; i++)
+            //            ints[i] = br.ReadInt32();
+            //    }
 
-                return ints;
-            }
+            //    return ints;
+            //}
         }
     }
 }

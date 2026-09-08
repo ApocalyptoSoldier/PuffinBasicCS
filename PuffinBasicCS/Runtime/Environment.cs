@@ -1,5 +1,5 @@
 //using Java.Util;
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
     using System;
     using System.Collections.Generic;
@@ -16,15 +16,15 @@ namespace Org.Puffinbasic.Runtime
             private readonly Dictionary<string, string> overrides;
             public SystemEnv() => this.overrides = new Dictionary<string, string>();
 
-            public virtual string Get(string key)
+            public virtual string? Get(string key)
             {
-                if (overrides.TryGetValue(key, out string result))
+                if (overrides.TryGetValue(key, out string? result))
                     return result;
                 else
                     return Environment.GetEnvironmentVariable(key);
             }
 
-            public string this[string key] => Get(key);
+            public string this[string key] => Get(key) ?? String.Empty;
 
             public virtual void Set(string key, string value) => overrides.Add(key, value);
         }

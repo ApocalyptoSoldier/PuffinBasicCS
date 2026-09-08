@@ -1,7 +1,7 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.File
+namespace PuffinBasicCS.File
 {
-    using Org.Puffinbasic.Domain;
+    using PuffinBasicCS.Domain;
     //using Org.Jetbrains.Annotations;
     using System;
     using System.Collections.Generic;

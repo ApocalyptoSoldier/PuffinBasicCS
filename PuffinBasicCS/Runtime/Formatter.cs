@@ -1,19 +1,19 @@
 //using It.Unimi.Dsi.Fastutil.Objects;
 
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
+    using PuffinBasicCS.Error;
     //using Java.Text;
     //using Java.Util;
 
-    using Org.Puffinbasic.Error;
-
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
 
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Globalization;
-    using Org.Puffinbasic.Common;
+
+    using PuffinBasicCS.Common;
 
     public class Formatter
     {
@@ -27,11 +27,13 @@ namespace Org.Puffinbasic.Runtime
 
             public IIFormatter Get(string format)
             {
+                #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 if (!cache.TryGetValue(format, out IIFormatter formatter))
                 {
                     formatter = Formatter.GetFormatter(format);
                     cache[format] = formatter;
                 }
+                #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 return formatter;
     
                 //return cache.ComputeIfAbsent(format, Formatter.GetFormatter());

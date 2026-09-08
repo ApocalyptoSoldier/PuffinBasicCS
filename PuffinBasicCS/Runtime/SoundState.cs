@@ -1,5 +1,5 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
     //using Javax.Sound.Sampled;
     //using Java.Io;

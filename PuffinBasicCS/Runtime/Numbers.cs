@@ -1,8 +1,8 @@
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
     //using Java.Util.Function;
-    using static Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+    using static PuffinBasicCS.Error.PuffinBasicSemanticError.ErrorCode;
 
     using System;
     using System.Globalization;
@@ -15,7 +15,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 return Int32.Parse(value);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSemanticError(BAD_NUMBER, line, "Failed to parse number as int32: " + value);
             }
@@ -27,7 +27,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 return Convert.ToInt32(value, @base);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSemanticError(BAD_NUMBER, line, "Failed to parse number as int32: " + value);
             }
@@ -39,7 +39,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 return Int64.Parse(value);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSemanticError(BAD_NUMBER, line, "Failed to parse number as int64: " + value);
             }
@@ -51,7 +51,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 return Convert.ToInt64(value, @base);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSemanticError(BAD_NUMBER, line, "Failed to parse number as int64: " + value);
             }
@@ -63,7 +63,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 return Single.Parse(value, CultureInfo.InvariantCulture);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSemanticError(BAD_NUMBER, line, "Failed to parse number as float32: " + value);
             }
@@ -75,7 +75,7 @@ namespace Org.Puffinbasic.Runtime
             {
                 return Double.Parse(value);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSemanticError(BAD_NUMBER, line, "Failed to parse number as float64: " + value);
             }

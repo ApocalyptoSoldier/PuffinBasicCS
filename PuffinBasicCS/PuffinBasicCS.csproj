@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <StartupObject>Org.Puffinbasic.PuffinBasicInterpreterMain</StartupObject>
+    <StartupObject>PuffinBasicCS.PuffinBasicInterpreterMain</StartupObject>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 

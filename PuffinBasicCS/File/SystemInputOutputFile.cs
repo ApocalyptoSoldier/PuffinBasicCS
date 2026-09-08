@@ -1,16 +1,17 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.File
+namespace PuffinBasicCS.File
 {
-    using Org.Puffinbasic.Domain;
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
     //using Org.Jetbrains.Annotations;
     //using Java.Io;
     //using Java.Nio.Charset;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
 
     using System;
     using System.Collections.Generic;
     using System.IO;
+
+    using PuffinBasicCS.Domain;
 
     public class SystemInputOutputFile : PuffinBasicFile
     {
@@ -59,7 +60,7 @@ namespace Org.Puffinbasic.File
             {
                 return @in.ReadLine().TrimEnd();
             }
-            catch (IOException e)
+            catch (IOException)
             {
                 throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read line!");
             }

@@ -1,6 +1,6 @@
-namespace Org.Puffinbasic.Error
+namespace PuffinBasicCS.Error
 {
-    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using static PuffinBasicCS.Parser.PuffinBasicIR;
 
     using System;
 

@@ -1,17 +1,16 @@
 //using It.Unimi.Dsi.Fastutil.Chars;
 //using It.Unimi.Dsi.Fastutil.Objects;
-namespace Org.Puffinbasic.Domain
+namespace PuffinBasicCS.Domain
 {
-    using Org.Puffinbasic.Domain.Scope;
+    using PuffinBasicCS.Error;
 
-    using static Org.Puffinbasic.Domain.STObjects;
-    using static Org.Puffinbasic.Domain.Variable;
-    using Org.Puffinbasic.Error;
+    using static PuffinBasicCS.Domain.STObjects;
+    using static PuffinBasicCS.Domain.Variable;
     //using Java.Util;
     //using Java.Util.Concurrent.Atomic;
     //using Java.Util.Function;
-    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -21,10 +20,10 @@ namespace Org.Puffinbasic.Domain
         public delegate void VariableConsumer(int id, ISTEntry entry, Variable variable);
 
         public static readonly int NULL_ID = -1;
-        private readonly Dictionary<char, PuffinBasicAtomTypeId> defaultDataTypes;
-        private readonly Dictionary<string, StructType> userDefinedTypes;
-        private readonly Dictionary<string, int> labelNameToId;
-        private IScope currentScope;
+        private readonly Dictionary<char, PuffinBasicAtomTypeId> defaultDataTypes = new Dictionary<char, PuffinBasicAtomTypeId>();
+        private readonly Dictionary<string, StructType> userDefinedTypes = new Dictionary<string, StructType>();
+        private readonly Dictionary<string, int> labelNameToId = new Dictionary<string, int>();
+        private IScope currentScope = new GlobalScope();
         private int id;
         private int lastId;
         private int lastLastId;
@@ -32,10 +31,6 @@ namespace Org.Puffinbasic.Domain
         private ISTEntry lastLastEntry;
         public PuffinBasicSymbolTable()
         {
-            this.defaultDataTypes = new Dictionary<char, PuffinBasicAtomTypeId>();
-            this.userDefinedTypes = new Dictionary<string, StructType>();
-            this.labelNameToId = new Dictionary<string, int>();
-            this.currentScope = new GlobalScope();
             this.lastId = this.lastLastId = -1;
         }
 
@@ -153,7 +148,7 @@ namespace Org.Puffinbasic.Domain
                 id = GenerateNextId();
                 scope.PutVariable(variableName, id);
                 var variable = variableCreator.Invoke(variableName);
-                entry = variableName.GetDataType().CreateVariableEntry(variable);
+                entry = variableName.DataType.CreateVariableEntry(variable);
                 scope.PutEntry(id, entry);
             }
             else
@@ -198,7 +193,7 @@ namespace Org.Puffinbasic.Domain
         {
             var scope = GetCurrentScope();
             int id = GenerateNextId();
-            var entry = PuffinBasicAtomTypeId.INT32.CreateTmpEntry();
+            var entry = INT32.CreateTmpEntry();
             scope.PutEntry(id, entry);
             return id;
         }
@@ -207,29 +202,29 @@ namespace Org.Puffinbasic.Domain
         {
             var @ref = new ArrayReferenceValue(lvalue);
             int id = GenerateNextId();
-            var entry = new STLValue(@ref, lvalue.GetType());
+            var entry = new STLValue(@ref, lvalue.Type);
             GetCurrentScope().PutEntry(id, entry);
             return id;
         }
 
-        public virtual int AddTmp(PuffinBasicType type, Action<ISTEntry> consumer)
+        public virtual int AddTmp(PuffinBasicType type, Action<ISTEntry>? consumer = null)
         {
             var scope = GetCurrentScope();
             int id = GenerateNextId();
             ISTEntry entry = type.CanBeLValue() ? new STLValue(null, type) : new STTmp(null, type);
             entry.CreateAndSetInstance(this);
             scope.PutEntry(id, entry);
-            consumer.Invoke(entry);
+            consumer?.Invoke(entry);
             return id;
         }
 
-        public virtual int AddTmp(PuffinBasicAtomTypeId dataType, Action<ISTEntry> consumer)
+        public virtual int AddTmp(PuffinBasicAtomTypeId dataType, Action<ISTEntry>? consumer = null)
         {
             var scope = GetCurrentScope();
             int id = GenerateNextId();
             var entry = dataType.CreateTmpEntry();
             scope.PutEntry(id, entry);
-            consumer.Invoke(entry);
+            consumer?.Invoke(entry);
             return id;
         }
 
@@ -245,13 +240,13 @@ namespace Org.Puffinbasic.Domain
         public virtual int AddTmpCompatibleWith(int srcId)
         {
             var scope = GetCurrentScope();
-            var dataType = scope.GetEntry(srcId).GetType().GetAtomTypeId();
+            var dataType = scope.GetEntry(srcId).Type.AtomTypeId;
             int id = GenerateNextId();
             scope.PutEntry(id, dataType.CreateTmpEntry());
             return id;
         }
 
-        public virtual PuffinBasicAtomTypeId GetDataTypeFor(string varname, string suffix)
+        public virtual PuffinBasicAtomTypeId GetDataTypeFor(string varname, string? suffix)
         {
             var scope = GetCurrentScope();
             if (scope.ContainsVariable(new VariableName(varname, null, COMPOSITE)))
@@ -284,7 +279,7 @@ namespace Org.Puffinbasic.Domain
         {
             if (userDefinedTypes.ContainsKey(name))
             {
-                throw new PuffinBasicRuntimeError(BAD_FIELD, "Name: " + name + " is already used!");
+                throw new PuffinBasicRuntimeError(BAD_FIELD, $"Name: {name} is already used!");
             }
         }
 

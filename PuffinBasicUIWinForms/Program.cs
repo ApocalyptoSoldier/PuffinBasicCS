@@ -1,14 +1,10 @@
-﻿using Org.Puffinbasic;
-using Org.Puffinbasic.Runtime;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-namespace DrawingQuickstartWinForms
+﻿namespace PuffinBasicUIWinForms
 {
+    using PuffinBasicCS;
+
+    using System;
+    using System.Windows.Forms;
+
     static class Program
     {
         /// <summary>
@@ -20,8 +16,8 @@ namespace DrawingQuickstartWinForms
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            var graphicsRuntime = new PuffinBasicUI.GraphicsRuntime();
-            Org.Puffinbasic.Runtime.GraphicsRuntime.Implementation = graphicsRuntime;
+            var graphicsRuntime = new GraphicsRuntime();
+            PuffinBasicCS.Runtime.GraphicsRuntime.Implementation = graphicsRuntime;
 
             PuffinBasicInterpreterMain.Main(args);
 

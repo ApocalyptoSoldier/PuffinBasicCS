@@ -1,22 +1,23 @@
 //using Com.Google.Common.Base;
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.File
+
+namespace PuffinBasicCS.File
 {
-    using Org.Puffinbasic.Domain;
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
     //using Org.Jetbrains.Annotations;
     //using Java.Io;
     //using Java.Nio;
     //using Java.Util;
-    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using static Org.Puffinbasic.File.IPuffinBasicFile;
+    using static PuffinBasicCS.File.IPuffinBasicFile;
     using System.IO;
-    using Org.Puffinbasic.Common;
     using Microsoft.Win32.SafeHandles;
+    using PuffinBasicCS.Domain;
+    using PuffinBasicCS.Common;
 
     public class PuffinBasicRandomAccessFile : PuffinBasicFile
     {
@@ -24,7 +25,6 @@ namespace Org.Puffinbasic.File
         private readonly FileAccessMode accessMode;
         //private readonly System.IO.FileInfo file; // System.IO.RandomAccess?
         //private readonly FileStream file;
-        private FileStream file;
         private readonly SafeFileHandle fileHandle;
         private readonly int recordLength;
         private readonly byte[] recordBuffer;
@@ -70,8 +70,8 @@ namespace Org.Puffinbasic.File
             foreach (var recordPart in recordParts)
             {
                 var entry = symbolTable[recordPart];
-                var value = entry.GetValue();
-                var dataType = entry.GetType().GetAtomTypeId();
+                var value = entry.Value;
+                var dataType = entry.Type.AtomTypeId;
                 if (dataType != STRING)
                 {
                     throw new PuffinBasicInternalError($"Expected String recordPart but found: {dataType}");
@@ -100,7 +100,7 @@ namespace Org.Puffinbasic.File
             try
             {
                 return RandomAccess.GetLength(fileHandle);
-                return file.Length;
+                //return file.Length;
             }
             catch (System.IO.IOException e)
             {
@@ -130,7 +130,7 @@ namespace Org.Puffinbasic.File
 
             for (int i = 0; i < recordParts.Count; i++)
             {
-                var entry = symbolTable[recordParts.ElementAt(i)].GetValue();
+                var entry = symbolTable[recordParts.ElementAt(i)].Value;
                 var value = entry.GetString();
                 var valueLength = value.Length;
                 var fieldLength = entry.GetFieldLength();
@@ -185,7 +185,7 @@ namespace Org.Puffinbasic.File
             var recordPartBuffers = new List<Memory<byte>>();
 
             for (int i = 0; i < recordParts.Count; i++) {
-                var entry = symbolTable[recordParts[i]].GetValue();
+                var entry = symbolTable[recordParts[i]].Value;
                 recordPartBuffers.Add(new Memory<byte>(new byte[entry.GetFieldLength()]));
             }
 
@@ -199,7 +199,7 @@ namespace Org.Puffinbasic.File
             }
 
             for (int i = 0; i != recordParts.Count; i++) {
-                var entry = symbolTable[recordParts[i]].GetValue();
+                var entry = symbolTable[recordParts[i]].Value;
                 entry.SetString(ISOEncoding.GetString(recordPartBuffers[i].ToArray()));
             }
 

@@ -1,6 +1,6 @@
 //using Org.Antlr.V4.Runtime;
 //using Java.Util;
-namespace Org.Puffinbasic.Parser
+namespace PuffinBasicCS.Parser
 {
     using Antlr4.Runtime;
 
@@ -33,8 +33,8 @@ namespace Org.Puffinbasic.Parser
             // TODO: make relative path actually be the relative path once I've ported the path related code correctly
             //return relativePath.Remove(0, Environment.CurrentDirectory.Length);
             return System.IO.Path.GetFileName(relativePath);
-            return System.IO.Path.GetRelativePath(Environment.CurrentDirectory, relativePath);
-            return relativePath;
+            //return System.IO.Path.GetRelativePath(Environment.CurrentDirectory, relativePath);
+            //return relativePath;
         }
 
         public virtual string GetLibtag()

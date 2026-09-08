@@ -1,4 +1,4 @@
-﻿namespace Org.Puffinbasic.Common
+﻿namespace PuffinBasicCS.Common
 {
     using System.Text;
 

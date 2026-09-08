@@ -1,7 +1,7 @@
 //using It.Unimi.Dsi.Fastutil.Bytes;
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
-    using Org.Puffinbasic.File;
+    using PuffinBasicCS.File;
 
     using System.Collections.Generic;
     using System.Linq;

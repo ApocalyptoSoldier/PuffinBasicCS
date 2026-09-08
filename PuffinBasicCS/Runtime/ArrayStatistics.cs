@@ -1,6 +1,6 @@
 ﻿//using It.Unimi.Dsi.Fastutil.Ints;
 //using Org.Apache.Commons.Math3.Stat.Descriptive;
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
     using System;
     using System.Collections.Generic;

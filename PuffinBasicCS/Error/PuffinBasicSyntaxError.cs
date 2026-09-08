@@ -1,4 +1,4 @@
-namespace Org.Puffinbasic.Error
+namespace PuffinBasicCS.Error
 {
     using System;
 

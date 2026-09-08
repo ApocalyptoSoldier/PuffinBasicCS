@@ -1,9 +1,9 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-
-namespace PuffinBasicUI
+﻿namespace PuffinBasicUI
 {
+    using System;
+    using System.Drawing;
+    using System.Windows.Forms;
+
     public partial class BasicFrame : Form
     {
         public BasicFrame()

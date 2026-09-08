@@ -1,10 +1,10 @@
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.File
+namespace PuffinBasicCS.File
 {
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
 
-    using static Org.Puffinbasic.File.IPuffinBasicFile;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.File.IPuffinBasicFile;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
 
     using System.Collections.Generic;
 

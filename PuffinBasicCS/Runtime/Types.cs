@@ -1,15 +1,18 @@
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
-    using Org.Puffinbasic.Domain;
-    using static Org.Puffinbasic.Domain.STObjects;
-    using Org.Puffinbasic.Error;
-    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using PuffinBasicCS.Error;
+    using static PuffinBasicCS.Domain.STObjects;
+    using static PuffinBasicCS.Parser.PuffinBasicIR;
     //using Java.Util.Function;
-    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicAtomTypeId;
-    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
-    using RuntimeErrorCode = Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-    using SemanticErrorCode = Org.Puffinbasic.Error.PuffinBasicSemanticError.ErrorCode;
+    using static PuffinBasicCS.Domain.STObjects.PuffinBasicAtomTypeId;
+    using static PuffinBasicCS.Domain.STObjects.PuffinBasicTypeId;
+
+    using RuntimeErrorCode = Error.PuffinBasicRuntimeError.ErrorCode;
+    using SemanticErrorCode = Error.PuffinBasicSemanticError.ErrorCode;
+
     using System;
+
+    using PuffinBasicCS.Domain;
 
     public class Types
     {
@@ -17,24 +20,24 @@ namespace Org.Puffinbasic.Runtime
         {
             var fromEntry = symbolTable[instruction.op1];
             var toEntry = symbolTable[instruction.op2];
-            toEntry.GetValue().Assign(fromEntry.GetValue());
+            toEntry.Value.Assign(fromEntry.Value);
         }
 
         public static void ParamCopy(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var fromEntry = symbolTable[instruction.op1];
             var toEntry = symbolTable[instruction.op2];
-            if (toEntry.GetType().GetTypeId() == SCALAR)
+            if (toEntry.Type.TypeId == SCALAR)
             {
-                toEntry.GetValue().Assign(fromEntry.GetValue());
+                toEntry.Value.Assign(fromEntry.Value);
             }
             else if (toEntry.IsLValue())
             {
-                ((STLValue)toEntry).SetValue(fromEntry.GetValue());
+                ((STLValue)toEntry).SetValue(fromEntry.Value);
             }
             else
             {
-                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, $"Expected LValue, but found: {toEntry.GetType()}");
+                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, $"Expected LValue, but found: {toEntry.Type}");
             }
         }
 
@@ -44,11 +47,11 @@ namespace Org.Puffinbasic.Runtime
             var dst = symbolTable[instruction.op2];
             if (dst.IsLValue())
             {
-                ((STLValue)dst).SetValue(src.GetValue());
+                ((STLValue)dst).SetValue(src.Value);
             }
             else
             {
-                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, $"Expected LValue, but found: {dst.GetType()}");
+                throw new PuffinBasicRuntimeError(RuntimeErrorCode.BAD_FIELD, $"Expected LValue, but found: {dst.Type}");
             }
         }
 

@@ -5,30 +5,30 @@
 //using Org.Antlr.V4.Runtime;
 //using Org.Antlr.V4.Runtime.Tree;
 //using Org.Puffinbasic.Antlr4;
-namespace Org.Puffinbasic
+namespace PuffinBasicCS
 {
-using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
-using Org.Puffinbasic.Domain;
-using Org.Puffinbasic.Error;
-using Org.Puffinbasic.Parser;
-using static Org.Puffinbasic.Parser.LinenumberListener;
-using Org.Puffinbasic.Runtime;
-using static Org.Puffinbasic.Runtime.IEnvironment;
-//using Java.Io;
-//using Java.Nio.Charset;
-//using Java.Nio.File;
-//using Java.Time;
-//using Java.Util;
-//using Java.Util.Stream;
-using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-using static Org.Puffinbasic.Parser.LinenumberListener.ThrowOnDuplicate;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.CommandLine;
-using Org.Puffinbasic.Antlr;
+    using PuffinBasicCS.Error;
+    using PuffinBasicCS.Parser;
+    using PuffinBasicCS.Runtime;
+    using Antlr4.Runtime;
+    using Antlr4.Runtime.Tree;
+    using PuffinBasicCS.Domain;
+    using static PuffinBasicCS.Parser.LinenumberListener;
+    using static PuffinBasicCS.Runtime.IEnvironment;
+    //using Java.Io;
+    //using Java.Nio.Charset;
+    //using Java.Nio.File;
+    //using Java.Time;
+    //using Java.Util;
+    //using Java.Util.Stream;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Parser.LinenumberListener.ThrowOnDuplicate;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using System.IO;
+    using System.CommandLine;
+    using Org.Puffinbasic.Antlr;
 
     public sealed class PuffinBasicInterpreterMain
     {
@@ -54,12 +54,12 @@ using Org.Puffinbasic.Antlr;
             RootCommand command = new RootCommand();
 
             Option<bool> logDuplicate = new Option<bool>("-d", "--logduplicate") { Description = "Log error on duplicate"};
-            Option<bool> list= new Option<bool>("-l", "--list") { Description = "Print Sorted Source Code"};
-            Option<bool> ir = new Option<bool>("-i", "--ir") { Description = "Print IR"};
-            Option<bool> timing = new Option<bool>("-t", "--timing") { Description = "Print timing"};
-            Option<bool> graphics = new Option<bool>("-g", "--graphics") { Description = "Enable graphics" };
+            Option<bool> list         = new Option<bool>("-l", "--list")         { Description = "Print Sorted Source Code"};
+            Option<bool> ir           = new Option<bool>("-i", "--ir")           { Description = "Print IR"};
+            Option<bool> timing       = new Option<bool>("-t", "--timing")       { Description = "Print timing"};
+            Option<bool> graphics     = new Option<bool>("-g", "--graphics")     { Description = "Enable graphics" };
 
-            Option<string> file = new Option<string>("file");
+            Option<string> file = new Option<string>("file") { Description = "The file to execute", Required = true };
 
             command.Options.Add(logDuplicate);
             command.Options.Add(list);
@@ -71,29 +71,35 @@ using Org.Puffinbasic.Antlr;
 
             ParseResult res = command.Parse(args);
 
+            if (res.Action is System.CommandLine.Help.HelpAction)
+            {
+                res.Invoke();
+                Environment.Exit(0);
+            }
+
             if (res.Errors.Count > 0)
                 Environment.Exit(1);
 
-            return new UserOptions(res.GetValue(logDuplicate), res.GetValue(list), res.GetValue(ir), res.GetValue(timing), res.GetValue(graphics), System.IO.Path.GetFullPath(res.GetValue(file)));
+            return new UserOptions(res.GetValue(logDuplicate), 
+                res.GetValue(list), 
+                res.GetValue(ir), 
+                res.GetValue(timing), 
+                res.GetValue(graphics), 
+                Path.GetFullPath(res.GetRequiredValue(file))
+                );
             //return new UserOptions(res.GetBoolean("logduplicate"), res.GetBoolean("list"), res.GetBoolean("ir"), res.GetBoolean("timing"), res.GetBoolean("graphics"), (string)res.GetList("file")[0]);
         }
 
         private static string LoadSource(string filename)
         {
-            var sb = new StringBuilder();
             try
             {
-                //foreach (string line in System.IO.File.ReadLines(Paths[filename], Encoding.ASCII))
-                //    sb.AppendLine(line);
-                foreach (string line in System.IO.File.ReadLines(filename))
-                    sb.AppendLine(line);
+                return System.IO.File.ReadAllText(filename);
             }
             catch (System.IO.IOException e)
             {
                 throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to read source code: {filename}, error: {e.Message}");
             }
-
-            return sb.ToString();
         }
 
         static void InterpretAndRun(UserOptions userOptions, string sourceCode, TextWriter @out, IEnvironment env)
@@ -254,28 +260,6 @@ using Org.Puffinbasic.Antlr;
 
                 throw new PuffinBasicSyntaxError($"[{line}:{charPositionInLine}] {msg}{Environment.NewLine}{inputLine}");
             }
-
-            //public /*override*/ void SyntaxError(Recognizer<Symbol, Antlr4.Runtime.Atn.ATNSimulator> recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
-            //{
-            //    var lineIndex = line - 1;
-
-            //    var lines = input.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.None);
-            //    string inputLine;
-            //    if (lineIndex >= 0 && lineIndex < lines.Length)
-            //    {
-            //        inputLine = lines[lineIndex];
-            //        if (charPositionInLine >= 0 && charPositionInLine <= inputLine.Length)
-            //        {
-            //            inputLine += Environment.NewLine + "^".PadLeft(Math.Max(0, charPositionInLine));
-            //        }
-            //    }
-            //    else
-            //    {
-            //        inputLine = "<LINE OUT OF RANGE>";
-            //    }
-
-            //    throw new PuffinBasicSyntaxError("[" + line + ":" + charPositionInLine + "] " + msg + Environment.NewLine + inputLine);
-            //}
         }
 
         public sealed class UserOptions
@@ -290,8 +274,8 @@ using Org.Puffinbasic.Antlr;
             public readonly bool printIR;
             public readonly bool timing;
             public readonly bool graphics;
-            public readonly string filename;
-            public UserOptions(bool logOnDuplicate, bool listSourceCode, bool printIR, bool timing, bool graphics, string filename)
+            public readonly string? filename;
+            public UserOptions(bool logOnDuplicate, bool listSourceCode, bool printIR, bool timing, bool graphics, string? filename)
             {
                 this.logOnDuplicate = logOnDuplicate;
                 this.listSourceCode = listSourceCode;

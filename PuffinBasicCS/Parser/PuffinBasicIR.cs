@@ -1,10 +1,11 @@
 //using Org.Antlr.V4.Runtime.Misc;
 //using Org.Jetbrains.Annotations;
-namespace Org.Puffinbasic.Parser
+namespace PuffinBasicCS.Parser
 {
+    using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
 
-    using Org.Puffinbasic.Domain;
+    using PuffinBasicCS.Domain;
     //using Java.Util;
     using System;
     using System.Collections.Generic;
@@ -24,7 +25,9 @@ namespace Org.Puffinbasic.Parser
                 if (m is FieldInfo field)
                 {
                     PuffinBasicIR.OpCode opCode = (PuffinBasicIR.OpCode)(field.GetValue(null));
+                    #pragma warning disable CS8602 // Dereference of a possibly null reference.
                     opCodeToRepr[opCode] = field.GetCustomAttribute<DescriptionAttribute>().Description;
+                    #pragma warning restore CS8602 // Dereference of a possibly null reference.
                 }
             }
         }
@@ -516,10 +519,16 @@ namespace Org.Puffinbasic.Parser
             return instruction;
         }
 
-        public virtual PuffinBasicSymbolTable GetSymbolTable()
+        public virtual Instruction AddInstruction(PuffinBasicSourceFile sourceFile, int linenum, ParserRuleContext ctx, OpCode opCode, int op1, int op2, int result)
         {
-            return symbolTable;
+            var instruction = new Instruction(new InputRef(sourceFile, linenum, ctx.Start.StartIndex, ctx.Stop.StopIndex), opCode,  op1, op2, result);
+            instructions.Add(instruction);
+            return instruction;
         }
+
+        public virtual PuffinBasicSymbolTable SymbolTable => symbolTable;
+
+        public virtual PuffinBasicSymbolTable GetSymbolTable() => symbolTable;
 
         public sealed class InputRef
         {
@@ -535,7 +544,7 @@ namespace Org.Puffinbasic.Parser
                 this.inputStopIndex = inputStopIndex;
             }
 
-            public new bool Equals(object o)
+            public override bool Equals(object? o)
             {
                 if (this == o)
                     return true;
@@ -545,20 +554,9 @@ namespace Org.Puffinbasic.Parser
                 return sourceFile.Equals(other.sourceFile) && lineNumber == other.lineNumber && inputStartIndex == other.inputStartIndex && inputStopIndex == other.inputStopIndex;
             }
 
-            public new int GetHashCode()
-            {
-                int hash = 17;
-                hash = hash * 23 + sourceFile.GetHashCode();
-                hash = hash * 23 + lineNumber.GetHashCode();
-                hash = hash * 23 + inputStartIndex.GetHashCode();
-                hash = hash * 23 + inputStopIndex.GetHashCode();
-                return hash;
-            }
+            public override int GetHashCode() => HashCode.Combine(sourceFile, lineNumber, inputStartIndex, inputStopIndex);
 
-            public override string ToString()
-            {
-                return "[" + sourceFile.GetRelativePath() + ":" + lineNumber + "(" + inputStartIndex + "-" + inputStopIndex + ")]";
-            }
+            public override string ToString() => $"[{sourceFile.GetRelativePath()}:{lineNumber}({inputStartIndex}-{inputStopIndex})]";
         }
 
         public sealed class Instruction

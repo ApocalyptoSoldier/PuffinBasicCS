@@ -4,13 +4,13 @@
 //using Org.Antlr.V4.Runtime.Misc;
 //using Org.Jetbrains.Annotations;
 //using Org.Puffinbasic.Antlr4;
-namespace Org.Puffinbasic.Parser
+namespace PuffinBasicCS.Parser
 {
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
     //using Java.Util;
     //using Java.Util.Concurrent.Atomic;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
-    using static Org.Puffinbasic.Runtime.Types;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Runtime.Types;
     using System;
     using System.Collections.Generic;
     using Org.Puffinbasic.Antlr;
@@ -163,7 +163,7 @@ namespace Org.Puffinbasic.Parser
             {
                 return int.Parse(txt);
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 throw new PuffinBasicSyntaxError($"Bad line number: '{txt}'");
             }

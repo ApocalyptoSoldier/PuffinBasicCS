@@ -1,9 +1,9 @@
 //using Org.Apache.Commons.Io;
-namespace Org.Puffinbasic.Runtime
+namespace PuffinBasicCS.Runtime
 {
-    using Org.Puffinbasic.Domain;
+    using PuffinBasicCS.Domain;
 
-    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    using static PuffinBasicCS.Parser.PuffinBasicIR;
 
     //using Javax.Imageio;
     //using Javax.Swing;

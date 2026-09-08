@@ -1,13 +1,15 @@
 //using Com.Google.Common.Base;
 //using Org.Jetbrains.Annotations;
-namespace Org.Puffinbasic.Domain
+namespace PuffinBasicCS.Domain
 {
-    using static Org.Puffinbasic.Domain.STObjects;
-    using Org.Puffinbasic.Error;
+    using static PuffinBasicCS.Domain.STObjects;
     //using Java.Util;
     //using Java.Util.Function;
-    using static Org.Puffinbasic.Domain.STObjects.PuffinBasicTypeId;
+    using static PuffinBasicCS.Domain.STObjects.PuffinBasicTypeId;
+
     using System;
+
+    using PuffinBasicCS.Error;
 
     public class Variable
     {
@@ -16,22 +18,22 @@ namespace Org.Puffinbasic.Domain
             internal readonly string varname;
             internal readonly string suffix;
             internal readonly PuffinBasicAtomTypeId dataType;
-            public VariableName(string varname, string suffix, STObjects.PuffinBasicAtomTypeId dataType)
+            public VariableName(string varname, string? suffix, PuffinBasicAtomTypeId? dataType)
             {
                 ArgumentNullException.ThrowIfNull(varname);
                 if (dataType == null) throw new ArgumentNullException(nameof(dataType));
                 this.varname = varname;
-                this.suffix = suffix == null ? "" : suffix;
-                this.dataType = dataType;
+                this.suffix = suffix ?? "";
+                this.dataType = dataType.Value;
             }
 
             public string GetVarname() => varname;
 
-            public PuffinBasicAtomTypeId GetDataType() => dataType;
+            public PuffinBasicAtomTypeId DataType => dataType;
 
             public new string ToString() => varname + ":" + suffix + ":" + dataType;
 
-            public override bool Equals(object o)
+            public override bool Equals(object? o)
             {
                 if (this == o)
                     return true;
@@ -41,13 +43,7 @@ namespace Org.Puffinbasic.Domain
                 return this.varname == other.varname && this.suffix == other.suffix;
             }
 
-            public override int GetHashCode()
-            {
-                int hash = 17;
-                hash = hash * 23 + varname.GetHashCode();
-                hash = hash * 23 + suffix.GetHashCode();
-                return hash;
-            }
+            public override int GetHashCode() => HashCode.Combine(varname, suffix);
         }
 
         private static readonly string UDF_PREFIX = "FN";
@@ -64,7 +60,7 @@ namespace Org.Puffinbasic.Domain
             {
                 if (!variableName.varname.StartsWith(UDF_PREFIX))
                 {
-                    return new Variable(variableName, new ArrayType(variableName.GetDataType()));
+                    return new Variable(variableName, new ArrayType(variableName.DataType));
                 }
                 else
                 {
@@ -75,11 +71,11 @@ namespace Org.Puffinbasic.Domain
             {
                 if ((hint == VariableKindHint.DERIVE_FROM_NAME && variableName.varname.StartsWith(UDF_PREFIX)) || hint == VariableKindHint.UDF)
                 {
-                    return new Variable(variableName, new UDFType(variableName.GetDataType()));
+                    return new Variable(variableName, new UDFType(variableName.DataType));
                 }
                 else
                 {
-                    return new Variable(variableName, new ScalarType(variableName.GetDataType()));
+                    return new Variable(variableName, new ScalarType(variableName.DataType));
                 }
             }
         }
@@ -96,17 +92,17 @@ namespace Org.Puffinbasic.Domain
 
         public virtual VariableName GetVariableName() => variableName;
 
-        public virtual PuffinBasicType GetType() => type;
+        public virtual PuffinBasicType Type => type;
 
-        public virtual bool IsScalar() => type.GetTypeId() == SCALAR;
+        public virtual bool IsScalar() => type.TypeId == SCALAR;
 
-        public virtual bool IsArray() => type.GetTypeId() == ARRAY;
+        public virtual bool IsArray() => type.TypeId == ARRAY;
 
-        public virtual bool IsUDF() => type.GetTypeId() == UDF;
+        public virtual bool IsUDF() => type.TypeId == UDF;
 
-        public virtual string ToString() => variableName + ":" + type.GetTypeId();
+        public override string ToString() => variableName + ":" + type.TypeId;
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             if (this == o)
                 return true;
@@ -116,38 +112,12 @@ namespace Org.Puffinbasic.Domain
             Variable other = (Variable)o;
 
             return this.variableName.Equals(other.variableName) 
-                && this.type.GetTypeId() == other.type.GetTypeId()
-                && this.type.GetAtomTypeId() == other.type.GetAtomTypeId();
+                && this.type.TypeId == other.type.TypeId
+                && this.type.AtomTypeId == other.type.AtomTypeId;
 
         }
 
-        //public virtual bool Equals(Variable o)
-        //{
-        //    if (this == o)
-        //        return true;
-        //    //if (o == null || GetType() != o.GetType())
-        //    if (o == null)
-        //        return false;
-        //    Variable variable = (Variable)o;
-
-        //    bool varsEqual = this.variableName.varname == variable.variableName.varname
-        //        && this.variableName.dataType == variable.variableName.dataType
-        //        && this.variableName.suffix == variable.variableName.suffix;
-        //    bool typesEqual = this.type.GetTypeId() == variable.type.GetTypeId()
-        //        && this.type.GetAtomTypeId() == variable.type.GetAtomTypeId();
-
-        //    return typesEqual && varsEqual;
-
-        //    return variableName.Equals(variable.variableName) && type.Equals(variable.type);
-        //}
-
-        public override int GetHashCode()
-        {
-            int hash = 17;
-            hash = hash * 23 + variableName.GetHashCode();
-            hash = hash * 23 + type.GetHashCode();
-            return hash;
-        }
+        public override int GetHashCode() => HashCode.Combine(variableName, type);
     }
 }
 

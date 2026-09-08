@@ -1,20 +1,20 @@
 //using Com.Google.Common.Base;
 //using It.Unimi.Dsi.Fastutil.Ints;
-namespace Org.Puffinbasic.File
+namespace PuffinBasicCS.File
 {
-    using Org.Puffinbasic.Domain;
-    using Org.Puffinbasic.Error;
+    using PuffinBasicCS.Error;
     //using Org.Jetbrains.Annotations;
     //using Java.Io;
     //using Java.Nio.Charset;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
+    using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using static Org.Puffinbasic.File.IPuffinBasicFile;
+    using static PuffinBasicCS.File.IPuffinBasicFile;
     using System.IO;
-    using Org.Puffinbasic.Common;
+    using PuffinBasicCS.Domain;
+    using PuffinBasicCS.Common;
 
     public class PuffinBasicSequentialAccessInputFile : PuffinBasicFile
     {
@@ -22,7 +22,7 @@ namespace Org.Puffinbasic.File
         private readonly FileStream @in;
         private long bytesAccessed;
         private FileState fileState;
-        private string lastLine;
+        private string? lastLine;
         public PuffinBasicSequentialAccessInputFile(string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
