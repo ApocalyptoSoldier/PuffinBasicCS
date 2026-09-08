@@ -36,8 +36,8 @@
             // 
             pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pictureBox1.BackColor = Color.Black;
-            pictureBox1.Location = new Point(14, 14);
-            pictureBox1.Margin = new Padding(4, 3, 4, 3);
+            pictureBox1.Location = new Point(0, 0);
+            pictureBox1.Margin = new Padding(0, 0, 0, 0);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(653, 389);
             pictureBox1.TabIndex = 0;
@@ -51,7 +51,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(681, 417);
             Controls.Add(pictureBox1);
-            Margin = new Padding(4, 3, 4, 3);
+            Margin = new Padding(0, 0, 0, 0);
             Name = "BasicFrame";
             Text = "Drawing in Windows Forms";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
