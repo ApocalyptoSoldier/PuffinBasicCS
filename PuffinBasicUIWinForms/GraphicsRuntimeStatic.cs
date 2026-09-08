@@ -6,28 +6,47 @@
 
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Drawing;
-    using System.Drawing.Drawing2D;
     using System.IO;
+    using System.Text;
     using System.Text.RegularExpressions;
-    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
-    using static Org.Puffinbasic.Parser.PuffinBasicIR;
-    using static PuffinBasicUI.GraphicsUtil;
-    using static Org.Puffinbasic.Error.PuffinBasicRuntimeError.ErrorCode;
 
-    internal class GraphicsRuntime : Org.Puffinbasic.Runtime.GraphicsRuntime.IGraphicsRuntimeImplementation
+    using static Org.Puffinbasic.Parser.PuffinBasicIR;
+    //using static System.Runtime.InteropServices.JavaScript.JSType;
+    using static Org.Puffinbasic.Domain.PuffinBasicSymbolTable;
+
+    //using String = String;
+    using System.Windows;
+    using System.Security.Principal;
+    using System.Runtime.CompilerServices;
+    using System.Drawing.Drawing2D;
+    using System.Windows.Input;
+    using DrawingQuickstartWinForms;
+
+    internal class GraphicsRuntimeStatic
     {
         private static readonly Regex DRAW_ARG1 = new Regex("([UDLREFGHA])([BN]+)?([0-9]+)", RegexOptions.Compiled);
         private static readonly Regex DRAW_ARG2 = new Regex("M([+\\-]?[0-9]+),([+\\-]?[0-9]+)", RegexOptions.Compiled);
 
-        public GraphicsState graphicsState {  get; private set; } = new GraphicsState();
-        public SoundState soundState { get; private set; }
+        public static Font CurrentFont { get; private set; }
+        public static Color CurrentColor { get; private set; }
 
         public class GraphicsState
         {
 
             private BasicFrame frame;
+            private Bitmap curBitmap;
+            private Graphics curGraphics;
+
+            public virtual Bitmap GetBitmap()
+            {
+                return curBitmap;
+            }
+
+            public virtual void SetBitmap(Bitmap bitmap)
+            { 
+                curBitmap = bitmap;    
+            }
 
             public virtual bool IsInitialized()
             {
@@ -42,17 +61,20 @@
 
             public virtual Graphics GetGraphics()
             {
-                return GetFrame().GetDrawingCanvas().GetGraphics2D();
+                throw new NotImplementedException();
+                //return GetFrame().GetDrawingCanvas().GetGraphics2D();
             }
 
             public virtual int GetImageWidth()
             {
-                return GetFrame().GetDrawingCanvas().GetImageWidth();
+                return GetBitmap().Width;
+                //return GetFrame().GetDrawingCanvas().GetImageWidth();
             }
 
             public virtual int GetImageHeight()
             {
-                return GetFrame().GetDrawingCanvas().GetImageHeight();
+                return GetBitmap().Height;
+                //return GetFrame().GetDrawingCanvas().GetImageHeight();
             }
 
             public virtual void SetFrame(BasicFrame frame)
@@ -65,7 +87,7 @@
             {
                 if (frame != null)
                 {
-                    throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Screen cannot be called again!");
+                    throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Screen cannot be called again!");
                 }
             }
 
@@ -73,14 +95,15 @@
             {
                 if (frame == null)
                 {
-                    throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Screen has already been created!");
+                    throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Screen has already been created!");
                 }
             }
         }
 
-        public void Cls()
+        public void Cls(GraphicsState graphicsState)
         {
-            graphicsState.GetFrame().GetDrawingCanvas().Clear();
+            graphicsState.GetGraphics().Clear(System.Drawing.Color.Transparent);
+            //graphicsState.GetFrame().GetDrawingCanvas().Clear();
         }
 
         public void Beep()
@@ -96,24 +119,33 @@
             var variableValue = entry.GetValue();
             if (variableValue.GetNumArrayDimensions() != 2 || entry.GetType().GetAtomTypeId() != STObjects.PuffinBasicAtomTypeId.INT32)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Bad Array Variable, expected Int32 2D-Array Variable: " + entry);
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Bad Array Variable, expected Int32 2D-Array Variable: " + entry);
             }
 
             var dims = variableValue.GetArrayDimensions();
+            var v = new Bitmap(dims[0], dims[1], System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             var varVal = variableValue.GetInt32Array1D();
-            var image = ImageUtils.FromIntArray(varVal, dims[0], dims[1]);
+
+            for (int x = 0; x < v.Height; x++)
+            {
+                for (int y = 0; y < v.Width; y++)
+                {
+                    var c = varVal[v.Height * v.Width + y * v.Width + x];
+                    v.SetPixel(x, y, System.Drawing.Color.FromArgb(c));
+                }
+            }
 
             //BufferedImage image = new BufferedImage(dims[0], dims[1], BufferedImage.TYPE_3BYTE_BGR);
             //image.SetRGB(0, 0, image.GetWidth(), image.GetHeight(), variableValue.GetInt32Array1D(), 0, image.GetWidth());
             var ext = Path.GetExtension(path);
             try
             {
-                image.Save(path);
+                v.Save(path);
                 //ImageIO.Write(image, ext, new File(path));
             }
             catch (IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to save image: {path}, error: {e.Message}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.IO_ERROR, "Failed to save image: " + path + ", error: " + e.Message);
             }
         }
 
@@ -124,7 +156,7 @@
             var variableValue = entry.GetValue();
             if (variableValue.GetNumArrayDimensions() != 2 || entry.GetType().GetAtomTypeId() != STObjects.PuffinBasicAtomTypeId.INT32)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Bad Array Variable, expected Int32 2D-Array Variable: " + entry);
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Bad Array Variable, expected Int32 2D-Array Variable: " + entry);
             }
 
 
@@ -137,28 +169,25 @@
             }
             catch (IOException e)
             {
-                throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to load image: {path}, error: {e.Message}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.IO_ERROR, "Failed to load image: " + path + ", error: " + e.Message);
             }
 
             var dims = variableValue.GetArrayDimensions();
             if (image.Width != dims[0] || image.Height != dims[1])
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR,
-                    $"Image dimensions: {image.Width}, {image.Height} doesn't match with variable dimensions: {dims[0]}, {dims[1]}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, 
+                    "Image dimensions: " + image.Width + ", " + image.Height + " doesn't match with variable dimensions: " + dims[0] + ", " + dims[1]);
             }
-            var arr = variableValue.GetInt32Array1D();
-            var newArr = (image as Bitmap).ToIntArray();
-            Array.Copy(newArr, arr, arr.Length);
-            //using (var buffer = new MemoryStream())
-            //{
-            //    var arr = variableValue.GetInt32Array1D();
-            //    var newArr = Array.ConvertAll(buffer.ToArray(), Convert.ToInt32);
-            //    Array.Copy(newArr, arr, arr.Length);
-            //}
+            using (var buffer = new MemoryStream())
+            {
+                var arr = variableValue.GetInt32Array1D();
+                var newArr = Array.ConvertAll(buffer.ToArray(), Convert.ToInt32);
+                Array.Copy(newArr, arr, arr.Length);
+            }
             //image.GetRGB(0, 0, image.GetWidth(), image.GetHeight(), variableValue., 0, image.GetWidth());
         }
 
-        public void Screen(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
+        public void Screen(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
         {
             var i0 = instr0[0];
             var i1 = instr0[1];
@@ -168,48 +197,43 @@
             var iw = symbolTable[i1.op1].GetValue().GetInt32();
             var ih = symbolTable[i1.op2].GetValue().GetInt32();
             var title = symbolTable[instruction.op1].GetValue().GetString();
-            if (w <= 0 || h <= 0 || w > MAX_WIDTH || h > MAX_HEIGHT)
+            if (w <= 0 || h <= 0 || w > GraphicsUtil.MAX_WIDTH || h > GraphicsUtil.MAX_HEIGHT)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"Screen size out-of-bounds: {w}, {h}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Screen size out-of-bounds: " + w + ", " + h);
             }
 
-            if (iw <= 0 || ih <= 0 || iw > MAX_WIDTH || ih > MAX_HEIGHT)
+            if (iw <= 0 || ih <= 0 || iw > GraphicsUtil.MAX_WIDTH || ih > GraphicsUtil.MAX_HEIGHT)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"Image size out-of-bounds: {iw}, {ih}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Image size out-of-bounds: " + iw + ", " + ih);
             }
 
             var autoRepaint = symbolTable[i2.op1].GetValue().GetInt32() == -1;
             var doubleBuffer = symbolTable[i2.op2].GetValue().GetInt32() == -1;
-
-            //graphicsState = new GraphicsState();
-            graphicsState.SetFrame(new BasicFrame(title, w, h, iw, ih, autoRepaint, doubleBuffer));
+       
+            graphicsState.SetFrame(new BasicFrame(title, w, h));
+            //graphicsState.SetFrame(new BasicFrame(title, w, h, iw, ih, autoRepaint, doubleBuffer));
             //EventQueue.InvokeLater(() => graphicsState.GetFrame().SetVisible(true));
-
-            var start = new Task(() => Application.Run(graphicsState.GetFrame()));
-            start.Start();
         }
 
         public void Hsb2rgb(PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
         {
-            var h = symbolTable[instr0.op1].GetValue().GetFloat64();
-            var s = symbolTable[instr0.op2].GetValue().GetFloat64();
-            var b = symbolTable[instruction.op1].GetValue().GetFloat64();
+            var h = symbolTable[instr0.op1].GetValue().GetFloat32();
+            var s = symbolTable[instr0.op2].GetValue().GetFloat32();
+            var b = symbolTable[instruction.op1].GetValue().GetFloat32();
             var result = symbolTable[instruction.result].GetValue();
-            var col = HsbToRgb(h * 360, s, b);
-            var argb = col.ToArgb();
 
+            throw new NotImplementedException();
 
-            result.SetInt32(argb);
+            //result.SetInt32(Color.HSBtoRGB(h, s, b));
         }
 
-        public void Repaint()
+        public void Repaint(GraphicsState graphicsState)
         {
-            graphicsState.GetFrame()
-                .GetDrawingCanvas()
-                .RenderAndRepaint();
+            //graphicsState.GetFrame().GetDrawingCanvas().RenderAndRepaint();
+            graphicsState.GetFrame().Render(graphicsState.GetBitmap());
         }
 
-        public void End()
+        public void End(GraphicsState graphicsState)
         {
             //SwingUtilities.InvokeLater(() =>
             //{
@@ -221,15 +245,15 @@
             //});
         }
 
-        public void Circle(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
+        public void Circle(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
         {
             var i0 = instr0[0];
             var i1 = instr0[1];
             var i2 = instr0[2];
             var x = symbolTable[i0.op1].GetValue().GetInt32();
             var y = symbolTable[i0.op2].GetValue().GetInt32();
-            int? s = i1.op1 != NULL_ID ? symbolTable[i1.op1].GetValue().GetInt32() : null;
-            int? e = i1.op1 != NULL_ID ? symbolTable[i1.op2].GetValue().GetInt32() : null;
+            float? s = i1.op1 != NULL_ID ? symbolTable[i1.op1].GetValue().GetFloat32() : null;
+            float? e = i1.op1 != NULL_ID ? symbolTable[i1.op2].GetValue().GetFloat32() : null;
             int r1 = Math.Max(0, symbolTable[instruction.op1].GetValue().GetInt32());
             int r2 = Math.Max(0, symbolTable[instruction.op2].GetValue().GetInt32());
             bool fill = i2.op1 != NULL_ID && symbolTable[i2.op1].GetValue().GetString().Equals("F", StringComparison.InvariantCultureIgnoreCase);
@@ -242,34 +266,40 @@
             {
                 if (fill)
                 {
-                    graphicsState.GetFrame().GetDrawingCanvas().FillOval(sx, sy, w, h);
+                    //g.FillOval(sx, sy, w, h);
+                    g.FillEllipse(Brushes.AliceBlue, sx, sy, w, h);
                 }
                 else
                 {
-                    graphicsState.GetFrame().GetDrawingCanvas().DrawOval(sx, sy, w, h);
+                    g.DrawEllipse(Pens.AliceBlue, sx, sy, w, h);
                 }
             }
             else
             {
                 if (fill)
                 {
-                    graphicsState.GetFrame().GetDrawingCanvas().FillArc(sx, sy, w, h, s.Value, e.Value);
+                    throw new NotImplementedException();
+                    //g.FillArc(sx, sy, w, h, s, e);
                 }
                 else
                 {
-                    graphicsState.GetFrame().GetDrawingCanvas().DrawArc(sx, sy, w, h, s.Value, e.Value);
+                    if (s.HasValue && e.HasValue)
+                        g.DrawArc(Pens.Aqua, sx, sy, w, h, s.Value, e.Value);
+                    else
+                        g.DrawArc(Pens.Aqua, sx, sy, w, h, 0, 0);
+                    //g.DrawArc(sx, sy, w, h, s, e);
                 }
             }
         }
 
-        public void Font(PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
+        public void Font(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
         {
             var style = symbolTable[instr0.op1].GetValue().GetString().ToLower();
             var size = symbolTable[instr0.op2].GetValue().GetInt32();
             var name = symbolTable[instruction.op1].GetValue().GetString();
-            if (String.IsNullOrEmpty(name) || size <= 0 || size > MAX_WIDTH)
+            if (String.IsNullOrEmpty(name) || size <= 0 || size > GraphicsUtil.MAX_WIDTH)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"Bad name/size: '{name}'/{size}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Bad name/size: '" + name + "'/" + size);
             }
             FontStyle styleVal = FontStyle.Regular;
             if (style.Contains('i'))
@@ -282,26 +312,26 @@
                 styleVal |= FontStyle.Bold;
             }
 
-            graphicsState.GetFrame().GetDrawingCanvas().Font = new Font(name, size, styleVal);
+            CurrentFont = new Font(name, size, styleVal);
         }
 
-        public void Drawstr(PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
+        public void Drawstr(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
         {
             var x = symbolTable[instr0.op1].GetValue().GetFloat32();
             var y = symbolTable[instr0.op2].GetValue().GetFloat32();
             var text = symbolTable[instruction.op1].GetValue().GetString();
 
-            graphicsState.GetFrame()
-                .GetDrawingCanvas()
-                .DrawString(text, x, y);
+            var b = new SolidBrush(CurrentColor);
+
+            graphicsState.GetGraphics().DrawString(text, CurrentFont, b, x, y);
         }
 
-        public void Draw(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void Draw(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var str = symbolTable[instruction.op1].GetValue().GetString();
             if (String.IsNullOrEmpty(str))
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Found empty string in DRAW!");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Found empty string in DRAW!");
             }
 
             var path = new GraphicsPath();
@@ -407,12 +437,10 @@
                 }
             }
 
-            graphicsState.GetFrame()
-                .GetDrawingCanvas()
-                .DrawPath(path);
+            graphicsState.GetGraphics().DrawPath(Pens.Black, path);
         }
 
-        public void Line(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
+        public void Line(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
         {
             var i0 = instr0[0];
             var i1 = instr0[1];
@@ -421,30 +449,28 @@
             var x2 = symbolTable[i1.op1].GetValue().GetFloat32();
             var y2 = symbolTable[i1.op2].GetValue().GetFloat32();
             string bf = instruction.op1 != NULL_ID ? symbolTable[instruction.op1].GetValue().GetString().ToUpper() : "";
-
+            var p = Pens.Aquamarine; // TODO: impement this
             if (String.IsNullOrEmpty(bf))
             {
-                graphicsState.GetFrame().GetDrawingCanvas().DrawLine(x1, y1, x2, y2);
+                graphicsState.GetGraphics().DrawLine(p, x1, y1, x2, y2);
             }
             else if (bf.Equals("B"))
             {
-                graphicsState.GetFrame()
-                    .GetDrawingCanvas()
-                    .DrawRect(x1, y1, Math.Abs(x1 - x2), Math.Abs(y1 - y2));
+                graphicsState.GetGraphics().DrawRectangle(p, x1, y1, Math.Abs(x1 - x2), Math.Abs(y1 - y2));
             }
             else if (bf.Equals("BF"))
             {
-                graphicsState.GetFrame()
-                    .GetDrawingCanvas()
-                    .FillRect(x1, y1, Math.Abs(x1 - x2), Math.Abs(y1 - y2));
+                graphicsState.GetGraphics().FillRectangle(
+                    Brushes.Beige
+                    , x1, y1, Math.Abs(x1 - x2), Math.Abs(y1 - y2));
             }
             else
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Bad options: " + bf);
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Bad options: " + bf);
             }
         }
 
-        public void Color(PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
+        public void Color(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
         {
             var r = symbolTable[instr0.op1].GetValue().GetInt32();
             var g = symbolTable[instr0.op2].GetValue().GetInt32();
@@ -452,7 +478,8 @@
             r = ApplyColorBounds(r);
             g = ApplyColorBounds(g);
             b = ApplyColorBounds(b);
-            graphicsState.GetFrame().GetDrawingCanvas().SetColor(System.Drawing.Color.FromArgb(r, g, b));
+
+            CurrentColor = System.Drawing.Color.FromArgb(r, g, b);
         }
 
         private static int ApplyColorBounds(int c)
@@ -460,7 +487,7 @@
             return Math.Min(255, Math.Max(0, c));
         }
 
-        public void Paint(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
+        public void Paint(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
         {
             var i0 = instr0[0];
             var i1 = instr0[1];
@@ -471,17 +498,23 @@
             var y = symbolTable[instruction.op2].GetValue().GetInt32();
             if (x < 0 || y < 0 || x > graphicsState.GetImageWidth() || y > graphicsState.GetImageHeight())
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"x/y out-of-bounds: {x}, {y}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "x/y out-of-bounds: " + x + ", " + y);
             }
 
             r = ApplyColorBounds(r);
             g = ApplyColorBounds(g);
             b = ApplyColorBounds(b);
 
-            graphicsState.GetFrame().GetDrawingCanvas().FloodFill(x, y, r, g, b);
+            var br = new SolidBrush(System.Drawing.Color.FromArgb(r, g, b));
+            graphicsState.GetGraphics().FillRectangle(br, 0, 0, (float)x, (float)y);
+
+            //graphicsState.GetFrame().GetDrawingCanvas().FloodFill(x, y, r, g, b);
+
+            // We still have to actually draw it to the screen
+            throw new NotImplementedException();
         }
 
-        public void Pset(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
+        public void Pset(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
         {
             var i0 = instr0[0];
             var i1 = instr0[1];
@@ -495,27 +528,29 @@
             b = ApplyColorBounds(b);
             if (x < 0 || y < 0 || x > graphicsState.GetImageWidth() || y > graphicsState.GetImageHeight())
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"x/y out-of-bounds: {x}, {y}");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "x/y out-of-bounds: " + x + ", " + y);
             }
 
+            throw new NotImplementedException();
             //graphicsState.GetGraphics().dra
-            graphicsState.GetFrame().GetDrawingCanvas().Point(x, y, r, g, b);
+            //graphicsState.GetFrame().GetDrawingCanvas().Point(x, y, r, g, b);
         }
 
-        public void BufferCopyHor(PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
+        public void BufferCopyHor(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)
         {
             var srcx = symbolTable[instr0.op1].GetValue().GetInt32();
             var dstx = symbolTable[instr0.op2].GetValue().GetInt32();
             var w = symbolTable[instruction.op1].GetValue().GetInt32();
             if (srcx < 0 || dstx < 0 || w < 0 || srcx > graphicsState.GetImageWidth() || dstx > graphicsState.GetImageWidth() || w > graphicsState.GetImageWidth())
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"srcx/dstx/w misaligned/out-of-bounds: ({srcx} -> {dstx}), {w})");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "srcx/dstx/w misaligned/out-of-bounds: (" + srcx + " -> " + dstx + "), " + w + ")");
             }
 
-            graphicsState.GetFrame().GetDrawingCanvas().BufferCopyHor(srcx, dstx, w);
+            throw new NotImplementedException();
+            //graphicsState.GetFrame().GetDrawingCanvas().BufferCopyHor(srcx, dstx, w);
         }
 
-        public void Get(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
+        public void Get(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
         {
             var i0 = instr0[0];
             var i1 = instr0[1];
@@ -524,33 +559,26 @@
             var x2 = symbolTable[i1.op1].GetValue().GetInt32();
             var y2 = symbolTable[i1.op2].GetValue().GetInt32();
             var variable = symbolTable.GetVariable(instruction.op1);
-            if (variable.GetType().GetTypeId() != STObjects.PuffinBasicTypeId.ARRAY 
-                || variable.GetValue().GetNumArrayDimensions() != 2 
-                || variable.GetType().GetAtomTypeId() != STObjects.PuffinBasicAtomTypeId.INT32)
+            if (variable.GetType().GetTypeId() != STObjects.PuffinBasicTypeId.ARRAY || variable.GetValue().GetNumArrayDimensions() != 2 || variable.GetType().GetAtomTypeId() != STObjects.PuffinBasicAtomTypeId.INT32)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Bad variable! Expected Int32 2D-Array variable: " + variable);
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Bad variable! Expected Int32 2D-Array variable: " + variable);
             }
 
-            if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0 || x1 > x2 || y1 > y2 
-                || x1 > graphicsState.GetImageWidth() 
-                || y1 > graphicsState.GetImageHeight() 
-                || x2 > graphicsState.GetImageWidth() 
-                || y2 > graphicsState.GetImageHeight())
+            if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0 || x1 > x2 || y1 > y2 || x1 > graphicsState.GetImageWidth() || y1 > graphicsState.GetImageHeight() || x2 > graphicsState.GetImageWidth() || y2 > graphicsState.GetImageHeight())
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, $"x1/y1/x2/y2 misaligned/out-of-bounds: ({x1}, {y1}), {x2}, {y2})");
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "x1/y1/x2/y2 misaligned/out-of-bounds: (" + x1 + ", " + y1 + "), " + x2 + ", " + y2 + ")");
             }
 
             int bufferNumber = symbolTable[instruction.op2].GetValue().GetInt32();
-
-            graphicsState.GetFrame().GetDrawingCanvas()
-                .CopyGraphicsToArray(bufferNumber, x1, y1, x2, y2, variable.GetValue().GetInt32Array1D());
+            throw new NotImplementedException();
+            //graphicsState.GetFrame().GetDrawingCanvas().CopyGraphicsToArray(bufferNumber, x1, y1, x2, y2, variable.GetValue().GetInt32Array1D());
         }
 
-        public void Put(PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instr1, Instruction instruction)
+        public void Put(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instr1, Instruction instruction)
         {
             var x = symbolTable[instr0.op1].GetValue().GetInt32();
             var y = symbolTable[instr0.op2].GetValue().GetInt32();
-            var action = instruction.op1 != NULL_ID ? symbolTable[instruction.op1].GetValue().GetString() : PUT_XOR;
+            var action = instruction.op1 != NULL_ID ? symbolTable[instruction.op1].GetValue().GetString() : GraphicsUtil.PUT_XOR;
             action = action.ToUpper();
             int bufferNumber = symbolTable[instr1.op1].GetValue().GetInt32();
             var variable = symbolTable.GetVariable(instruction.op2);
@@ -559,7 +587,7 @@
                 || value.GetNumArrayDimensions() != 2 
                 || variable.GetType().GetAtomTypeId() != STObjects.PuffinBasicAtomTypeId.INT32)
             {
-                throw new PuffinBasicRuntimeError(GRAPHICS_ERROR, "Bad variable! Expected Int32 2D-Array variable: " + variable);
+                throw new PuffinBasicRuntimeError(PuffinBasicRuntimeError.ErrorCode.GRAPHICS_ERROR, "Bad variable! Expected Int32 2D-Array variable: " + variable);
             }
 
             int CW = graphicsState.GetImageWidth();
@@ -601,120 +629,98 @@
             // draw only if the image falls on the screen
             if (w > 0 && h > 0 && offset < iw * ih)
             {
+                throw new NotImplementedException();
                 //graphicsState.GetGraphics().DrawImage()
-                graphicsState.GetFrame().GetDrawingCanvas()
-                    .CopyArrayToGraphics(bufferNumber, xx, yy, w, h, action, value.GetInt32Array1D(), srcx, srcy, iw);
+                //graphicsState.GetFrame().GetDrawingCanvas().CopyArrayToGraphics(bufferNumber, xx, yy, w, h, action, value.GetInt32Array1D(), srcx, srcy, iw);
             }
         }
 
-        public void Inkeydlr(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void Inkeydlr(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            var key = graphicsState.GetFrame().GetDrawingCanvas().TakeNextKey();
+            //var key = graphicsState.GetFrame().KeysPressed.First();
+            //if (!String.IsNullOrEmpty(key))
+            //    graphicsState.GetFrame().KeysPressed.Remove(key);
 
-            if (!String.IsNullOrEmpty(key))
-            {
-                //Debugger.Break();
-            }
-
-            symbolTable[instruction.result].GetValue().SetString(key);
+            ////var key = graphicsState.GetFrame().GetDrawingCanvas().TakeNextKey();
+            //symbolTable[instruction.result].GetValue().SetString(key);
         }
 
-        public void Loadwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void Loadwav(SoundState soundState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var file = symbolTable[instruction.op1].GetValue().GetString();
             var variable = symbolTable.GetVariable(instruction.op2).GetValue();
-            variable.SetInt32(1);
             //variable.SetInt32(soundState.Load(file));
-            //throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
-        public void Playwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void Playwav(SoundState soundState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var id = symbolTable[instruction.op1].GetValue().GetInt32();
             //soundState.Play(id);
-            //throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
-        public void Stopwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void Stopwav(SoundState soundState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var id = symbolTable[instruction.op1].GetValue().GetInt32();
             //soundState.Stop(id);
-            //throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
-        public void Loopwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void Loopwav(SoundState soundState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var id = symbolTable[instruction.op1].GetValue().GetInt32();
             //soundState.Loop(id);
-            //throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
-        public void MouseMovedX(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseMovedX(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetMovedX());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetMovedX());
+            throw new NotImplementedException();
         }
 
-        public void MouseMovedY(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseMovedY(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetMovedY());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetMovedY());
+            throw new NotImplementedException();
         }
 
-        public void MouseDraggedX(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseDraggedX(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetDraggedX());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetDraggedX());
+            throw new NotImplementedException();
         }
 
-        public void MouseDraggedY(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseDraggedY(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetDraggedY());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetDraggedY());
+            throw new NotImplementedException();
         }
 
-        public void MouseButtonClicked(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseButtonClicked(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetButtonClicked());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetButtonClicked());
+            throw new NotImplementedException();
         }
 
-        public void MouseButtonPressed(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseButtonPressed(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetButtonPressed());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetButtonPressed());
+            throw new NotImplementedException();
         }
 
-        public void MouseButtonReleased(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void MouseButtonReleased(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
-            symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetButtonReleased());
+            //symbolTable[instruction.result].GetValue().SetInt32(graphicsState.GetFrame().GetDrawingCanvas().GetMouseState().GetButtonReleased());
+            throw new NotImplementedException();
         }
 
-        public void IsKeyPressed(PuffinBasicSymbolTable symbolTable, Instruction instruction)
+        public void IsKeyPressed(GraphicsState graphicsState, PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var key = symbolTable[instruction.op1].GetValue().GetString();
-            symbolTable[instruction.result].GetValue().SetInt32(
-                graphicsState.GetFrame().GetDrawingCanvas().IsKeyPressed(key) ? -1 : 0);
-        }
-
-        public static Color HsbToRgb(double hue, double saturation, double brightness)
-        {
-            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
-            double f = hue / 60 - Math.Floor(hue / 60);
-
-            brightness = brightness * 255;
-            int v = Convert.ToInt32(brightness);
-            int p = Convert.ToInt32(brightness * (1 - saturation));
-            int q = Convert.ToInt32(brightness * (1 - f * saturation));
-            int t = Convert.ToInt32(brightness * (1 - (1 - f) * saturation));
-
-            if (hi == 0)
-                return System.Drawing.Color.FromArgb(255, v, t, p);
-            else if (hi == 1)
-                return System.Drawing.Color.FromArgb(255, q, v, p);
-            else if (hi == 2)
-                return System.Drawing.Color.FromArgb(255, p, v, t);
-            else if (hi == 3)
-                return System.Drawing.Color.FromArgb(255, p, q, v);
-            else if (hi == 4)
-                return System.Drawing.Color.FromArgb(255, t, p, v);
-            else
-                return System.Drawing.Color.FromArgb(255, v, p, q);
+            //var keyPressed = graphicsState.GetFrame().KeysPressed.Contains(key);
+            //symbolTable[instruction.result].GetValue().SetInt32(keyPressed ? -1 : 0);
         }
     }
-
 }

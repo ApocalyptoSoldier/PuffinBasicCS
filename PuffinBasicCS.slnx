@@ -3,8 +3,12 @@
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
   </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
   <Project Path="PuffinBasicCS\PuffinBasicCS.csproj">
     <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="Release|Any CPU" Project="x86" />
   </Project>
+  <Project Path="PuffinBasicUIWinForms/PuffinBasicUIWinForms.csproj" />
 </Solution>

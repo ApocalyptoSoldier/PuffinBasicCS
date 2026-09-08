@@ -15248,7 +15248,8 @@ namespace Org.Puffinbasic.Parser
             var x2 = LookupInstruction(ctx.x2);
             var y2 = LookupInstruction(ctx.y2);
             var varInstr = LookupInstruction(ctx.variable());
-            int bufferNumber = ctx.BACK1() != null ? GraphicsUtil.BUFFER_NUM_BACK1 : GraphicsUtil.BUFFER_NUM_FRONT;
+            //int bufferNumber = ctx.BACK1() != null ? GraphicsUtil.BUFFER_NUM_BACK1 : GraphicsUtil.BUFFER_NUM_FRONT;
+            int bufferNumber = ctx.BACK1() != null ? 0 : 1;
             Types.AssertNumeric(ir.GetSymbolTable()[x1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             Types.AssertNumeric(ir.GetSymbolTable()[y1.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             Types.AssertNumeric(ir.GetSymbolTable()[x2.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
@@ -15425,7 +15426,8 @@ namespace Org.Puffinbasic.Parser
             var y = LookupInstruction(ctx.y);
             var varInstr = LookupInstruction(ctx.variable());
             var action = ctx.action != null ? LookupInstruction(ctx.action) : null;
-            int bufferNumber = ctx.FRONT() == null ? GraphicsUtil.BUFFER_NUM_BACK1 : GraphicsUtil.BUFFER_NUM_FRONT;
+            //int bufferNumber = ctx.FRONT() == null ? GraphicsUtil.BUFFER_NUM_BACK1 : GraphicsUtil.BUFFER_NUM_FRONT;
+            int bufferNumber = ctx.FRONT() == null ? 0 : 1;
             Types.AssertNumeric(ir.GetSymbolTable()[x.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             Types.AssertNumeric(ir.GetSymbolTable()[y.result].GetType().GetAtomTypeId(), GetCtxString(ctx));
             AssertVariable(ir.GetSymbolTable()[varInstr.result], GetCtxString(ctx));

@@ -14,3 +14,5 @@
 **/bin/x64
 /IDEAS.md
 /Properties/launchSettings.json
+/PuffinBasicUIWinForms/Properties/launchSettings.json
+/.editorconfig
