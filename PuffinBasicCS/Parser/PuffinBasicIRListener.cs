@@ -53,7 +53,7 @@ namespace Org.Puffinbasic.Parser
         //private readonly Dictionary<int, UDFState> udfStateMap = new Dictionary<int, UDFState>();
         private readonly LinkedList<WhileLoopState> whileLoopStateList = new LinkedList<WhileLoopState>();
         private readonly LinkedList<ForLoopState> forLoopStateList = new LinkedList<ForLoopState>();
-        private readonly LinkedList<IfState> ifStateList;
+        private readonly LinkedList<IfState> ifStateList = new LinkedList<IfState>();
         private UDFState currentUdfState;
         private readonly ParseTreeProperty<IfState> nodeToIfState;
         private int currentLineNumber;

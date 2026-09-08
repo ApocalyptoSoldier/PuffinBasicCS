@@ -31,6 +31,7 @@ namespace Org.Puffinbasic.Runtime
                 throw new PuffinBasicRuntimeError(DATA_OUT_OF_RANGE, "Sleep time millis cannot be less than 0.");
             }
 
+            Thread.Sleep(millis);
             //LockSupport.ParkNanos(TimeUnit.MILLISECONDS.ToNanos(millis));
         }
 

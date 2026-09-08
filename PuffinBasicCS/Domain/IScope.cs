@@ -85,7 +85,7 @@ namespace Org.Puffinbasic.Domain.Scope
             }
 
             var newEntryMap = new ISTEntry[newLen];
-            Array.Copy(entryMap, newEntryMap, newLen);
+            Array.Copy(entryMap, newEntryMap, entryMap.Length);
             entryMap = newEntryMap;
         }
 

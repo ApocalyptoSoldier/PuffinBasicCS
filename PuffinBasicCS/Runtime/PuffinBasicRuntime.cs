@@ -137,7 +137,7 @@ namespace Org.Puffinbasic.Runtime
             }
             finally
             {
-                //GraphicsRuntime.End(graphicsState);
+                GraphicsRuntime.End();
                 //soundState.Dispose();
             }
         }
@@ -776,7 +776,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Hsb2rgb(ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Hsb2rgb(ir.GetSymbolTable(), @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -875,13 +875,13 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Screen(graphicsState, ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Screen(ir.GetSymbolTable(), @params, instruction);
                     @params.Clear();
                 }
 
                     break;
                 case REPAINT:
-                    //GraphicsRuntime.Repaint(graphicsState);
+                    GraphicsRuntime.Repaint();
                     break;
                 case CIRCLE:
                 {
@@ -890,7 +890,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 3 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Circle(graphicsState, ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Circle(ir.GetSymbolTable(), @params, instruction);
                     @params.Clear();
                 }
 
@@ -902,7 +902,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Line(graphicsState, ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Line(ir.GetSymbolTable(), @params, instruction);
                     @params.Clear();
                 }
 
@@ -914,7 +914,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Color(graphicsState, ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Color(ir.GetSymbolTable(), @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -926,7 +926,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Paint(graphicsState, ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Paint(ir.GetSymbolTable(), @params, instruction);
                     @params.Clear();
                 }
 
@@ -938,7 +938,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Pset(graphicsState, ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Pset(ir.GetSymbolTable(), @params, instruction);
                     @params.Clear();
                 }
 
@@ -950,7 +950,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Get(graphicsState, ir.GetSymbolTable(), @params, instruction);
+                    GraphicsRuntime.Get(ir.GetSymbolTable(), @params, instruction);
                     @params.Clear();
                 }
 
@@ -962,7 +962,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 2 params, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Put(graphicsState, ir.GetSymbolTable(), @params[0], @params[1], instruction);
+                    GraphicsRuntime.Put(ir.GetSymbolTable(), @params[0], @params[1], instruction);
                     @params.Clear();
                 }
 
@@ -974,7 +974,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.BufferCopyHor(graphicsState, ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.BufferCopyHor(ir.GetSymbolTable(), @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -986,7 +986,7 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Font(graphicsState, ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Font(ir.GetSymbolTable(), @params[0], instruction);
                     @params.Clear();
                 }
 
@@ -998,64 +998,64 @@ namespace Org.Puffinbasic.Runtime
                         throw new PuffinBasicInternalError("Expected 1 param, but found: " + @params);
                     }
 
-                    //GraphicsRuntime.Drawstr(graphicsState, ir.GetSymbolTable(), @params[0], instruction);
+                    GraphicsRuntime.Drawstr(ir.GetSymbolTable(), @params[0], instruction);
                     @params.Clear();
                 }
 
                     break;
                 case LOADIMG:
-                    //GraphicsRuntime.Loadimg(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Loadimg(ir.GetSymbolTable(), instruction);
                     break;
                 case SAVEIMG:
-                    //GraphicsRuntime.Saveimg(ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Saveimg(ir.GetSymbolTable(), instruction);
                     break;
                 case DRAW:
-                    //GraphicsRuntime.Draw(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Draw(ir.GetSymbolTable(), instruction);
                     break;
                 case INKEYDLR:
-                    //GraphicsRuntime.Inkeydlr(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Inkeydlr(ir.GetSymbolTable(), instruction);
                     break;
                 case CLS:
-                    //GraphicsRuntime.Cls(graphicsState);
+                    GraphicsRuntime.Cls();
                     break;
                 case BEEP:
-                    //GraphicsRuntime.Beep();
+                    GraphicsRuntime.Beep();
                     break;
                 case LOADWAV:
-                    //GraphicsRuntime.Loadwav(soundState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Loadwav(ir.GetSymbolTable(), instruction);
                     break;
                 case PLAYWAV:
-                    //GraphicsRuntime.Playwav(soundState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Playwav(ir.GetSymbolTable(), instruction);
                     break;
                 case STOPWAV:
-                    //GraphicsRuntime.Stopwav(soundState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Stopwav(ir.GetSymbolTable(), instruction);
                     break;
                 case LOOPWAV:
-                    //GraphicsRuntime.Loopwav(soundState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.Loopwav(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEMOVEDX:
-                    //GraphicsRuntime.MouseMovedX(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseMovedX(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEMOVEDY:
-                    //GraphicsRuntime.MouseMovedY(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseMovedY(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEDRAGGEDX:
-                    //GraphicsRuntime.MouseDraggedX(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseDraggedX(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEDRAGGEDY:
-                    //GraphicsRuntime.MouseDraggedY(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseDraggedY(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEBUTTONCLICKED:
-                    //GraphicsRuntime.MouseButtonClicked(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseButtonClicked(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEBUTTONPRESSED:
-                    //GraphicsRuntime.MouseButtonPressed(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseButtonPressed(ir.GetSymbolTable(), instruction);
                     break;
                 case MOUSEBUTTONRELEASED:
-                    //GraphicsRuntime.MouseButtonReleased(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.MouseButtonReleased(ir.GetSymbolTable(), instruction);
                     break;
                 case ISKEYPRESSED:
-                    //GraphicsRuntime.IsKeyPressed(graphicsState, ir.GetSymbolTable(), instruction);
+                    GraphicsRuntime.IsKeyPressed(ir.GetSymbolTable(), instruction);
                     break;
             }
 
