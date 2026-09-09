@@ -35,9 +35,10 @@ namespace PuffinBasicCS.Runtime
         private ReadData readData;
         private readonly TextWriter @out;
         private readonly IEnvironment env;
+        private readonly bool graphicsEnabled;
         //private GraphicsState graphicsState;
         //private SoundState soundState;
-        public PuffinBasicRuntime(PuffinBasicIR ir, TextWriter @out, IEnvironment env)
+        public PuffinBasicRuntime(PuffinBasicIR ir, TextWriter @out, IEnvironment env, bool graphicsEnabled = false)
         {
             this.ir = ir;
             this.@out = @out;
@@ -131,7 +132,8 @@ namespace PuffinBasicCS.Runtime
             }
             finally
             {
-                GraphicsRuntime.End();
+                if (graphicsEnabled)
+                    GraphicsRuntime.End();
                 //soundState.Dispose();
             }
         }

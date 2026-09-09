@@ -102,7 +102,7 @@ namespace PuffinBasicCS
             }
         }
 
-        static void InterpretAndRun(UserOptions userOptions, string sourceCode, TextWriter @out, IEnvironment env)
+        public static void InterpretAndRun(UserOptions userOptions, string sourceCode, TextWriter @out, IEnvironment env)
         {
             InterpretAndRun(userOptions, UNKNOWN_SOURCE_FILE, sourceCode, @out, env);
         }
@@ -264,7 +264,7 @@ namespace PuffinBasicCS
 
         public sealed class UserOptions
         {
-            static UserOptions OfTest()
+            public static UserOptions OfTest()
             {
                 return new UserOptions(false, false, false, false, false, null);
             }

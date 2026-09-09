@@ -7,8 +7,9 @@
     <File Path=".editorconfig" />
   </Folder>
   <Project Path="PuffinBasicCS\PuffinBasicCS.csproj">
-    <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="Release|Any CPU" Project="x86" />
+    <Platform Solution="Release|x64" Project="x64" />
   </Project>
   <Project Path="PuffinBasicUIWinForms/PuffinBasicUIWinForms.csproj" />
+  <Project Path="Tests/Tests.csproj" Id="9bcff600-b3b1-468f-97c1-e61fa9796c0d" />
 </Solution>
