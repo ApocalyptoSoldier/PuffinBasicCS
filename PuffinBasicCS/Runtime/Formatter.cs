@@ -237,6 +237,7 @@ namespace PuffinBasicCS.Runtime
                 }
 
                 return Format(value.ToString(decimalFormat, CultureInfo.InvariantCulture), isNegative);
+                //return Format(value.ToString(decimalFormat, CultureInfo.InvariantCulture), isNegative);
             }
 
             // Handle prefix '+' or '-'
@@ -253,6 +254,7 @@ namespace PuffinBasicCS.Runtime
                 }
 
                 return Format(value.ToString(decimalFormat, CultureInfo.InvariantCulture), isNegative);
+                //return Format(value.ToString(decimalFormat, CultureInfo.InvariantCulture), isNegative);
             }
 
             // Handle prefix '+' or '-'
@@ -492,16 +494,24 @@ namespace PuffinBasicCS.Runtime
 
         public static string PrintFormatFloat32(float value)
         {
-            return value < 0 ? value + " " : " " + value + " ";
+            if (value % 1 == 0)
+                return $"{(value < 0 ? "" : " ")}{value.ToString("0.0", CultureInfo.InvariantCulture)} ";
+            else
+                return $"{(value < 0 ? "" : " ")}{value.ToString(CultureInfo.InvariantCulture)} ";
         }
 
         public static string PrintFormatFloat64(double value)
         {
-            return value < 0 ? value + " " : " " + value + " ";
+            if (value % 1 == 0)
+                return $"{(value < 0 ? "" : " ")}{value.ToString("0.0", CultureInfo.InvariantCulture)} ";
+            else
+                return $"{(value < 0 ? "" : " ")}{value.ToString(CultureInfo.InvariantCulture)} ";
         }
 
         public static string PrintFormatString(string value)
         {
+            if (value.Length >= 2 && value.StartsWith('"') && value.EndsWith('"'))
+                return value.Substring(1, value.Length - 2);
             return value;
         }
 
@@ -517,19 +527,18 @@ namespace PuffinBasicCS.Runtime
 
         public static string WriteFormatFloat32(float value)
         {
-            return value.ToString();
+            return value.ToString(CultureInfo.InvariantCulture);
         }
 
         public static string WriteFormatFloat64(double value)
         {
-            return value.ToString();
+            return value.ToString(CultureInfo.InvariantCulture);
         }
 
         public static string WriteFormatString(string value)
         {
             if (value.Contains("\""))
             {
-
                 // Expects unescaped quotes
                 value = value.Replace("\"", "\\\"");
             }

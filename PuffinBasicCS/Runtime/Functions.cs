@@ -552,7 +552,9 @@ namespace PuffinBasicCS.Runtime
             }
             else
             {
-                result = x.Substring(n - 1, Math.Min(xlen, n + m - 1));
+                // Take m (or all remaining if not specified) characters starting at n
+                int length = Math.Min(xlen - n, xlen - m - n);
+                result = x.Substring(n - 1, xlen - m - n);
             }
 
             symbolTable[instr.result].Value.SetString(result);

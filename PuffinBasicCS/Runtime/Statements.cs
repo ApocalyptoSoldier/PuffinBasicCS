@@ -230,14 +230,15 @@ namespace PuffinBasicCS.Runtime
             }
             else
             {
-                byte[] bytes = new byte[destLen];
-                int offset = destLen - valLen;
-                // fill(int[] a, int fromIndex, int toIndex, int val)
-                //Fill<T>(T[] array, T value, int startIndex, int count);
-                //Arrays.Fill(bytes, (byte)' ', 0, offset);
-                ArrayUtil.Fill(bytes, (byte)' ', offset, valLen);
-                Array.Copy(value.ToCharArray(), 0, bytes, offset, valLen);
-                result = ISOEncoding.GetString(bytes);
+                //byte[] bytes = new byte[destLen];
+                //int offset = destLen - valLen;
+                //// fill(int[] a, int fromIndex, int toIndex, int val)
+                ////Fill<T>(T[] array, T value, int startIndex, int count);
+                ////Arrays.Fill(bytes, (byte)' ', 0, offset);
+                //ArrayUtil.Fill(bytes, (byte)' ', offset, valLen);
+                //Array.Copy(ISOEncoding.GetBytes(value), 0, bytes, offset, valLen);
+                //result = ISOEncoding.GetString(bytes);
+                result = value.PadLeft(destLen, ' ');
             }
 
             destEntry.SetString(result);
@@ -354,16 +355,16 @@ namespace PuffinBasicCS.Runtime
                     switch (entry.Type.AtomTypeId)
                     {
                         case INT32:
-                            value.SetInt32(int.Parse(record[i].Trim()));
+                            value.SetInt32(Int32.Parse(record[i].Trim()));
                             break;
                         case INT64:
-                            value.SetInt64(long.Parse(record[i].Trim()));
+                            value.SetInt64(Int64.Parse(record[i].Trim()));
                             break;
                         case FLOAT:
-                            value.SetFloat32(float.Parse(record[i].Trim()));
+                            value.SetFloat32(Single.Parse(record[i].Trim(), System.Globalization.CultureInfo.InvariantCulture));
                             break;
                         case DOUBLE:
-                            value.SetFloat64(Double.Parse(record[i].Trim()));
+                            value.SetFloat64(Double.Parse(record[i].Trim(), System.Globalization.CultureInfo.InvariantCulture));
                             break;
                         case STRING:
                             value.SetString(record[i].Trim());

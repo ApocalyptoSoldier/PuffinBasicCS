@@ -28,7 +28,7 @@
         private static readonly Regex DRAW_ARG2 = new Regex("M([+\\-]?[0-9]+),([+\\-]?[0-9]+)", RegexOptions.Compiled);
 
         public GraphicsState graphicsState { get; private set; } = new GraphicsState();
-        public SoundState soundState { get; private set; }
+        public SoundState soundState { get; private set; } = new SoundState();
 
         public class GraphicsState
         {
@@ -82,7 +82,6 @@
         public void Beep()
         {
             Console.Beep();
-            //Toolkit.GetDefaultToolkit().Beep();
         }
 
         public void Saveimg(PuffinBasicSymbolTable symbolTable, Instruction instruction)
@@ -122,11 +121,9 @@
 
 
             Image image;
-            //BufferedImage image;
             try
             {
                 image = Image.FromFile(path);
-                //image = ImageIO.Read(new File(path));
             }
             catch (IOException e)
             {
@@ -167,9 +164,7 @@
             var autoRepaint = symbolTable[i2.op1].Value.GetInt32() == -1;
             var doubleBuffer = symbolTable[i2.op2].Value.GetInt32() == -1;
 
-            //graphicsState = new GraphicsState();
             graphicsState.Frame = new BasicFrame(title, w, h, iw, ih, autoRepaint, doubleBuffer);
-            //EventQueue.InvokeLater(() => graphicsState.GetFrame().SetVisible(true));
 
             var start = new Task(() => Application.Run(graphicsState.Frame));
             start.Start();
@@ -203,6 +198,7 @@
             //        frame.DispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
             //    }
             //});
+            soundState.Dispose();
         }
 
         public void Circle(PuffinBasicSymbolTable symbolTable, IList<Instruction> instr0, Instruction instruction)
@@ -592,11 +588,6 @@
         {
             var key = graphicsState.Frame.DrawingCanvas.TakeNextKey();
 
-            if (!String.IsNullOrEmpty(key))
-            {
-                //Debugger.Break();
-            }
-
             symbolTable[instruction.result].Value.SetString(key);
         }
 
@@ -604,30 +595,26 @@
         {
             var file = symbolTable[instruction.op1].Value.GetString();
             var variable = symbolTable.GetVariable(instruction.op2).Value;
-            variable.SetInt32(1);
-            //variable.SetInt32(soundState.Load(file));
-            //throw new NotImplementedException();
+
+            variable.SetInt32(soundState.Load(file));
         }
 
         public void Playwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var id = symbolTable[instruction.op1].Value.GetInt32();
-            //soundState.Play(id);
-            //throw new NotImplementedException();
+            soundState.Play(id);
         }
 
         public void Stopwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var id = symbolTable[instruction.op1].Value.GetInt32();
-            //soundState.Stop(id);
-            //throw new NotImplementedException();
+            soundState.Stop(id);
         }
 
         public void Loopwav(PuffinBasicSymbolTable symbolTable, Instruction instruction)
         {
             var id = symbolTable[instruction.op1].Value.GetInt32();
-            //soundState.Loop(id);
-            //throw new NotImplementedException();
+            soundState.Loop(id);
         }
 
         public void MouseMovedX(PuffinBasicSymbolTable symbolTable, Instruction instruction)

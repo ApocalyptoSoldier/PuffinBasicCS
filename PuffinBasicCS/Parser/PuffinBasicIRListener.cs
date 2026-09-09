@@ -49,7 +49,6 @@ namespace PuffinBasicCS.Parser
         private readonly bool graphics;
         private readonly ParseTreeProperty<Instruction> nodeToInstruction;
         private readonly Dictionary<Variable, UDFState> udfStateMap = new Dictionary<Variable, UDFState>();
-        //private readonly Dictionary<int, UDFState> udfStateMap = new Dictionary<int, UDFState>();
         private readonly LinkedList<WhileLoopState> whileLoopStateList = new LinkedList<WhileLoopState>();
         private readonly LinkedList<ForLoopState> forLoopStateList = new LinkedList<ForLoopState>();
         private readonly LinkedList<IfState> ifStateList = new LinkedList<IfState>();

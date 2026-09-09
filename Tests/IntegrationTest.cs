@@ -213,6 +213,7 @@
         [TestMethod]
         public virtual void TestDict()
         {
+            // The original output had 2 1 on line 15, but the order of dictonary keys is not guaranteed, I think, so maybe make the test more dynamic
             RunTest("dict.bas", "dict.bas.output");
         }
 
