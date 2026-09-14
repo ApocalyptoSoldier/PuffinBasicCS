@@ -4,10 +4,6 @@
 namespace PuffinBasicCS.File
 {
     using PuffinBasicCS.Error;
-    //using Org.Jetbrains.Annotations;
-    //using Java.Io;
-    //using Java.Nio;
-    //using Java.Util;
     using static PuffinBasicCS.Domain.STObjects.PuffinBasicAtomTypeId;
     using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
     using System;
@@ -23,8 +19,6 @@ namespace PuffinBasicCS.File
     {
         private readonly string filename;
         private readonly FileAccessMode accessMode;
-        //private readonly System.IO.FileInfo file; // System.IO.RandomAccess?
-        //private readonly FileStream file;
         private readonly SafeFileHandle fileHandle;
         private readonly int recordLength;
         private readonly byte[] recordBuffer;
@@ -50,8 +44,6 @@ namespace PuffinBasicCS.File
                 FileAccess fileAccess = accessMode == FileAccessMode.READ_ONLY ? FileAccess.Read : 
                     accessMode == FileAccessMode.READ_WRITE ? FileAccess.ReadWrite : FileAccess.Write;
                 this.fileHandle = System.IO.File.OpenHandle(this.filename, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-                //this.file = new RandomAccessFile(filename, accessMode.mode);
-                //this.file = System.IO.File.Open(filename, FileMode.OpenOrCreate); // TODO: Add conversion for FileAccessMode
             }
             catch (System.IO.FileNotFoundException e)
             {
@@ -100,7 +92,6 @@ namespace PuffinBasicCS.File
             try
             {
                 return RandomAccess.GetLength(fileHandle);
-                //return file.Length;
             }
             catch (System.IO.IOException e)
             {
@@ -146,7 +137,6 @@ namespace PuffinBasicCS.File
 
                 var byteBuffer = new byte[fieldLength];
 
-                Array.Fill(byteBuffer, (byte)' ');
                 Array.Copy(valueBytes, byteBuffer, valueBytes.Length);
 
                 recordBufferParts.Add(new ReadOnlyMemory<byte>(byteBuffer));
@@ -165,13 +155,8 @@ namespace PuffinBasicCS.File
             UpdateCurrentBytePos();
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
         public override void Get(int? recordNumber, PuffinBasicSymbolTable symbolTable)
         {
-            //throw new NotImplementedException();
             AssertOpen();
             if (accessMode == FileAccessMode.WRITE_ONLY)
             {
@@ -229,21 +214,11 @@ namespace PuffinBasicCS.File
             currentFilePosBytes += recordLength;
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
         private long GetRecordBytePos(long recordNumber)
         {
             return recordNumber * recordLength;
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
         private void SeekToRecord(int recordNumber)
         {
             // TODO: we're only using this method to keep track of currentFilePosBytes, with System.IO.RandomAccess we don't actually need to seek
@@ -251,12 +226,6 @@ namespace PuffinBasicCS.File
             currentFilePosBytes = GetRecordBytePos(recordNumber);
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         private void AssertOpen()
         {
             if (!IsOpen())
@@ -265,23 +234,11 @@ namespace PuffinBasicCS.File
             }
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         public override bool IsOpen()
         {
             return fileState == FileState.OPEN;
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         public override void Dispose()
         {
             AssertOpen();
@@ -291,45 +248,21 @@ namespace PuffinBasicCS.File
             this.fileState = FileState.CLOSED;
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         public override byte[] ReadBytes(int n)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Can't read single bytes from RandomAccessFile!");
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         public override void Print(string s)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for RandomAccessFile!");
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         public override string ReadLine()
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for RandomAccessFile!");
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        // Seek only when record number is not sequential
         public override void WriteByte(byte b)
         {
             throw new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for RandomAccessFile!");

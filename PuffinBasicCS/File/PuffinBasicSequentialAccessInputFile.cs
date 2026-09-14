@@ -1,11 +1,6 @@
-//using Com.Google.Common.Base;
-//using It.Unimi.Dsi.Fastutil.Ints;
 namespace PuffinBasicCS.File
 {
     using PuffinBasicCS.Error;
-    //using Org.Jetbrains.Annotations;
-    //using Java.Io;
-    //using Java.Nio.Charset;
     using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
     using System;
     using System.Collections.Generic;
@@ -92,8 +87,6 @@ namespace PuffinBasicCS.File
 
         public override byte[] ReadBytes(int n)
         {
-            //throw new NotImplementedException();
-            //byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
             byte[] line = ISOEncoding.GetBytes(ReadLine());
             if (n >= line.Length)
             {

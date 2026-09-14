@@ -1,10 +1,6 @@
-//using Com.Google.Common.Base;
-//using It.Unimi.Dsi.Fastutil.Ints;
 namespace PuffinBasicCS.File
 {
     using PuffinBasicCS.Error;
-    //using Org.Jetbrains.Annotations;
-    //using Java.Io;
     using static PuffinBasicCS.Error.PuffinBasicRuntimeError.ErrorCode;
 
     using System;
@@ -34,14 +30,6 @@ namespace PuffinBasicCS.File
             catch (Exception e) {
                 throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to open file {filename} for writing, error: ${e.Message}");
             }
-            //try
-            //{
-            //    this.@out = new PrintStream(new BufferedOutputStream(new FileOutputStream(filename, append)));
-            //}
-            //catch (FileNotFoundException e)
-            //{
-            //    throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to open file '" + filename + "' for writing, error: " + e.Message);
-            //}
 
             this.fileState = IPuffinBasicFile.FileState.OPEN;
         }
