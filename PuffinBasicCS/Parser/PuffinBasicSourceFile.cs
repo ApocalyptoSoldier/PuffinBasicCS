@@ -37,20 +37,11 @@ namespace PuffinBasicCS.Parser
             //return relativePath;
         }
 
-        public virtual string GetLibtag()
-        {
-            return libtag;
-        }
+        public virtual string Libtag => libtag;
 
-        public virtual string GetSourceCode()
-        {
-            return sourceCode;
-        }
+        public virtual string SourceCode => sourceCode;
 
-        public virtual ICharStream GetSourceCodeStream()
-        {
-            return sourceCodeStream;
-        }
+        public virtual ICharStream SourceCodeStream => sourceCodeStream;
 
         public new virtual bool Equals(object o)
         {

@@ -650,7 +650,7 @@ namespace PuffinBasicCS.Domain
 
         public interface ISTEntry
         {
-            bool IsLValue();
+            bool IsLValue { get; }
             ISTValue Value { get; }
 
             void SetValue(ISTValue value);
@@ -669,7 +669,7 @@ namespace PuffinBasicCS.Domain
                 this.type = type;
             }
 
-            public virtual PuffinBasicType Type => type; // TODO: check if I actually need this instead of using the property
+            public virtual PuffinBasicType Type => type;
             public virtual void SetValue(ISTValue value) => this.value = value;
 
             public virtual ISTValue Value
@@ -687,7 +687,7 @@ namespace PuffinBasicCS.Domain
 
             public void CreateAndSetInstance(PuffinBasicSymbolTable symbolTable) => SetValue(Type.NewInstance(symbolTable));
 
-            public virtual bool IsLValue() => false;
+            public virtual bool IsLValue => false;
         }
 
         public class STLValue : AbstractSTEntry
@@ -696,7 +696,7 @@ namespace PuffinBasicCS.Domain
             {
             }
 
-            public override bool IsLValue() => true;
+            public override bool IsLValue => true;
         }
 
         public interface ISTVariable : ISTEntry
@@ -1963,7 +1963,7 @@ namespace PuffinBasicCS.Domain
 
             public override void Assign(ISTValue entry)
             {
-                if (!(entry is STStruct))
+                if (entry is not STStruct)
                 {
                     throw new PuffinBasicRuntimeError(DATA_TYPE_MISMATCH, $"Expected STStruct but found: {entry.GetType()}");
                 }

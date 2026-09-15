@@ -31,7 +31,7 @@ namespace PuffinBasicCS.Runtime
             {
                 toEntry.Value.Assign(fromEntry.Value);
             }
-            else if (toEntry.IsLValue())
+            else if (toEntry.IsLValue)
             {
                 ((STLValue)toEntry).SetValue(fromEntry.Value);
             }
@@ -45,7 +45,7 @@ namespace PuffinBasicCS.Runtime
         {
             var src = symbolTable[instruction.op1];
             var dst = symbolTable[instruction.op2];
-            if (dst.IsLValue())
+            if (dst.IsLValue)
             {
                 ((STLValue)dst).SetValue(src.Value);
             }

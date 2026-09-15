@@ -112,14 +112,14 @@ namespace PuffinBasicCS
             var importPath = new PuffinBasicImportPath(sourceFilename);
             DateTime t1 = DateTime.Now;
             var sourceFile = SyntaxCheckAndSortByLineNumber(importPath, sourceFilename, sourceCode, userOptions.logOnDuplicate ? LOG : THROW, SourceFileMode.MAIN);
-            if (String.IsNullOrEmpty(sourceFile.GetSourceCode()))
+            if (String.IsNullOrEmpty(sourceFile.SourceCode))
             {
                 throw new PuffinBasicSyntaxError("Failed to parse source code! Check if a linenumber is missing");
             }
 
             LogTimeTaken("SORT", t1, userOptions.timing);
             Log("LIST", userOptions.listSourceCode);
-            Log(sourceFile.GetSourceCode(), userOptions.listSourceCode);
+            Log(sourceFile.SourceCode, userOptions.listSourceCode);
             DateTime t2 = DateTime.Now;
             var ir = GenerateIR(sourceFile, userOptions.graphics);
             LogTimeTaken("IR", t2, userOptions.timing);
@@ -163,7 +163,7 @@ namespace PuffinBasicCS
         {
             var symbolTable = new PuffinBasicSymbolTable();
             var ir = new PuffinBasicIR(symbolTable);
-            foreach (var importFile in sourceFile.GetImportFiles())
+            foreach (var importFile in sourceFile.ImportFiles)
             {
                 GenerateIR(importFile, ir, graphics);
             }
@@ -174,7 +174,7 @@ namespace PuffinBasicCS
 
         private static void GenerateIR(PuffinBasicSourceFile sourceFile, PuffinBasicIR ir, bool graphics)
         {
-            var @in = sourceFile.GetSourceCodeStream();
+            var @in = sourceFile.SourceCodeStream;
             var lexer = new PuffinBasicLexer(@in);
             var tokens = new CommonTokenStream(lexer);
             var parser = new PuffinBasicParser(tokens);
@@ -218,7 +218,7 @@ namespace PuffinBasicCS
                 var importedInput = LoadSource(importPath.Find(importFilename));
                 var importSourceFile = SyntaxCheckAndSortByLineNumber(importPath, importFilename, importedInput, throwOnDuplicate, SourceFileMode.LIB);
                 importSourceFiles.Add(importSourceFile);
-                foreach (var importFile in importSourceFile.GetImportFiles())
+                foreach (var importFile in importSourceFile.ImportFiles)
                     importSourceFiles.Add(importFile);
             }
 
@@ -242,7 +242,8 @@ namespace PuffinBasicCS
                 RecognitionException e)
             {
                 var lineIndex = line - 1;
-                var lines = input.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.None);
+                // Account for CR LF (Windows), LF (Unix) and CR (Macintosh)
+                var lines = input.Split(new string[] { "\r\n", "\n", "\r"}, StringSplitOptions.None);
 
                 string inputLine;
                 if (lineIndex >= 0 && lineIndex < lines.Length)

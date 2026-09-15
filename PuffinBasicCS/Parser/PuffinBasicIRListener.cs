@@ -2085,10 +2085,7 @@ namespace PuffinBasicCS.Parser
                 }
 
                 var paramId = ir.SymbolTable.AddVariableOrUDF(paramName, 
-                    (variableName1) => new Variable(variableName1, paramType), 
-                    (varId, varEntry, variable) =>
-                {
-                });
+                    (variableName1) => new Variable(variableName1, paramType));
                 currentUdfState.udfEntry.DeclareParam(paramId);
             }
         }
@@ -2481,10 +2478,7 @@ namespace PuffinBasicCS.Parser
                     var dataType = ir.SymbolTable.GetDataTypeFor(varname, varsuffix);
                     var variableName = new VariableName(varname, dataType.GetRepr(), dataType);
                     int id = ir.SymbolTable.AddVariableOrUDF(variableName, 
-                        (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)), 
-                        (id1, e1, v1) =>
-                    {
-                    });
+                        (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)));
                     var variable = ((STVariable)ir.SymbolTable[id]).GetVariable();
                     if (forLoopStateList.Count == 0)
                     {
@@ -2918,7 +2912,7 @@ namespace PuffinBasicCS.Parser
 
         private void AssertVariable(ISTEntry entry, string line)
         {
-            if (!entry.IsLValue())
+            if (!entry.IsLValue)
             {
                 throw new PuffinBasicSemanticError(BAD_ARGUMENT, line, "Expected variable, but found: " + entry);
             }

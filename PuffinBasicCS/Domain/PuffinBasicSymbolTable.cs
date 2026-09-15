@@ -27,8 +27,8 @@ namespace PuffinBasicCS.Domain
         private int id;
         private int lastId;
         private int lastLastId;
-        private ISTEntry lastEntry;
-        private ISTEntry lastLastEntry;
+        private ISTEntry? lastEntry;
+        private ISTEntry? lastLastEntry;
         public PuffinBasicSymbolTable()
         {
             this.lastId = this.lastLastId = -1;
@@ -95,7 +95,7 @@ namespace PuffinBasicCS.Domain
 
         public virtual ISTEntry Get(int id)
         {
-
+            #pragma warning disable CS8603 // Possible null reference return.
             // Cache for better performance
             if (id == lastId)
             {
@@ -106,6 +106,7 @@ namespace PuffinBasicCS.Domain
             {
                 return lastLastEntry;
             }
+            #pragma warning restore CS8603 // Possible null reference return.
 
             lastLastId = lastId;
             lastLastEntry = lastEntry;
@@ -130,7 +131,7 @@ namespace PuffinBasicCS.Domain
         public virtual ISTEntry GetVariable(int id)
         {
             var entry = Get(id);
-            if (!entry.IsLValue())
+            if (!entry.IsLValue)
             {
                 throw new PuffinBasicRuntimeError(ILLEGAL_FUNCTION_PARAM, "Entry for id: " + id + " is not a variable");
             }
@@ -138,7 +139,7 @@ namespace PuffinBasicCS.Domain
             return entry;
         }
 
-        public virtual int AddVariableOrUDF(VariableName variableName, Func<VariableName, Variable> variableCreator, VariableConsumer consumer)
+        public virtual int AddVariableOrUDF(VariableName variableName, Func<VariableName, Variable> variableCreator, VariableConsumer? consumer = null)
         {
             var scope = FindScope((s) => s.ContainsVariable(variableName)) ?? GetCurrentScope();
             int id = scope.GetIdForVariable(variableName);
@@ -156,7 +157,7 @@ namespace PuffinBasicCS.Domain
                 entry = (ISTVariable)Get(id);
             }
 
-            consumer.Invoke(id, entry, entry.GetVariable());
+            consumer?.Invoke(id, entry, entry.GetVariable());
             return id;
         }
 
