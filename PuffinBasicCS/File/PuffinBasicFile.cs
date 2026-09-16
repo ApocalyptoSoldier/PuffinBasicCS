@@ -1,10 +1,11 @@
-//using It.Unimi.Dsi.Fastutil.Ints;
 namespace PuffinBasicCS.File
 {
+    using PuffinBasicCS.Common;
     using PuffinBasicCS.Domain;
-    //using Org.Jetbrains.Annotations;
     using System;
+    using System.Collections.Frozen;
     using System.Collections.Generic;
+    using System.ComponentModel;
 
     public interface IPuffinBasicFile
     {
@@ -30,20 +31,12 @@ namespace PuffinBasicCS.File
 
         enum FileAccessMode
         {
-            // READ_ONLY("r")
+            [Description("r")]
             READ_ONLY,
-            // WRITE_ONLY("w")
+            [Description("w")]
             WRITE_ONLY,
-            // READ_WRITE("rw")
-            READ_WRITE 
-
-            // --------------------
-            // TODO enum body members
-            // public final String mode;
-            // FileAccessMode(String mode) {
-            //     this.mode = mode;
-            // }
-            // --------------------
+            [Description("rw")]
+            READ_WRITE
         }
 
         enum LockMode
@@ -62,80 +55,33 @@ namespace PuffinBasicCS.File
         }
     }
 
-    public static class FileEnumExtensions
+    // We probably don't need all these dictionaries when there are so few values involved, but at least this way everything is in a central location
+    public static class FileEnums
     {
-        public static IPuffinBasicFile.FileAccessMode FileAccessModeValueOf(string name)
+        private static readonly FrozenDictionary<string, IPuffinBasicFile.FileAccessMode> accessModeNameToValue;
+        private static readonly FrozenDictionary<IPuffinBasicFile.FileAccessMode, string> accessModeValueToName;
+
+        private static readonly FrozenDictionary<string, IPuffinBasicFile.FileOpenMode> openModeNameToValue
+            = EnumHelpers.GetEnumLabels<IPuffinBasicFile.FileOpenMode>()
+            .ToFrozenDictionary(x => x.Value, static x => x.Key);
+
+        private static readonly FrozenDictionary<string, IPuffinBasicFile.LockMode> lockModeNameToValue
+            = EnumHelpers.GetEnumLabels<IPuffinBasicFile.LockMode>()
+            .ToFrozenDictionary(x => x.Value, static x => x.Key);
+
+        static FileEnums()
         {
-            // TODO: decide if I should fix this to match the original values or rework everything to match ToString()
-            foreach (var val in (IPuffinBasicFile.FileAccessMode[])Enum.GetValues(typeof(IPuffinBasicFile.FileAccessMode)))
-                if (name == val.ToString())
-                    return val;
-
-            switch (name) {
-                case "r":
-                    return IPuffinBasicFile.FileAccessMode.READ_ONLY;
-                case "w":
-                    return IPuffinBasicFile.FileAccessMode.WRITE_ONLY;
-                case "rw":
-                    return IPuffinBasicFile.FileAccessMode.READ_WRITE;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            accessModeValueToName = EnumHelpers.GetEnumLabels<IPuffinBasicFile.FileAccessMode>().ToFrozenDictionary();
+            accessModeNameToValue = accessModeValueToName.ToFrozenDictionary(x => x.Value, static x => x.Key);
         }
 
-        public static IPuffinBasicFile.FileOpenMode FileOpenModeValueOf(string name)
-        {
-            // TODO: decide if I should fix this to match the original values or rework everything to match ToString()
-            foreach (var val in (IPuffinBasicFile.FileOpenMode[])Enum.GetValues(typeof(IPuffinBasicFile.FileOpenMode)))
-                if (name == val.ToString())
-                    return val;
+        public static IPuffinBasicFile.FileAccessMode ParseAccessMode(string name) => accessModeNameToValue[name];
+        public static IPuffinBasicFile.FileOpenMode ParseOpenMode(string name) => openModeNameToValue[name];
+        public static IPuffinBasicFile.LockMode ParseLockMode(string name) => lockModeNameToValue[name];
 
-            switch (name) {
-                case "INPUT":
-                    return IPuffinBasicFile.FileOpenMode.INPUT;
-                case "OUTPUT":
-                    return IPuffinBasicFile.FileOpenMode.OUTPUT;
-                case "APPEND":
-                    return IPuffinBasicFile.FileOpenMode.APPEND;
-                case "RANDOM":
-                    return IPuffinBasicFile.FileOpenMode.RANDOM;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static IPuffinBasicFile.LockMode LockModeValueOf(string name)
-        {
-            // TODO: decide if I should fix this to match the original values or rework everything to match ToString()
-            foreach (var val in (IPuffinBasicFile.LockMode[])Enum.GetValues(typeof(IPuffinBasicFile.LockMode)))
-                if (name == val.ToString())
-                    return val;
-
-            switch (name)
-            {
-                case "SHARED":
-                    return IPuffinBasicFile.LockMode.SHARED;
-                case "READ":
-                    return IPuffinBasicFile.LockMode.READ;
-                case "WRITE":
-                    return IPuffinBasicFile.LockMode.WRITE;
-                case "READ_WRITE":
-                    return IPuffinBasicFile.LockMode.READ_WRITE;
-                case "DEFAULT":
-                    return IPuffinBasicFile.LockMode.DEFAULT;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static IPuffinBasicFile.FileState ValueOf(this IPuffinBasicFile.FileState _, string name) {
-            if (name == "OPEN")
-                return IPuffinBasicFile.FileState.OPEN;
-            if (name == "CLOSED")
-                return IPuffinBasicFile.FileState.CLOSED;
-
-            throw new ArgumentOutOfRangeException();
-        }
+        public static string Repr(this IPuffinBasicFile.FileAccessMode accessMode) => accessModeValueToName[accessMode];
+        public static string Repr(this IPuffinBasicFile.FileOpenMode openMode) => openMode.ToString();
+        public static string Repr(this IPuffinBasicFile.LockMode lockMode) => lockMode.ToString();
     }
 
     public abstract class PuffinBasicFile : IPuffinBasicFile

@@ -248,9 +248,9 @@ namespace PuffinBasicCS.Runtime
         {
             var fileName = symbolTable[instr_fn_fn_0.op1].Value.GetString();
             var fileNumber = symbolTable[instr_fn_fn_0.op2].Value.GetInt32();
-            var fileOpenMode = FileEnumExtensions.FileOpenModeValueOf(symbolTable[instr_om_am_1.op1].Value.GetString());
-            var fileAccessMode = FileEnumExtensions.FileAccessModeValueOf(symbolTable[instr_om_am_1.op2].Value.GetString());
-            var fileLockMode = FileEnumExtensions.LockModeValueOf(symbolTable[instr_lm_rl_2.op1].Value.GetString());
+            var fileOpenMode = FileEnums.ParseOpenMode(symbolTable[instr_om_am_1.op1].Value.GetString());
+            var fileAccessMode = FileEnums.ParseAccessMode(symbolTable[instr_om_am_1.op2].Value.GetString());
+            var fileLockMode = FileEnums.ParseLockMode(symbolTable[instr_lm_rl_2.op1].Value.GetString());
             var recordLen = symbolTable[instr_lm_rl_2.op2].Value.GetInt32();
             files.Open(fileNumber, fileName, fileOpenMode, fileAccessMode, recordLen);
         }
@@ -329,109 +329,49 @@ namespace PuffinBasicCS.Runtime
                 file = files.sys;
             }
 
-            //using (var parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(file.))
-
-            // TODO: Implement this properly
-
-            //throw new NotImplementedException();
-
             bool retry = false;
+            var record = new string[0];
+            do
+            {
+                if (retry)
+                    if (printPrompt)
+                        Console.Error.WriteLine("?Redo from start");
+                    else
+                        throw new PuffinBasicRuntimeError(IO_ERROR, $"Record mismatch: expected={instructions.Count}, found in file={record.Length}, record: {record}");
+                record = file.ReadLine().Split(',');
 
-            //do
-            //{
-            //    if (retry)
-            //        if (printPrompt)
-            //            Console.Error.WriteLine("?Redo from start");
-            //        else
-            //            throw new PuffinBasicRuntimeError(IO_ERROR, "Record mismatch: expected=" + instructions.Count + ", found in file=" + record.Count + ", record: " + record);
+                if (retry && printPrompt && record.Length == 0)
+                    throw new PuffinBasicRuntimeError(INPUT_ERROR, "Input not specified");
 
-                var record = file.ReadLine().Split(',');
+                retry = true;
+            } while (record.Length != instructions.Count);
 
-                int i = 0;
-                foreach (var instr0 in instructions)
+            int i = 0;
+            foreach (var instr0 in instructions)
+            {
+                var entry = symbolTable[instr0.op1];
+                var value = entry.Value;
+                switch (entry.Type.AtomTypeId)
                 {
-                    var entry = symbolTable[instr0.op1];
-                    var value = entry.Value;
-                    switch (entry.Type.AtomTypeId)
-                    {
-                        case INT32:
-                            value.SetInt32(Int32.Parse(record[i].Trim()));
-                            break;
-                        case INT64:
-                            value.SetInt64(Int64.Parse(record[i].Trim()));
-                            break;
-                        case FLOAT:
-                            value.SetFloat32(Single.Parse(record[i].Trim(), System.Globalization.CultureInfo.InvariantCulture));
-                            break;
-                        case DOUBLE:
-                            value.SetFloat64(Double.Parse(record[i].Trim(), System.Globalization.CultureInfo.InvariantCulture));
-                            break;
-                        case STRING:
-                            value.SetString(record[i].Trim());
-                            break;
-                    }
-
-                    ++i;
+                    case INT32:
+                        value.SetInt32(Int32.Parse(record[i].Trim()));
+                        break;
+                    case INT64:
+                        value.SetInt64(Int64.Parse(record[i].Trim()));
+                        break;
+                    case FLOAT:
+                        value.SetFloat32(Single.Parse(record[i].Trim(), System.Globalization.CultureInfo.InvariantCulture));
+                        break;
+                    case DOUBLE:
+                        value.SetFloat64(Double.Parse(record[i].Trim(), System.Globalization.CultureInfo.InvariantCulture));
+                        break;
+                    case STRING:
+                        value.SetString(record[i].Trim());
+                        break;
                 }
 
-            //} while (false);
-
-            //CSVRecord record = null;
-            //bool retry = false;
-            //do
-            //{
-            //    if (retry)
-            //    {
-            //        if (printPrompt)
-            //        {
-            //            Console.Error.WriteLine("?Redo from start");
-            //        }
-            //        else
-            //        {
-            //            throw new PuffinBasicRuntimeError(IO_ERROR, "Record mismatch: expected=" + instructions.Count + ", found in file=" + record.Count + ", record: " + record);
-            //        }
-            //    }
-
-            //    CSVParser parser;
-            //    try
-            //    {
-            //        parser = CSVParser.Parse(file.ReadLine(), CSVFormat.DEFAULT);
-            //    }
-            //    catch (System.IO.IOException e)
-            //    {
-            //        throw new PuffinBasicRuntimeError(IO_ERROR, "Failed to read inputs, error: " + e.Message);
-            //    }
-
-            //    record = parser.Iterator().Next();
-            //    retry = true;
-            //}
-            //while (record.Count != instructions.Count);
-            //int i = 0;
-            //foreach (var instr0 in instructions)
-            //{
-            //    var entry = symbolTable[instr0.op1];
-            //    var value = entry.GetValue();
-            //    switch (entry.GetType().GetAtomTypeId())
-            //    {
-            //        case INT32:
-            //            value.SetInt32(int.Parse(record[i].Trim()));
-            //            break;
-            //        case INT64:
-            //            value.SetInt64(long.Parse(record[i].Trim()));
-            //            break;
-            //        case FLOAT:
-            //            value.SetFloat32(float.Parse(record[i].Trim()));
-            //            break;
-            //        case DOUBLE:
-            //            value.SetFloat64(Double.Parse(record[i].Trim()));
-            //            break;
-            //        case STRING:
-            //            value.SetString(record[i].Trim());
-            //            break;
-            //    }
-
-            //    ++i;
-            //}
+                ++i;
+            }
         }
 
         public static void Lineinput(PuffinBasicFiles files, PuffinBasicSymbolTable symbolTable, Instruction instr0, Instruction instruction)

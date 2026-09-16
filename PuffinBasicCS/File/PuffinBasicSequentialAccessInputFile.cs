@@ -15,7 +15,7 @@ namespace PuffinBasicCS.File
     {
         private readonly string filename;
         private readonly FileStream @in;
-        private long bytesAccessed;
+        private long bytesAccessed = 0;
         private FileState fileState;
         private string? lastLine;
         public PuffinBasicSequentialAccessInputFile(string filename)
@@ -23,7 +23,6 @@ namespace PuffinBasicCS.File
             if (filename == null) throw new ArgumentNullException(nameof(filename));
 
             this.filename = filename;
-            this.bytesAccessed = 0;
             try
             {
                 this.@in = System.IO.File.OpenRead(filename);

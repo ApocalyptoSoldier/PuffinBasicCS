@@ -22,6 +22,7 @@ namespace PuffinBasicCS.Parser
     using static Org.Puffinbasic.Antlr.PuffinBasicParser;
     using System.Threading;
     using PuffinBasicCS.Runtime;
+    using PuffinBasicCS.File;
 
     public class PuffinBasicIRListener : PuffinBasicBaseListener
     {
@@ -1317,9 +1318,9 @@ namespace PuffinBasicCS.Parser
             ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
                 OpCode.PARAM2, h.result, s.result, NULL_ID);
-             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile,
-                currentLineNumber, ctx,
-                OpCode.HSB2RGB, b.result, NULL_ID, ir.SymbolTable.AddTmp(INT32)));
+            nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile,
+               currentLineNumber, ctx,
+               OpCode.HSB2RGB, b.result, NULL_ID, ir.SymbolTable.AddTmp(INT32)));
         }
 
         public override void ExitFuncMouseMovedX(FuncMouseMovedXContext ctx)
@@ -1407,8 +1408,8 @@ namespace PuffinBasicCS.Parser
             objectType.CheckFuncCallArguments(funcName, paramTypes);
             nodeToInstruction.Put(ctx, ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
-                OpCode.MEMBER_FUNC_CALL, varInstruction.result, 
-                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(funcName)), 
+                OpCode.MEMBER_FUNC_CALL, varInstruction.result,
+                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(funcName)),
                 ir.SymbolTable.AddTmp(returnType)));
         }
 
@@ -1693,11 +1694,8 @@ namespace PuffinBasicCS.Parser
             var varname = ctx.varname().GetText();
             var exprInstruction = LookupInstruction(ctx.expr());
             var resultType = ir.SymbolTable[exprInstruction.result].Type;
-            int varId = ir.SymbolTable.AddVariableOrUDF(new VariableName(varname, null, resultType.AtomTypeId), 
-                (variableName1) => new Variable(variableName1, resultType), 
-                (id, entry, v1) =>
-            {
-            });
+            int varId = ir.SymbolTable.AddVariableOrUDF(new VariableName(varname, null, resultType.AtomTypeId),
+                (variableName1) => new Variable(variableName1, resultType));
             ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
                 OpCode.VARREF, exprInstruction.result, varId, NULL_ID);
@@ -1705,31 +1703,37 @@ namespace PuffinBasicCS.Parser
 
         public override void ExitPrintstmt(PrintstmtContext ctx)
         {
-            HandlePrintstmt(ctx, ctx.printlist().children, null);
+            HandlePrintstmt(ctx, ctx.printlist()?.children, null);
         }
 
         public override void ExitPrinthashstmt(PrinthashstmtContext ctx)
         {
             var fileNumber = LookupInstruction(ctx.filenum);
-            HandlePrintstmt(ctx, ctx.printlist().children, fileNumber);
+            HandlePrintstmt(ctx, ctx.printlist()?.children, fileNumber);
         }
 
         private void HandlePrintstmt(ParserRuleContext ctx, IList<IParseTree>? children, Instruction? fileNumber)
         {
             bool endsWithNewline = true;
-            foreach (IParseTree child in children)
+
+            if (children == null)
+                endsWithNewline = true;
+            else
             {
-                if (child is ExprContext)
+                foreach (IParseTree child in children)
                 {
-                    var exprInstruction = LookupInstruction((ExprContext)child);
-                    ir.AddInstruction(sourceFile,
-                        currentLineNumber, ctx,
-                        OpCode.PRINT, exprInstruction.result, NULL_ID, NULL_ID);
-                    endsWithNewline = true;
-                }
-                else
-                {
-                    endsWithNewline = false;
+                    if (child is ExprContext)
+                    {
+                        var exprInstruction = LookupInstruction((ExprContext)child);
+                        ir.AddInstruction(sourceFile,
+                            currentLineNumber, ctx,
+                            OpCode.PRINT, exprInstruction.result, NULL_ID, NULL_ID);
+                        endsWithNewline = true;
+                    }
+                    else
+                    {
+                        endsWithNewline = false;
+                    }
                 }
             }
 
@@ -1821,8 +1825,8 @@ namespace PuffinBasicCS.Parser
             }
 
             var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
-            var varId = ir.SymbolTable.AddVariableOrUDF(variableName, 
-                (variableName1) => new Variable(variableName1, new ArrayType(variableName1.DataType, dims, true)), 
+            var varId = ir.SymbolTable.AddVariableOrUDF(variableName,
+                (variableName1) => new Variable(variableName1, new ArrayType(variableName1.DataType, dims, true)),
                 (id, entry, v1) => entry.Value.SetArrayDimensions(dims));
             foreach (var expr in ctx.expr())
             {
@@ -1846,8 +1850,8 @@ namespace PuffinBasicCS.Parser
             }
 
             var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
-            var varId = ir.SymbolTable.AddVariableOrUDF(variableName, 
-                (variableName1) => new Variable(variableName1, new ArrayType(variableName1.DataType, dims, true)), 
+            var varId = ir.SymbolTable.AddVariableOrUDF(variableName,
+                (variableName1) => new Variable(variableName1, new ArrayType(variableName1.DataType, dims, true)),
                 (id, entry, v1) => entry.Value.SetArrayDimensions(dims));
             foreach (var expr in ctx.expr())
             {
@@ -1945,31 +1949,31 @@ namespace PuffinBasicCS.Parser
         public override void EnterFunctionbeginstmt(FunctionbeginstmtContext ctx)
         {
             var variableName = GetVariableNameFromCtx(ctx.varname(), ctx.varsuffix());
-            var udfId = ir.SymbolTable.AddVariableOrUDF(variableName, 
-                (variableName1) => Variable.Of(variableName1, VariableKindHint.UDF, GetCtxString(ctx)), 
+            var udfId = ir.SymbolTable.AddVariableOrUDF(variableName,
+                (variableName1) => Variable.Of(variableName1, VariableKindHint.UDF, GetCtxString(ctx)),
                 (varId, varEntry, variable) =>
-            {
-                if (currentUdfState != null)
                 {
+                    if (currentUdfState != null)
+                    {
                         throw new PuffinBasicSemanticError(BAD_FUNCTION_DEF, GetCtxString(ctx), $"Function {variableName} defined in another function: {currentUdfState.variableName}");
-                }
+                    }
 
-                currentUdfState = new UDFState(variableName, (STUDF)varEntry);
-                udfStateMap[variable] = currentUdfState;
+                    currentUdfState = new UDFState(variableName, (STUDF)varEntry);
+                    udfStateMap[variable] = currentUdfState;
 
-                // GOTO postFuncDecl
-                currentUdfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile,
-                    currentLineNumber, ctx,
-                    OpCode.GOTO_LABEL, ir.SymbolTable.AddGotoTarget(), NULL_ID, NULL_ID);
+                    // GOTO postFuncDecl
+                    currentUdfState.gotoPostFuncDecl = ir.AddInstruction(sourceFile,
+                        currentLineNumber, ctx,
+                        OpCode.GOTO_LABEL, ir.SymbolTable.AddGotoTarget(), NULL_ID, NULL_ID);
 
-                // LABEL FuncStart
-                currentUdfState.labelFuncStart = ir.AddInstruction(sourceFile,
-                    currentLineNumber, ctx,
-                    OpCode.LABEL, ir.SymbolTable.AddLabel(), NULL_ID, NULL_ID);
+                    // LABEL FuncStart
+                    currentUdfState.labelFuncStart = ir.AddInstruction(sourceFile,
+                        currentLineNumber, ctx,
+                        OpCode.LABEL, ir.SymbolTable.AddLabel(), NULL_ID, NULL_ID);
 
-                // Push child scope
-                ir.SymbolTable.PushDeclarationScope(varId, true);
-            });
+                    // Push child scope
+                    ir.SymbolTable.PushDeclarationScope(varId, true);
+                });
             #pragma warning disable CS8602 // Dereference of a possibly null reference.
             currentUdfState.udfId = udfId;
             #pragma warning restore CS8602 // Dereference of a possibly null reference.
@@ -2084,7 +2088,7 @@ namespace PuffinBasicCS.Parser
                     throw new PuffinBasicSemanticError(DATA_TYPE_MISMATCH, GetCtxString(ctx), $"Bad struct field: {compCtx.GetText()}");
                 }
 
-                var paramId = ir.SymbolTable.AddVariableOrUDF(paramName, 
+                var paramId = ir.SymbolTable.AddVariableOrUDF(paramName,
                     (variableName1) => new Variable(variableName1, paramType));
                 currentUdfState.udfEntry.DeclareParam(paramId);
             }
@@ -2393,7 +2397,7 @@ namespace PuffinBasicCS.Parser
             var zero = ir.SymbolTable.AddTmp(INT32, (e) => e.Value.SetInt32(0));
             var t1 = ir.SymbolTable.AddTmp(INT32);
             ir.AddInstruction(sourceFile,
-                currentLineNumber, ctx, 
+                currentLineNumber, ctx,
                 GetGEOpCode(ir.SymbolTable[stepCopy.result].Type.AtomTypeId, INT32), stepCopy.result, zero, t1);
 
             // Patch GOTO LABEL Check
@@ -2402,10 +2406,10 @@ namespace PuffinBasicCS.Parser
             // var > end
             var t2 = ir.SymbolTable.AddTmp(INT32);
             ir.AddInstruction(sourceFile,
-                currentLineNumber, ctx, 
+                currentLineNumber, ctx,
                 GetGTOpCode(
-                    ir.SymbolTable[varInstr.result].Type.AtomTypeId, 
-                    ir.SymbolTable[endCopy.result].Type.AtomTypeId), 
+                    ir.SymbolTable[varInstr.result].Type.AtomTypeId,
+                    ir.SymbolTable[endCopy.result].Type.AtomTypeId),
                 varInstr.result, endCopy.result, t2);
 
             // (step >= 0 and var > end)
@@ -2417,18 +2421,18 @@ namespace PuffinBasicCS.Parser
             // step < 0
             var t4 = ir.SymbolTable.AddTmp(INT32);
             ir.AddInstruction(sourceFile,
-                currentLineNumber, ctx, 
+                currentLineNumber, ctx,
                 GetLTOpCode(
-                    ir.SymbolTable[stepCopy.result].Type.AtomTypeId, INT32), 
+                    ir.SymbolTable[stepCopy.result].Type.AtomTypeId, INT32),
                 stepCopy.result, zero, t4);
 
             // var < end
             var t5 = ir.SymbolTable.AddTmp(INT32);
             ir.AddInstruction(sourceFile,
-                currentLineNumber, ctx, 
+                currentLineNumber, ctx,
                 GetLTOpCode(
-                    ir.SymbolTable[varInstr.result].Type.AtomTypeId, 
-                    ir.SymbolTable[endCopy.result].Type.AtomTypeId), 
+                    ir.SymbolTable[varInstr.result].Type.AtomTypeId,
+                    ir.SymbolTable[endCopy.result].Type.AtomTypeId),
                 varInstr.result, endCopy.result, t5);
 
             // (step < 0 and var < end)
@@ -2477,7 +2481,7 @@ namespace PuffinBasicCS.Parser
                     var varsuffix = varCtx.leafvariable().varsuffix() != null ? varCtx.leafvariable().varsuffix().GetText() : null;
                     var dataType = ir.SymbolTable.GetDataTypeFor(varname, varsuffix);
                     var variableName = new VariableName(varname, dataType.GetRepr(), dataType);
-                    int id = ir.SymbolTable.AddVariableOrUDF(variableName, 
+                    int id = ir.SymbolTable.AddVariableOrUDF(variableName,
                         (variableName1) => Variable.Of(variableName1, VariableKindHint.DERIVE_FROM_NAME, GetCtxString(ctx)));
                     var variable = ((STVariable)ir.SymbolTable[id]).GetVariable();
                     if (forLoopStateList.Count == 0)
@@ -2543,7 +2547,7 @@ namespace PuffinBasicCS.Parser
             ifState.gotoIfConditionTrue.PatchOp2(ifState.labelBeforeThen.op1);
 
             // Patch IF false: GOTO labelAfterThen|labelBeforeElse
-             #pragma warning disable CS8602 // Dereference of a possibly null reference.
+            #pragma warning disable CS8602 // Dereference of a possibly null reference.
             ifState.gotoIfConditionFalse.PatchOp1(noElseStmt ? ifState.labelAfterThen.op1 : ifState.labelBeforeElse.op1);
             #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
@@ -2824,14 +2828,14 @@ namespace PuffinBasicCS.Parser
             ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
                 OpCode.PARAM2,
-                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(fileOpenMode.ToString())),
-                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(accessMode.ToString())), NULL_ID);
+                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(fileOpenMode.Repr())),
+                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(accessMode.Repr())), NULL_ID);
 
             // lockMode, recordLen
             ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
                 OpCode.OPEN,
-                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(lockMode.ToString())),
+                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(lockMode.Repr())),
                 recordLenInstrId,
                 NULL_ID);
         }
@@ -2843,8 +2847,8 @@ namespace PuffinBasicCS.Parser
             var accessMode = GetFileAccessMode(ctx.access());
             var lockMode = GetLockMode(ctx.@lock());
             var fileNumber = Numbers.ParseInt32(ctx.filenum.Text, GetCtxString(ctx));
-            var recordLenInstrId = ctx.reclen != null ? 
-                LookupInstruction(ctx.reclen).result 
+            var recordLenInstrId = ctx.reclen != null ?
+                LookupInstruction(ctx.reclen).result
                 : ir.SymbolTable.AddTmp(INT32, (e) => e.Value.SetInt32(File.PuffinBasicFile.DEFAULT_RECORD_LEN));
             Types.AssertString(ir.SymbolTable[filenameInstr.result].Type.AtomTypeId, GetCtxString(ctx));
             Types.AssertNumeric(ir.SymbolTable[recordLenInstrId].Type.AtomTypeId, GetCtxString(ctx));
@@ -2857,13 +2861,13 @@ namespace PuffinBasicCS.Parser
             // openMode, accessMode
             ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
-                OpCode.PARAM2, ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(fileOpenMode.ToString())), 
-                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(accessMode.ToString())), NULL_ID);
+                OpCode.PARAM2, ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(fileOpenMode.Repr())),
+                ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(accessMode.Repr())), NULL_ID);
 
             // lockMode, recordLen
             ir.AddInstruction(sourceFile,
                 currentLineNumber, ctx,
-                OpCode.OPEN, ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(lockMode.ToString())), recordLenInstrId, NULL_ID);
+                OpCode.OPEN, ir.SymbolTable.AddTmp(PuffinBasicAtomTypeId.STRING, (e) => e.Value.SetString(lockMode.Repr())), recordLenInstrId, NULL_ID);
         }
 
         public override void ExitClosestmt(ClosestmtContext ctx)
@@ -2967,8 +2971,8 @@ namespace PuffinBasicCS.Parser
         {
             var varInstr = LookupInstruction(ctx.variable());
             var nInstr = LookupInstruction(ctx.expr(0));
-            var mInstrId = ctx.expr().Length == 3 
-                ? LookupInstruction(ctx.expr(1)).result 
+            var mInstrId = ctx.expr().Length == 3
+                ? LookupInstruction(ctx.expr(1)).result
                 : ir.SymbolTable.AddTmp(INT32, (e) => e.Value.SetInt32(-1));
             var replacement = ctx.expr().Length == 3 ? LookupInstruction(ctx.expr(2)) : LookupInstruction(ctx.expr(1));
             Types.AssertString(ir.SymbolTable[varInstr.result].Type.AtomTypeId, GetCtxString(ctx));

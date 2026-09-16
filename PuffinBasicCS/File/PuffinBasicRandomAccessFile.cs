@@ -1,6 +1,3 @@
-//using Com.Google.Common.Base;
-//using It.Unimi.Dsi.Fastutil.Ints;
-
 namespace PuffinBasicCS.File
 {
     using PuffinBasicCS.Error;
@@ -21,11 +18,10 @@ namespace PuffinBasicCS.File
         private readonly FileAccessMode accessMode;
         private readonly SafeFileHandle fileHandle;
         private readonly int recordLength;
-        private readonly byte[] recordBuffer;
         private List<int> recordParts;
-        private long currentFilePosBytes;
-        private int lastGetRecordNumber;
-        private int lastPutRecordNumber;
+        private long currentFilePosBytes = 0;
+        private int lastGetRecordNumber = 0;
+        private int lastPutRecordNumber = -1;
         private FileState fileState;
         public PuffinBasicRandomAccessFile(string filename, FileAccessMode accessMode, int recordLen)
         {
@@ -36,9 +32,7 @@ namespace PuffinBasicCS.File
             this.filename = filename.Replace('/', '\\');
             this.accessMode = accessMode;
             this.recordLength = recordLen;
-            this.recordBuffer = new byte[recordLength];
-            this.lastPutRecordNumber = this.lastGetRecordNumber = -1;
-            this.currentFilePosBytes = 0;
+
             try
             {
                 FileAccess fileAccess = accessMode == FileAccessMode.READ_ONLY ? FileAccess.Read : 
@@ -138,6 +132,9 @@ namespace PuffinBasicCS.File
                 var byteBuffer = new byte[fieldLength];
 
                 Array.Copy(valueBytes, byteBuffer, valueBytes.Length);
+                // Fill the remaining slots with ' '
+                if (fieldLength > valueLength)
+                    Array.Fill(byteBuffer, (byte)' ', valueBytes.Length, fieldLength - valueLength);
 
                 recordBufferParts.Add(new ReadOnlyMemory<byte>(byteBuffer));
             }
@@ -191,24 +188,6 @@ namespace PuffinBasicCS.File
             UpdateCurrentBytePos();
         }
 
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
-        private BinaryWriter ClearAndGetRecordBuffer()
-        {
-            Array.Fill(recordBuffer, (byte)' ');
-            
-            var ms = new MemoryStream(recordBuffer);
-            return new BinaryWriter(ms);
-        }
-
-        // Create a new buffer and fill with spaces.
-        // Put first fieldLength bytes only
-        // If fieldLength > valueLength, skip fieldLength - valueLength
-        // Write the record buffer to file
-        // Seek to record number and read the record into record buffer
         private void UpdateCurrentBytePos()
         {
             currentFilePosBytes += recordLength;

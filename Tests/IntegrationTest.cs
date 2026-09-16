@@ -10,9 +10,9 @@
     [TestClass]
     public class IntegrationTest
     {
-        private IEnvironment env;
+        private IEnvironment env = new IEnvironment.SystemEnv();
 
-        private Dictionary<string, string> fileNameToResource;
+        private Dictionary<string, string> fileNameToResource = GetResourceNamesToResources();
 
         private static Dictionary<string, string> GetResourceNamesToResources()
         {
@@ -24,13 +24,13 @@
             return manifestResourceNames.ToDictionary(resourceName => resourceName.Replace(resourcePrefix, String.Empty));
         }
 
-        [TestInitialize]
-        public virtual void Setup()
-        {
-            env = new IEnvironment.SystemEnv();
+        //[TestInitialize]
+        //public virtual void Setup()
+        //{
+        //    env = new IEnvironment.SystemEnv();
 
-            fileNameToResource = GetResourceNamesToResources();
-        }
+        //    fileNameToResource = GetResourceNamesToResources();
+        //}
 
         [TestMethod]
         public virtual void TestForLoop()

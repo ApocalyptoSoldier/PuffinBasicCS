@@ -398,8 +398,7 @@ namespace PuffinBasicCS.Domain
                         if (type.TypeId == PuffinBasicTypeId.SCALAR)
                         {
                             var value = type.AtomTypeId.GetValueFrom(@params[1]);
-                            //list.Add(index, value);
-                            list[index] = value;
+                            list.Insert(index, value);
                         }
                         else
                         {
@@ -1700,11 +1699,11 @@ namespace PuffinBasicCS.Domain
 
             public override void SetInt32(int value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetInt64(long value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetInt64(long value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetFloat32(float value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetFloat32(float value) => this.value[GetArrayIndex1D()] = (long)value;
 
-            public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (long)value;
 
             public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }
@@ -1747,11 +1746,11 @@ namespace PuffinBasicCS.Domain
 
             public override void SetInt32(int value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetInt64(long value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetInt64(long value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetFloat32(float value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetFloat32(float value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (float)value;
 
             public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }
@@ -1794,11 +1793,11 @@ namespace PuffinBasicCS.Domain
 
             public override void SetInt32(int value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetInt64(long value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetInt64(long value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetFloat32(float value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetFloat32(float value) => this.value[GetArrayIndex1D()] = value;
 
-            public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = (int)value;
+            public override void SetFloat64(double value) => this.value[GetArrayIndex1D()] = value;
 
             public override void SetString(string value) => throw new PuffinBasicInternalError($"Can't cast String to int32: '{value}'");
         }

@@ -8,6 +8,7 @@ namespace PuffinBasicCS.File
     using System.IO;
 
     using PuffinBasicCS.Domain;
+    using PuffinBasicCS.Common;
 
     public class SystemInputOutputFile : PuffinBasicFile
     {
@@ -36,18 +37,7 @@ namespace PuffinBasicCS.File
 
         public override byte[] ReadBytes(int n)
         {
-            throw new NotImplementedException();
-            //byte[] line = ReadLine().GetBytes(StandardCharsets.US_ASCII);
-            //if (n >= line.Length)
-            //{
-            //    return line;
-            //}
-            //else
-            //{
-            //    byte[] copy = new byte[Math.Min(n, line.Length)];
-            //    Array.Copy(line, 0, copy, 0, n);
-            //    return copy;
-            //}
+            return ISOEncoding.GetBytes(ReadLine());
         }
 
         public override string ReadLine()

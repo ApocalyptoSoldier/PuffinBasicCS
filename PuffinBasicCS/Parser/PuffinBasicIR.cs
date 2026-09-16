@@ -3,32 +3,16 @@ namespace PuffinBasicCS.Parser
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
 
+    using PuffinBasicCS.Common;
     using PuffinBasicCS.Domain;
     using System;
     using System.Collections.Frozen;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Reflection;
 
     public static class OpCodeRepr
     {
-        private static readonly Dictionary<PuffinBasicIR.OpCode, string> opCodeToRepr = new Dictionary<PuffinBasicIR.OpCode, string>();
-
-        static OpCodeRepr()
-        {
-            var enumMembers = typeof(PuffinBasicIR.OpCode).GetMembers(BindingFlags.Public | BindingFlags.Static);
-
-            foreach (var m in enumMembers)
-            {
-                if (m is FieldInfo field)
-                {
-                    PuffinBasicIR.OpCode opCode = (PuffinBasicIR.OpCode)(field.GetValue(null));
-                    #pragma warning disable CS8602 // Dereference of a possibly null reference.
-                    opCodeToRepr[opCode] = field.GetCustomAttribute<DescriptionAttribute>().Description;
-                    #pragma warning restore CS8602 // Dereference of a possibly null reference.
-                }
-            }
-        }
+        private static readonly FrozenDictionary<PuffinBasicIR.OpCode, string> opCodeToRepr = EnumHelpers.GetEnumLabels<PuffinBasicIR.OpCode>().ToFrozenDictionary();
 
         public static string Repr(this PuffinBasicIR.OpCode opCode) => opCodeToRepr[opCode];
     }
@@ -497,7 +481,7 @@ namespace PuffinBasicCS.Parser
         {
             try
             {
-                return instruction.GetInputRef().sourceFile.GetSourceCodeStream().GetText(new Interval(instruction.inputRef.inputStartIndex, instruction.inputRef.inputStopIndex));
+                return instruction.GetInputRef().sourceFile.SourceCodeStream.GetText(new Interval(instruction.inputRef.inputStartIndex, instruction.inputRef.inputStopIndex));
             }
             catch (Exception e)
             {

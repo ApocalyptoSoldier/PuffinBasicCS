@@ -13,7 +13,6 @@ namespace PuffinBasicCS.File
     public class PuffinBasicSequentialAccessOutputFile : IPuffinBasicFile
     {
         private readonly string filename;
-        //private readonly TextWriter @out;
         private readonly FileStream @out;
         private long bytesAccessed;
         private IPuffinBasicFile.FileState fileState;
@@ -22,10 +21,11 @@ namespace PuffinBasicCS.File
             if (filename == null) throw new ArgumentNullException("filename");
 
             this.filename = filename;
-            this.bytesAccessed = 0;
             try
             { 
                 @out = System.IO.File.OpenWrite(filename);
+                
+                this.bytesAccessed = append ? @out.Length : 0;
             }
             catch (Exception e) {
                 throw new PuffinBasicRuntimeError(IO_ERROR, $"Failed to open file {filename} for writing, error: ${e.Message}");
@@ -93,7 +93,7 @@ namespace PuffinBasicCS.File
             throw GetIllegalAccess();
         }
 
-        private PuffinBasicRuntimeError GetIllegalAccess()
+        private static PuffinBasicRuntimeError GetIllegalAccess()
         {
             return new PuffinBasicRuntimeError(ILLEGAL_FILE_ACCESS, "Not implemented for SequentialAccessOutputFile!");
         }

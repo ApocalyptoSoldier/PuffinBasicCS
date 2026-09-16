@@ -86,7 +86,8 @@ namespace PuffinBasicCS.Parser
             else
             {
                 linenum = Interlocked.Increment(ref linenum); // TODO: check if this is even neccessary
-                numNoLinenum++;
+                if (!String.IsNullOrWhiteSpace(line)) // TODO: check if empty lines are actually in spec
+                    numNoLinenum++;
             }
 
             if (sortedLines.ContainsKey(linenum))

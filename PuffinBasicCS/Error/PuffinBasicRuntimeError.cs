@@ -25,7 +25,8 @@ namespace PuffinBasicCS.Error
             BAD_FIELD,
             MISSING_STRUCT,
             BAD_FUNCTION_CALL,
-            IMPORT_ERROR
+            IMPORT_ERROR,
+            INPUT_ERROR
         }
 
         private readonly ErrorCode errorCode;

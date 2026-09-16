@@ -11,10 +11,9 @@ namespace PuffinBasicCS.File
     public class PuffinBasicFiles
     {
         public readonly IPuffinBasicFile sys;
-        private readonly Dictionary<int, IPuffinBasicFile> files;
+        private readonly Dictionary<int, IPuffinBasicFile> files = new Dictionary<int, IPuffinBasicFile>();
         public PuffinBasicFiles(IPuffinBasicFile sys)
         {
-            this.files = new Dictionary<int, IPuffinBasicFile>();
             this.sys = sys;
         }
 

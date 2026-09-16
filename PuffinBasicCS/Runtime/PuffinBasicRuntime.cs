@@ -18,6 +18,7 @@ namespace PuffinBasicCS.Runtime
 
     using PuffinBasicCS.File;
     using PuffinBasicCS.Error;
+    using System.Collections.Frozen;
 
     public class PuffinBasicRuntime
     {
@@ -27,9 +28,10 @@ namespace PuffinBasicCS.Runtime
         private Stack<int> gosubReturnLabelStack = new Stack<int>();
         private int programCounter;
         private Random random = new Random();
-        private Dictionary<int, int> labelToInstrNum;
-        private Dictionary<int, int> lineNumToInstrNum;
-        private IList<Instruction> @params = new List<Instruction>();
+        private IList<Instruction> instructions;
+        private FrozenDictionary<int, int> labelToInstrNum;
+        private FrozenDictionary<int, int> lineNumToInstrNum;
+        private List<Instruction> @params = new List<Instruction>();
         private FormatterCache formatterCache = new FormatterCache();
         private PuffinBasicFiles files;
         private ReadData readData;
@@ -43,9 +45,16 @@ namespace PuffinBasicCS.Runtime
             this.ir = ir;
             this.@out = @out;
             this.env = env;
+            this.graphicsEnabled = graphicsEnabled;
+
+            this.instructions = ir.GetInstructions();
+            this.labelToInstrNum = ComputeLabelToInstructionNumber(instructions).ToFrozenDictionary();
+            this.lineNumToInstrNum = ComputeLineNumberToInstructionNumber(instructions).ToFrozenDictionary();
+            this.files = new PuffinBasicFiles(new SystemInputOutputFile(Console.In, @out));
+            this.readData = ProcessDataInstructions(instructions);
         }
 
-        private Dictionary<int,int> ComputeLabelToInstructionNumber(IList<Instruction> instructions)
+        private static Dictionary<int,int> ComputeLabelToInstructionNumber(IList<Instruction> instructions)
         {
             Dictionary<int, int> labelToInstrNum = new Dictionary<int, int>();
             for (int i = 0; i < instructions.Count; i++)
@@ -68,7 +77,7 @@ namespace PuffinBasicCS.Runtime
             return instrNum;
         }
 
-        private Dictionary<int, int> ComputeLineNumberToInstructionNumber(IList<Instruction> instructions)
+        private static Dictionary<int, int> ComputeLineNumberToInstructionNumber(IList<Instruction> instructions)
         {
             var linenumToInstrNum = new Dictionary<int, int>();
             int instrNum = 0;
@@ -97,11 +106,6 @@ namespace PuffinBasicCS.Runtime
 
         public virtual void Run()
         {
-            var instructions = ir.GetInstructions();
-            this.labelToInstrNum = ComputeLabelToInstructionNumber(instructions);
-            this.lineNumToInstrNum = ComputeLineNumberToInstructionNumber(instructions);
-            this.files = new PuffinBasicFiles(new SystemInputOutputFile(Console.In, @out));
-            this.readData = ProcessDataInstructions(instructions);
             //this.graphicsState = new GraphicsState();
             //this.soundState = new SoundState();
             try
